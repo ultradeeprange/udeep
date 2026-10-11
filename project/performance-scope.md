@@ -423,6 +423,30 @@ Processor time, because elapsed time on the machine that day ran from 3 to 46 s 
 every thread, so it understates the gain where the new path works on several at once. The core's reader also
 decodes its two JPEGs on a thread each. What is left is matplotlib drawing the figure four times.
 
+## 4g. What the first run on Linux found (2026-10-11)
+
+The tests had only ever run on one Windows machine. Their first run on GitHub's Linux machines failed in two
+places, and both were faults of ours, not of the tests' machine.
+
+1. **A small call into the core was about twenty times slower than it should be.** With `threads = 0` (every
+   available core) the core asked the system how many cores it had on every call. On Linux that count is
+   understood to read the process's limits from files (not checked here; the timing is what was seen). The test that a one-value call starts no thread measured 36.9 µs for the
+   parallel entry point against 1.56 µs for the serial one; on Windows the same test had always passed. The core
+   now counts the cores once, and does not count them at all when there are too few values for a second thread
+   (`par::threads_for`). The figures are one measurement on a shared machine, taken from the failing test's own
+   message; the fix was not timed separately, only shown to bring the test back inside its bound (five times the
+   serial call, plus 5 µs).
+2. **The colour tables are not regenerated bit for bit.** `udeep.cmap.generate` gave, for the version-2 tables,
+   numbers a few units in the last place of a float32 away from the shipped ones; the version-1 tables came out
+   exact. The cause is taken to be the mathematics library (powers and cube roots are not rounded the same way
+   by every library); that was not isolated further. The shipped table is the definition (profile 6.10), so
+   nothing a file means has changed, but two things relied on exact regeneration and no longer do: the test, which
+   now holds the generator to the table tolerance (2e-6), and `tools/make_tables.py`, which now never rewrites a
+   table that exists.
+
+Neither is a fault in Rust, NumPy or the system's library, and none has been reported to them: counting cores is
+not promised to be fast, and no mathematics library promises correctly rounded powers.
+
 ## 5. Order
 
 1. **3.1, colour map as a table.** Largest gain, and it settles how colour maps are defined. Needs: regenerate
