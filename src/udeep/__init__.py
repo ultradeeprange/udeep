@@ -1,6 +1,6 @@
 """HDR plotting core: data -> multiples of SDR white -> HDR colour -> HDR file.
 
-See docs/superpowers/specs/2026-09-25-hdr-plotting-scope.md.
+See profile/udeep-figure-profile-v0.3.md.
 """
 from udeep.cmap import MAPS, cmap
 from udeep.export import pq_encode, write_png_pq, write_png_sdr

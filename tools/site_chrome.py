@@ -66,8 +66,8 @@ def og_image() -> None:
     fig = Image.open(DOCS / "assets" / "gw250114_sdr.png").convert("RGB")
     fig.thumbnail((560, 520))
     im.paste(fig, (w - fig.width - 48, (h - fig.height) // 2))
-    d.text((56, 150), "hdr", fill="#e4e8ec", font=big)
-    d.text((56 + d.textlength("hdr", font=big), 150), "plot", fill="#e8b04a", font=big)
+    d.text((56, 150), "U", fill="#e4e8ec", font=big)
+    d.text((56 + d.textlength("U", font=big), 150), "Deep", fill="#e8b04a", font=big)
     for i, line in enumerate(["Scientific figures that record", "how data became light,", "and use the range of", "modern screens."]):
         d.text((56, 270 + i * 46), line, fill="#cdd3d9", font=mid)
     d.text((56, 540), "A data-first draft profile and reference tools", fill="#939da7", font=small)

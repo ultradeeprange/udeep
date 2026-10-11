@@ -65,7 +65,7 @@ if __name__ == "__main__":
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Profile · udeep</title>
+<title>Profile · UDeep</title>
 <meta name="description" content="The UDeep Figure Profile, draft v0.3: a data-first specification for turning scientific data into light, with its requirements, metadata, delivery forms and conformance rules.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="brand" href="../index.html">hdr<b>plot</b></a>
+  <a class="brand" href="../index.html">U<b>Deep</b></a>
   <nav aria-label="Site"></nav>
 </div></header>
 <main><div class="wrap layout">

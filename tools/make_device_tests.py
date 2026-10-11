@@ -67,7 +67,7 @@ def page(path: Path, title: str, body: str, depth: int = 2) -> None:
     doc = (f'<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
            f'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
            f'<title>{html.escape(title)} · udeep</title>{FONTS}<style>{STYLE}</style></head><body><main>'
-           f'<p class="crumb"><a href="{up}index.html">udeep</a> / <a href="../index.html">device checks</a></p>'
+           f'<p class="crumb"><a href="{up}index.html">UDeep</a> / <a href="../index.html">device checks</a></p>'
            f'{body}</main></body></html>\n')
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(doc, encoding="utf-8")
