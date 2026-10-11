@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>About · UDeep</title>
+<meta name="description" content="Who is behind UDeep, where the project stands, the planned study of whether HDR helps people read figures, how to cite it, and how to report what your screen shows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --tag: #8cc2e6; --warm: #e8b04a; --good: #9fd49a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  p { margin: 0; max-width: 70ch; }
+  ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; max-width: 74ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code, pre { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover, nav a[aria-current] { color: var(--ink); }
+  .intro { padding-block: 48px 30px; display: grid; gap: 16px; }
+  section { padding-block: 40px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; gap: 18px; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 560px; width: 100%; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .done { color: var(--good); } .next { color: var(--warm); } .later { color: var(--muted); }
+  pre { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 16px; overflow-x: auto; line-height: 1.55; color: var(--soft); white-space: pre-wrap; }
+  .btn { display: inline-block; font: 600 14px var(--sans); color: var(--ground); background: var(--tag); padding: 9px 16px; border-radius: 4px; text-decoration: none; border: 0; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/about/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="About · UDeep">
+<meta property="og:description" content="Who is behind UDeep, where the project stands, the planned study of whether HDR helps people read figures, how to cite it, and how to report what your screen shows.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/about/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">hdr<b>plot</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html" aria-current="page">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <p class="eyebrow">About · 8 October 2026</p>
+  <h1>An independent project, at an early stage</h1>
+  <p>UDeep is the work of Mathew Newman
+    (<a href="https://orcid.org/0000-0003-1784-3250">ORCID 0000-0003-1784-3250</a>). It is an independent project,
+    not affiliated with an institution or a standards body. The profile is a working draft, and the tools are a
+    research preview.</p>
+</div>
+
+<section id="status"><div class="wrap">
+  <p class="eyebrow">Status</p>
+  <h2>What exists, and what does not</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Piece</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>Profile, draft v0.3 (data-first)</td><td class="done">written; open issues listed in its section 10</td></tr>
+      <tr><td>Python reference implementation: mapping, colour maps, gain-map JPEG and HDR PNG writers, matplotlib front end</td><td class="done">working, with tests; it reproduces all 82 shared test vectors. A JavaScript port reproduces the 47 that it implements: it does not compute stored levels or write the metadata and caption</td></tr>
+      <tr><td>Strictly increasing, reversible curve above the knee</td><td class="done">done (profile 6.3)</td></tr>
+      <tr><td>Real-data gallery and device checks</td><td class="done">six datasets; four check pages</td></tr>
+      <tr><td>Metadata written into the files (profile section 8), and a caption generated from it</td><td class="done">done for gain-map JPEGs; the gallery's HDR files carry it</td></tr>
+      <tr><td>Conformance validator (<code>python -m udeep.validate</code>)</td><td class="done">working; every HDR figure in the gallery and on the home page passes the checks that can be made from the file alone (the device-check test patterns are not figures and carry no declaration), and the build that makes them also checks each against its figure and stops if one fails</td></tr>
+      <tr><td>Hybrid SVG writer; HDR video of real data</td><td class="next">not yet</td></tr>
+      <tr><td>Julia</td><td class="next">a binding to the native core, tested on the shared test vectors, with a Makie extension that draws an HDR image and colour bar and saves the figure as a gain-map JPEG (CairoMakie only). The reference validator accepts its files. Not packaged for installing yet; maps at the registered headrooms only</td></tr>
+      <tr><td>GPU shader (WebGPU)</td><td class="next">the mapping as a shader, tested on one graphics card against the shared test vectors, and a <a href="../view/index.html">live view</a> in the browser that draws data through it. The view runs and agrees with the reference to 0.2 %; nobody has yet judged it on an HDR screen</td></tr>
+      <tr><td>Shared native core library (Rust, with a C interface)</td><td class="next">all 14 kinds are implemented; it reproduces all 82 cases. A gain-map JPEG writer is an optional feature; there is no PNG writer and no validator yet</td></tr>
+      <tr><td>Evidence that HDR helps people read figures</td><td class="later">none yet; a study is designed (below)</td></tr>
+      <tr><td>Device evidence</td><td class="later">one phone and one monitor so far</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="study"><div class="wrap">
+  <p class="eyebrow">The missing evidence</p>
+  <h2>A study that has been designed and not yet run</h2>
+  <p>No one has shown that HDR helps people read a scientific figure. The planned study compares three versions of the
+    same data, with tasks that have known answers:</p>
+  <ul>
+    <li><b>SDR clipped:</b> the ordinary figure, with everything above the knee white.</li>
+    <li><b>SDR compressed:</b> the whole range squeezed into SDR. This is the best SDR alternative.</li>
+    <li><b>HDR:</b> the ordinary figure plus the range above white.</li>
+  </ul>
+  <p>The predictions, to be registered in advance: above the knee, HDR does at least as well as the compressed figure, and
+    both beat the clipped one. Below the knee, HDR equals the clipped figure, and both beat the compressed one. Reading values
+    from the colour bar is no worse with HDR. If these hold, HDR is the only version that does not trade one range against
+    the other. A null result would be published too.</p>
+  <p class="muted">It needs research-ethics approval before anyone is recruited, and it would benefit from a collaborator in vision
+    science or in a field that reads such images every day. If that is you, please get in touch.</p>
+</div></section>
+
+<section id="report"><div class="wrap">
+  <p class="eyebrow">Help wanted</p>
+  <h2>Tell us what your screen shows</h2>
+  <p>The device evidence comes from two screens. Run the <a href="../check/index.html">device checks</a> and send the
+    result. The details matter, because the same file can look different on different screens and settings.</p>
+<pre id="template">Device and model:
+Operating system and version:
+Browser or app, and version:
+Brightness setting (and was automatic brightness on?):
+Room light (dark / dim / bright):
+Viewed directly, not over remote desktop: yes / no
+
+Format check (F0 to F6): which show the squares inside the white band?
+SVG check (S0 to S6, V1 to V3):
+Video check (V1 to V5): which play, and which show the squares?
+Precision check (each letter): bands / faint / smooth</pre>
+  <div class="cta">
+    <button class="btn" type="button" id="copy">Copy the template</button>
+    <a class="btn ghost" href="https://github.com/ultradeeprange/udeep/issues/new?title=Device%20report%3A%20&amp;labels=device-report">Open a report on GitHub</a>
+    <span class="muted" id="copied" role="status"></span>
+  </div>
+</div></section>
+
+<section id="cite"><div class="wrap">
+  <p class="eyebrow">Citing and reuse</p>
+  <h2>How to cite it</h2>
+  <p>Until a versioned release with a DOI exists, cite the repository and the profile version:</p>
+<pre>Newman, M. (2026). UDeep: Ultra Deep Range scientific figures and the UDeep Figure Profile, draft v0.3.
+https://github.com/ultradeeprange/udeep</pre>
+  <p>The repository's <code>CITATION.cff</code> carries the same information in machine-readable form. Code is under
+    BSD-3-Clause; text, the profile and this site are under CC BY 4.0. Figures made from third-party data keep the terms
+    of their sources, listed on the <a href="../gallery/index.html#credits">gallery page</a>.</p>
+</div></section>
+
+<section id="contact"><div class="wrap">
+  <p class="eyebrow">Contact</p>
+  <h2>Comments, corrections and collaboration</h2>
+  <p>Use the <a href="https://github.com/ultradeeprange/udeep/issues">issue tracker</a> for comments on the profile, corrections
+    to the evidence, and device reports. If you maintain a scientific application and want to try this in it, the
+    <a href="../apps/index.html">apps page</a> describes what is involved.</p>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · Mathew Newman · text under CC BY 4.0.</p></div></footer>
+
+<script>
+  document.getElementById("copy").addEventListener("click", function () {
+    var text = document.getElementById("template").textContent, note = document.getElementById("copied");
+    function fallback() {
+      var range = document.createRange(); range.selectNodeContents(document.getElementById("template"));
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      note.textContent = "Selected. Press Ctrl+C or ⌘C to copy.";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { note.textContent = "Copied."; }, fallback);
+    } else { fallback(); }
+  });
+</script>
+</body>
+</html>

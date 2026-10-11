@@ -1,0 +1,23 @@
+A. colour map as a table
+
+  fire     257 nodes: build    24.7 ms | worst error 2.9329 codes below white, 0.7332 in the HDR pass | 0.247% of values round to a different 8-bit code
+  fire    1025 nodes: build    40.9 ms | worst error 0.3041 codes below white, 0.0952 in the HDR pass | 0.014% of values round to a different 8-bit code
+  fire    4097 nodes: build    98.8 ms | worst error 0.2193 codes below white, 0.0778 in the HDR pass | 0.001% of values round to a different 8-bit code
+  fire   16385 nodes: build  1342.4 ms | worst error 0.0440 codes below white, 0.0255 in the HDR pass | 0.001% of values round to a different 8-bit code
+  ice      257 nodes: build    10.7 ms | worst error 1.4109 codes below white, 0.6559 in the HDR pass | 0.215% of values round to a different 8-bit code
+  ice     1025 nodes: build    68.4 ms | worst error 0.5246 codes below white, 0.2944 in the HDR pass | 0.025% of values round to a different 8-bit code
+  ice     4097 nodes: build   130.6 ms | worst error 0.1378 codes below white, 0.0773 in the HDR pass | 0.002% of values round to a different 8-bit code
+  ice    16385 nodes: build   711.8 ms | worst error 0.0168 codes below white, 0.0468 in the HDR pass | 0.001% of values round to a different 8-bit code
+
+  one megapixel, 'fire': exact search 16645 ms, table lookup 316 ms (53 x faster)
+  table luminance never decreases below white (needed for invertibility): True
+
+B. inside savefig_hdr, grey, 8 x 8 inch at 150 dpi
+
+  savefig_hdr, whole                            2758 ms   (1169 x 956 pixels)
+    compose (three renders + arithmetic)        1813 ms
+      one render, cropped to the labels          508 ms   (matplotlib draw, PNG encode, PNG decode)
+        of which decoding that PNG                27 ms
+      one render, not cropped                    163 ms   (matplotlib draw only)
+    gain-map JPEG                                507 ms
+    declaration (levels, digests)                 36 ms   (levels alone 33 ms)

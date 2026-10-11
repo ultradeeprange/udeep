@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>In your apps · UDeep</title>
+<meta name="description" content="How scientific applications can adopt the UDeep Figure Profile: file support, live HDR views, and a shared core library.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --faint: #6b7580;
+    --tag: #8cc2e6; --warm: #e8b04a; --good: #9fd49a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  h3 { font-size: 18px; line-height: 1.3; }
+  p { margin: 0; max-width: 70ch; }
+  ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; max-width: 74ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code, pre { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover { color: var(--ink); }
+  .intro { padding-block: 48px 30px; display: grid; gap: 16px; }
+  section { padding-block: 40px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; gap: 18px; }
+  .levels { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .level { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+  .level .tag { font-family: var(--mono); font-size: 12px; color: var(--warm); letter-spacing: .06em; text-transform: uppercase; }
+  .level p, .level li { font-size: 15px; color: var(--soft); }
+  pre { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 16px; overflow-x: auto; line-height: 1.55; color: var(--soft); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 680px; width: 100%; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/apps/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="In your apps · UDeep">
+<meta property="og:description" content="How scientific applications can adopt the UDeep Figure Profile: file support, live HDR views, and a shared core library.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/apps/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">hdr<b>plot</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html" aria-current="page">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <p class="eyebrow">In your apps · plan, 28 September 2026</p>
+  <h1>A figure standard is only useful if your tools speak it.</h1>
+  <p>The profile is meant for the applications scientists already use: notebooks, image viewers, plotting libraries,
+    and medical, microscopy and astronomy tools. An app can adopt it at three levels, and each level stands on its own.</p>
+</div>
+
+<section id="levels"><div class="wrap">
+  <h2>Three levels of support</h2>
+  <div class="levels">
+    <div class="level"><span class="tag">Level 1 · files</span><h3>Read and write conforming figures</h3>
+      <p>Export the current view as a profile file: a gain-map JPEG, a 16-bit HDR PNG or an AVIF, with the declared mapping as
+        metadata. Open one, and show its mapping and colour bar in data units.</p>
+      <p class="muted">Works in any app today, because the file is the ordinary figure wherever HDR is missing.</p></div>
+    <div class="level"><span class="tag">Level 2 · live view</span><h3>Render HDR in the app's own window</h3>
+      <p>Apply the declared mapping on the GPU and draw above white. Each platform has its own route:</p>
+      <ul>
+        <li>Windows: a 16-bit float (scRGB) swap chain.</li>
+        <li>macOS and iOS: extended dynamic range (EDR) Metal layers.</li>
+        <li>The web: WebGPU with extended tone mapping.</li>
+      </ul>
+      <p>Interface text stays at SDR white.</p>
+      <p class="muted">The most native feel, and the most work per app.</p></div>
+    <div class="level"><span class="tag">Level 3 · shared core</span><h3>One library, many bindings</h3>
+      <p>One small core library holds the mapping, the tone curve, the encoders and the conformance validator, with
+        bindings for Python, JavaScript/WebAssembly, Julia, Java and MATLAB. Apps call it instead of reimplementing it.</p>
+      <p class="muted">Every implementation is held to the same golden test vectors.</p></div>
+  </div>
+</div></section>
+
+<section id="targets"><div class="wrap">
+  <h2>Where to start</h2>
+  <p>The first targets are apps that handle high-range data, are open source, and have a plugin system. None of those listed
+    below has native HDR output for scientific data that we have found.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>App</th><th>Field</th><th>Why it fits</th><th>First step</th></tr></thead>
+    <tbody>
+      <tr><td>Jupyter</td><td>everything</td><td>Notebooks render in a browser, and browsers already show HDR images</td><td>Show udeep figures as HDR inline (level 1); a WebGPU widget for live views (level 2)</td></tr>
+      <tr><td>napari</td><td>microscopy</td><td>A Python viewer for 12–16-bit data, with plugins</td><td>An export plugin (level 1), then an HDR canvas (level 2)</td></tr>
+      <tr><td>Makie</td><td>Julia plotting</td><td>Scientific plotting with GPU back ends</td><td>HDR export from CairoMakie: an extension of the Julia binding draws an HDR image and colour bar and saves the figure as a gain-map JPEG with its declaration (Makie 0.24). The Python validator accepts the files. Other Makie back ends are not covered, and the package is not yet installable on its own</td></tr>
+      <tr><td>Fiji / ImageJ</td><td>microscopy</td><td>The most widely used open image-analysis tool, with Java plugins</td><td>An export plugin through the core's Java binding</td></tr>
+      <tr><td>3D Slicer</td><td>medical imaging</td><td>CT and MR, where window/level already means two ranges</td><td>Extend-style export of a window plus above-window structure</td></tr>
+      <tr><td>ParaView</td><td>simulation</td><td>Float data and GPU rendering; Python scripting</td><td>An export filter (level 1)</td></tr>
+      <tr><td>Astronomy (astropy, SAOImage DS9)</td><td>astronomy</td><td>Float images whose asinh stretches exist because 8-bit clips</td><td>An astropy-style visualisation helper that writes profile files</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="contract"><div class="wrap">
+  <h2>What an app has to do</h2>
+  <p>From the profile's viewer rules, in short:</p>
+  <ol>
+    <li>Apply the file's declared mapping exactly, fitted to the display's headroom.</li>
+    <li>Never apply automatic tone mapping, "Auto HDR" or SDR-to-HDR expansion to scientific images.</li>
+    <li>Keep interface text, axes and labels at SDR white.</li>
+    <li>Show a colour bar in data units, with the value at SDR white marked.</li>
+    <li>Never lift masked (saturated, clipped or invalid) pixels above white.</li>
+    <li>When exporting, write the profile metadata, and write the ordinary SDR figure as the base.</li>
+  </ol>
+  <p class="muted">What the conformance validator (<code>python -m udeep.validate FILE.jpg</code>) can check of this list,
+    given only the file:</p>
+  <ul class="muted">
+    <li>Item 6, the metadata half: every required property is present and the declaration is consistent, and the
+      stated precision (<code>MaxDataStep</code>) is right. With <code>--sdr FIGURE.png</code> it also confirms that the
+      named SDR figure is the one the file was made from, where the file declares its digest.</li>
+    <li>Item 1, the declaration half: the declared mapping rises everywhere and can be inverted, and nothing in the
+      file is brighter than the declared headroom (5 % over is allowed for a lossy gain map).</li>
+    <li>Not from the file alone: whether the pixels are that mapping of the data, whether the base image is the
+      ordinary SDR figure, and item 5. These need the figure that made the file
+      (<code>udeep.mpl.validate(fig, path)</code>); the command-line tool reports them as skipped.</li>
+    <li>Not checked by any program: item 4. Items 2 and 3 are about how the app behaves on screen.</li>
+  </ul>
+</div></section>
+
+<section id="core"><div class="wrap">
+  <h2>The shared core</h2>
+  <p>The reference implementation today is Python (<code>udeep</code>). It reproduces all 82 golden vectors, which come
+    in 14 kinds. A JavaScript port reproduces the 47 that it implements (11 kinds: it does not compute stored levels
+    or write the metadata and caption). A small native core with a C interface exists in Rust: all 14 kinds are implemented; it reproduces all 82 cases. It has an
+    optional gain-map JPEG writer, and no PNG writer or validator yet. The aim is that every language and app
+    shares one implementation:</p>
+<pre>core (Rust, C ABI):  scale · tone curve · colour maps · PQ/HLG · gain map · metadata · validate
+  ├─ Python     udeep            (matplotlib, Jupyter, napari, 3D Slicer, ParaView)
+  ├─ JS / WASM  udeepcore            (web viewers, Jupyter widgets)
+  ├─ Julia      UDeepCore        (through the core; figures with CairoMakie)
+  ├─ Java       (planned)          (Fiji / ImageJ)
+  └─ MATLAB     (planned)</pre>
+  <p class="muted">A second implementation also matters for standardisation: standards bodies look for independent implementations
+    that pass the same tests.</p>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · text under CC BY 4.0. Maintain a scientific app and want to try this? Open an
+  <a href="https://github.com/ultradeeprange/udeep/issues">issue</a>.</p></div></footer>
+</body>
+</html>

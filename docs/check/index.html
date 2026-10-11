@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Device checks · UDeep</title><meta name="description" content="Test pages that show whether a screen and browser display HDR, each with controls that must pass."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap"><style>
+  :root { color-scheme: dark; --ground: #121417; --panel: #1b1f24; --ink: #e3e7eb; --muted: #909aa4;
+          --tag: #8cc2e6; --line: #2b3138;
+          --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+          --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.55 var(--sans); }
+  main { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; }
+  a { color: var(--tag); }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 10px; text-wrap: balance; }
+  h2 { font-size: 18px; margin: 34px 0 6px; }
+  p { margin: 0 0 10px; max-width: 68ch; } .muted { color: var(--muted); }
+  .row { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .id { font-family: var(--mono); font-weight: 600; color: var(--tag); letter-spacing: .06em; }
+  code { font-family: var(--mono); font-size: 13px; }
+  img, video, svg { dynamic-range-limit: no-limit; display: block; max-width: 100%; height: auto; }
+  video { width: 100%; background: #000; }
+  .crumb { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .v { width: 160px; height: 160px; background: #ffffff; padding: 30px; }
+  .v span { display: block; width: 100px; height: 100px; background: #ffffff; }
+</style><!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/check/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Device checks · UDeep">
+<meta property="og:description" content="Test pages that show whether a screen and browser display HDR, each with controls that must pass.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/check/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head><body><main><p class="crumb"><a href="../index.html">udeep</a> / device checks</p><h1>Device checks</h1><p>Test pages from the profile's Annex A. Each has a control that must not glow and a positive control that must. If a control fails, the result doesn't count.</p><p class="muted">Record your device, OS and browser versions, brightness setting and room light with your result. Remote-desktop sessions deliver SDR, so don't use them.</p><div class="row"><p><a href="pattern/index.html"><b>Which HDR formats does this screen show?</b></a></p><p class="muted">One referenced pattern in gain-map JPEG, HDR PNG, AVIF and HDR video.</p></div><div class="row"><p><a href="svg/index.html"><b>Does HDR survive inside SVG?</b></a></p><p class="muted">Inline, linked and standalone SVG; vector colours above white.</p></div><div class="row"><p><a href="video/index.html"><b>Does 12-bit HDR video play?</b></a></p><p class="muted">HEVC and AV1 at 10 and 12 bits.</p></div><div class="row"><p><a href="precision/index.html"><b>Which strips have bands?</b></a></p><p class="muted">A blind banding test: PQ ramps rounded to 8 to 16 bits.</p></div></main></body></html>

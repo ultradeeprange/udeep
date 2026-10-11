@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Live view · UDeep</title>
+<meta name="description" content="Move the knee and watch the mapping change: data drawn through the profile's reference shader on your graphics card, above white on an HDR screen. Synthetic data, or your own array.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --tag: #8cc2e6; --warm: #e8b04a; --good: #9fd49a; --bad: #e39a8a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 22px; line-height: 1.2; }
+  p { margin: 0; max-width: 70ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover, nav a[aria-current] { color: var(--ink); }
+  .intro { padding-block: 44px 26px; display: grid; gap: 14px; }
+  section { padding-block: 30px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; gap: 18px; }
+
+  .bench { display: grid; gap: 26px; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; }
+  figure { margin: 0; display: grid; gap: 10px; }
+  .stage { position: relative; padding-right: 104px; }                /* room for the colour bar's labels */
+  canvas { display: block; width: 100%; height: 320px; dynamic-range-limit: no-limit; image-rendering: pixelated; }
+  /* the colour bar is the right-hand strip of the canvas, drawn by the shader; its labels stand beside it */
+  #ticks { position: absolute; inset-block: 0; right: 0; width: 98px; pointer-events: none; }
+  #ticks span { position: absolute; left: 0; transform: translateY(-50%); white-space: nowrap; font: 600 11px var(--mono); color: var(--ink); }
+  #ticks span:first-child { transform: translateY(0); } #ticks span:last-child { transform: translateY(-100%); }
+  figcaption { font-size: 14px; color: var(--muted); }
+  figcaption b { color: var(--ink); font-weight: 600; }
+  #readout { font: 13px var(--mono); color: var(--ink); min-height: 2.8em; }
+
+  .panel { display: grid; gap: 16px; }
+  .controls { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 14px; align-items: center; font-size: 14px; }
+  .controls label { color: var(--muted); }
+  input[type="number"], select { font: 14px var(--sans); color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 4px; padding: 6px 8px; width: 100%; min-width: 0; }
+  input[type="range"] { width: 100%; accent-color: var(--warm); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .knee { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 8px; align-items: center; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+  #problem { color: var(--bad); font-size: 14px; min-height: 1.4em; }
+  dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: 13px; }
+  dt { font-family: var(--mono); color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
+  #status { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+  #status li { padding-left: 22px; position: relative; }
+  #status li::before { position: absolute; left: 0; font-family: var(--mono); font-weight: 600; }
+  #status li.yes::before { content: "+"; color: var(--good); } #status li.no::before { content: "–"; color: var(--bad); }
+  #status li.note::before { content: "·"; color: var(--muted); } #status li.note { color: var(--muted); }
+  .file { font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 860px) { .bench { grid-template-columns: 1fr; } }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/view/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Live view · UDeep">
+<meta property="og:description" content="Move the knee and watch the mapping change: data drawn through the profile&#x27;s reference shader on your graphics card, above white on an HDR screen. Synthetic data, or your own array.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/view/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">hdr<b>plot</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html" aria-current="page">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <span class="eyebrow">Live view · research preview</span>
+  <h1>Move the knee and watch</h1>
+  <p>Here the mapping from data to light runs on your graphics card, for every pixel, on every frame. Change the
+    knee, the stretch or the headroom and the picture follows at once. On an HDR screen the values above the knee
+    are brighter than white; on any other screen they are white.</p>
+  <p class="muted">This is the profile's reference shader, the same one that is tested against the project's test
+    vectors. The data on this page is synthetic, made in your browser. You can also open an array of your own; it
+    stays on your computer.</p>
+</div>
+
+<section><div class="wrap">
+  <div class="bench">
+    <figure>
+      <div class="stage"><canvas id="view" role="img" aria-label="The data drawn through the mapping, with its colour bar on the right"></canvas><div id="ticks" aria-hidden="true"></div></div>
+      <div id="readout">Move over the image for its values.</div>
+      <figcaption><b id="title">Loading…</b> Drawn without interpolation: each screen pixel shows one data value.
+        <span id="share">–</span> of its values lie above the knee. Frames drawn: <span id="frames">0</span>.</figcaption>
+    </figure>
+
+    <div class="panel">
+      <div class="controls">
+        <label for="dataset">Data</label>
+        <select id="dataset"><option value="phantom">CT phantom (synthetic)</option><option value="chirp">Chirp in noise (synthetic)</option></select>
+        <label for="kneeSlider">Knee</label>
+        <div class="knee"><input id="kneeSlider" type="range" aria-label="Knee, as a position in the range"><input id="knee" type="number" step="any" aria-label="Knee, in data units"></div>
+        <label for="mode">Preset</label>
+        <select id="mode"><option value="extend">Extend: everything above the knee</option><option value="highlight">Highlight: hold single pixels</option></select>
+        <label for="headroom">Headroom</label>
+        <select id="headroom"><option value="2">2 × white</option><option value="4">4 × white</option><option value="8">8 × white</option><option value="16">16 × white</option></select>
+        <label for="map">Colour map</label>
+        <select id="map"><option value="grey">grey</option><option value="fire/2">fire/2</option><option value="ice/2">ice/2</option></select>
+        <label for="stretch">Stretch</label>
+        <select id="stretch"><option value="linear">linear</option><option value="log">log</option><option value="asinh">asinh</option></select>
+        <label for="low">Range</label>
+        <div class="pair"><input id="low" type="number" step="any" aria-label="Bottom of the range"><input id="high" type="number" step="any" aria-label="Top of the range"></div>
+        <label for="width" id="widthLabel" hidden>asinh width</label>
+        <div id="widthRow" hidden><input id="width" type="number" step="any" value="1"></div>
+      </div>
+      <label class="check"><input id="sdr" type="checkbox"> Show the fair SDR plot: white above the knee</label>
+      <div id="problem" role="alert"></div>
+      <div class="file">
+        <label for="file">Or open your own array, a NumPy <code>.npy</code> file with two dimensions:</label>
+        <input id="file" type="file" accept=".npy">
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What this screen and browser are doing</h2>
+  <ul id="status"><li class="note">Starting…</li></ul>
+  <p class="muted">A page cannot measure a screen. To see whether yours really shows values above white, use the
+    <a href="../check/index.html">device checks</a>, which have controls that must pass.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>The mapping on screen now</h2>
+  <p class="muted">These are the properties a file made from this view would declare (profile section 8). The live
+    view writes no file; <a href="../index.html">the Python and Julia tools</a> do.</p>
+  <dl id="declared"></dl>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · the shader is <code>mapping.wgsl</code>, the numbers under the pointer come from
+  <code>udeepcore.js</code>; both are copies of the project's own, placed here by <code>tools/make_view.py</code>.</p></div></footer>
+
+<script src="udeepcore.js"></script>
+<script src="view.js"></script>
+</body>
+</html>

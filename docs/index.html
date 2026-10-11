@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UDeep · Ultra Deep Range scientific figures</title>
+<meta name="description" content="Scientific figures that are the ordinary plot on every screen and show what lies above white on HDR displays. A draft profile and a Python reference implementation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  /* Dark first: a dim grading suite, so anything brighter than white reads as brighter. A light palette for
+     viewers who ask for one is added by the shared theme block (tools/site_chrome.py). */
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --faint: #6b7580;
+    --tag: #8cc2e6; --warm: #e8b04a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(34px, 5.4vw, 58px); line-height: 1.04; letter-spacing: -0.01em; }
+  h2 { font-size: 28px; line-height: 1.15; }
+  h3 { font-size: 20px; line-height: 1.25; }
+  p { margin: 0; max-width: 66ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code, pre { font-family: var(--mono); font-size: 13.5px; }
+  img { display: block; max-width: 100%; height: auto; dynamic-range-limit: no-limit; }
+
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; letter-spacing: .02em; }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; }
+  nav a:hover { color: var(--ink); }
+
+  .hero { padding-block: 56px 40px; display: grid; gap: 36px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); align-items: start; }
+  .hero .lede { display: grid; gap: 18px; }
+  .hero .lede p { font-size: 18px; color: var(--soft); }
+  .badge { display: inline-block; font-family: var(--mono); font-size: 12px; color: var(--warm); border: 1px solid var(--warm-line); padding: 2px 8px; border-radius: 3px; }
+
+  figure.demo { margin: 0; display: grid; gap: 10px; }
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; width: max-content; max-width: 100%; }
+  .toggle button { font: 600 13px var(--sans); color: var(--muted); background: transparent; border: 0; padding: 7px 14px; cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--raise); color: var(--ink); }
+  .plate { background: #ffffff; border-radius: 3px; padding: 6px; }
+  figcaption { font-size: 14px; color: var(--muted); max-width: 62ch; }
+  figcaption b { color: var(--ink); font-weight: 600; }
+
+  section { padding-block: 44px; border-top: 1px solid var(--line); display: grid; gap: 22px; }
+  .rules { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .rule { display: grid; gap: 6px; align-content: start; }
+  .rule .n { font-family: var(--mono); color: var(--warm); font-size: 13px; }
+  .rule p { font-size: 15px; color: var(--soft); }
+
+  .modes { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .mode { display: grid; gap: 12px; align-content: start; }
+  .mode dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; font-size: 14px; }
+  .mode dt { color: var(--muted); } .mode dd { margin: 0; }
+
+  pre { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 16px; overflow-x: auto; line-height: 1.55; color: var(--soft); }
+  pre .c { color: var(--faint); } pre .k { color: var(--tag); } pre .s { color: var(--str); }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 620px; width: 100%; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .yes { color: var(--yes); } .no { color: var(--no); } .part { color: var(--warm); }
+
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { display: inline-block; font: 600 14px var(--sans); color: var(--ground); background: var(--tag); padding: 9px 16px; border-radius: 4px; text-decoration: none; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .check { display: grid; gap: 18px; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); align-items: center; }
+
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  footer .wrap { display: grid; gap: 8px; }
+
+  @media (max-width: 820px) { .hero, .check { grid-template-columns: 1fr; } .hero { padding-block: 36px 28px; } }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="UDeep · Ultra Deep Range scientific figures">
+<meta property="og:description" content="Scientific figures that are the ordinary plot on every screen and show what lies above white on HDR displays. A draft profile and a Python reference implementation.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="brand">hdr<b>plot</b></span>
+  <nav aria-label="Site"><a href="index.html" aria-current="page">Home</a><a href="gallery/index.html">Real data</a><a href="profile/index.html">Profile</a><a href="apps/index.html">In your apps</a><a href="view/index.html">Live view</a><a href="standard/index.html">Standardisation</a><a href="evidence/index.html">Evidence</a><a href="check/index.html">Device checks</a><a href="about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap hero">
+  <div class="lede">
+    <span class="badge">Draft profile v0.3 · research preview</span>
+    <h1>Turning data into light, on the record.</h1>
+    <p>Scientific data holds more range than a figure shows, and no figure file says how its data became
+      brightness. UDeep is a draft standard and a set of tools for figures that <b>declare that mapping</b>, keep it
+      reversible, and stay the ordinary figure on every screen.</p>
+    <p>On an HDR display, like most recent phones and many laptops, the values above the figure's white appear
+      brighter than white, so you see what an 8-bit figure has to clip.</p>
+    <p class="muted">The ordinary (SDR) version remains the figure of record. HDR adds to it and never replaces it.</p>
+    <div class="cta"><a class="btn" href="gallery/index.html">See real data</a><a class="btn ghost" href="profile/index.html">Read the profile</a><a class="btn ghost" href="check/pattern/index.html">Does my screen show HDR?</a></div>
+  </div>
+
+  <figure class="demo" id="demo">
+    <div class="toggle" role="group" aria-label="Rendering">
+      <button type="button" data-img="demo-img" data-src="assets/extend_hdr.jpg" aria-pressed="true">HDR (gain map)</button>
+      <button type="button" data-img="demo-img" data-src="assets/extend_sdr.png" aria-pressed="false">SDR, clipped at white</button>
+    </div>
+    <div class="plate themed"><picture><source data-dark srcset="assets/extend_dark_hdr.jpg" media="(prefers-color-scheme: dark)"><img data-themed id="demo-img" src="assets/extend_hdr.jpg" width="988" height="765"
+      alt="Synthetic CT phantom in a soft-tissue window; the bone ring above the window's top is white in SDR and shows its internal texture in HDR."></picture></div>
+    <figcaption><b>Synthetic CT phantom, <i>Extend</i> mode.</b> SDR white is at 240 HU, the top of the standard
+      soft-tissue window, so the low-contrast lesions read as usual. The bone (to 1850 HU) is flat white in SDR;
+      on an HDR display its texture appears above white. On an SDR screen the two buttons look the same, by design.</figcaption>
+  </figure>
+</div>
+
+<section id="why"><div class="wrap" style="display:grid;gap:22px">
+  <p class="eyebrow">Why this, why now</p>
+  <h2>The data has more than the figure shows.</h2>
+  <div class="rules">
+    <div class="rule"><span class="n">Figures clip the data</span><p>Detectors, cameras and CT record 12 to 16 bits; simulations
+      produce floats. An 8-bit figure stops at white, so every figure chooses between the faint part and the bright part. Radiologists
+      switch between a soft-tissue window and a bone window for exactly this reason.</p></div>
+    <div class="rule"><span class="n">Screens changed; figures didn't</span><p>Most recent phones and many laptops can show brighter
+      than white. Scientific figures are still made as if they can't, just as they stayed in sRGB long after screens went wide-gamut.</p></div>
+    <div class="rule"><span class="n">HDR will arrive anyway</span><p>Without a convention it arrives as "make it pop": Auto HDR,
+      inverse tone mapping and adaptive boosts that change data silently. Journal image-integrity rules require declared, global
+      processing. A rule written now makes the default safe.</p></div>
+    <div class="rule"><span class="n">Figures don't say how they were made</span><p>No figure file records how data became
+      brightness. The profile writes that mapping into the file, so the figure can be reproduced and checked.</p></div>
+  </div>
+  <h3>What it needs</h3>
+  <ul style="margin:0;padding-left:1.2em;display:grid;gap:6px;max-width:74ch">
+    <li><b>Evidence.</b> A study of whether HDR helps people read figures. This comes first: so far, model predictions show
+      small gains for Highlight mode, and the stronger Extend result rests on one CT slice.</li>
+    <li><b>Tools.</b> A pip package, then other plotting ecosystems.</li>
+    <li><b>Review.</b> Readers of the draft profile, and device reports from many screens.</li>
+    <li><b>Platform fixes.</b> Decoders that keep precision, gain maps inside SVG files, CSS HDR colours, and HDR in PDF.</li>
+    <li><b>A home in publishing.</b> HDR supplementary figures alongside papers, and a citable version of the profile.</li>
+  </ul>
+  <p class="muted">The full picture, with references, is on the <a href="evidence/index.html">evidence page</a>.</p>
+</div></section>
+
+<section id="idea"><div class="wrap" style="display:grid;gap:22px">
+  <p class="eyebrow">The idea</p>
+  <h2>HDR adds to a figure. It never replaces it.</h2>
+  <div class="rules">
+    <div class="rule"><span class="n">SDR is complete</span><p>Below the knee, the HDR figure is identical to the
+      SDR figure clipped at the same white. Every conclusion must be readable from the SDR version.</p></div>
+    <div class="rule"><span class="n">The knee means something</span><p>The value placed at white is a physical
+      threshold, a statistical one (a false-alarm level) or a domain preset (a CT window). A percentile is marked exploratory.</p></div>
+    <div class="rule"><span class="n">Brightness says where</span><p>Brightness shows <i>where</i> the extreme
+      values are; the colour bar, in data units with "SDR white" marked, says <i>how much</i>.</p></div>
+    <div class="rule"><span class="n">Global and declared</span><p>One mapping for the whole image, written into
+      the file. No local tone mapping, no "Auto HDR". Saturated or clipped pixels never go above white.</p></div>
+  </div>
+</div></section>
+
+<section id="modes"><div class="wrap" style="display:grid;gap:22px">
+  <p class="eyebrow">Two presets, one curve</p>
+  <p>The profile's rules are about the data and the mapping. <i>Highlight</i> and <i>Extend</i> are two convenient ways of
+    choosing the knee within those rules. They are presets, not requirements.</p>
+  <div class="modes">
+    <div class="mode">
+      <h3>Highlight: sparse extremes pop out</h3>
+      <div class="toggle" role="group" aria-label="Rendering of the Highlight demo">
+        <button type="button" data-img="hl-img" data-src="assets/highlight_hdr.jpg" aria-pressed="true">HDR</button>
+        <button type="button" data-img="hl-img" data-src="assets/highlight_sdr.png" aria-pressed="false">SDR, clipped at white</button>
+      </div>
+      <div class="plate themed"><picture><source data-dark srcset="assets/highlight_dark_hdr.jpg" media="(prefers-color-scheme: dark)"><img data-themed id="hl-img" src="assets/highlight_hdr.jpg" width="945" height="765" loading="lazy"
+        alt="Synthetic spectrogram of noise with a chirp; only bins above the 1e-4 false-alarm level go above white."></picture></div>
+      <dl><dt>Data</dt><dd>synthetic: exponential noise power, plus a chirp</dd>
+          <dt>Knee</dt><dd>the 10⁻⁴ false-alarm level of the noise, 13.3 × the median</dd>
+          <dt>Above white</dt><dd>0.9 % of the figure: the chirp, not the noise</dd></dl>
+    </div>
+    <div class="mode">
+      <h3>Extend: a second range, alongside the first</h3>
+      <div class="plate themed"><picture><source data-dark srcset="assets/extend_dark_hdr.jpg" media="(prefers-color-scheme: dark)"><img data-themed src="assets/extend_hdr.jpg" width="988" height="765" loading="lazy"
+        alt="Synthetic CT phantom, soft-tissue window with bone texture above white."></picture></div>
+      <dl><dt>Data</dt><dd>synthetic CT phantom, with 6 HU noise</dd>
+          <dt>Knee</dt><dd>240 HU, the top of the soft-tissue window (W400/L40)</dd>
+          <dt>Above white</dt><dd>4.0 % of the figure: the bone</dd></dl>
+    </div>
+  </div>
+  <p class="muted">Above the knee, the curve keeps rising to the top of the declared range, so every brightness maps back to
+    one data value. One gain-map file adapts itself to each display's headroom.</p>
+  <p>These two are synthetic. See <a href="gallery/index.html">six real datasets</a>: two gravitational waves, a chest CT, the Sun, a Hubble galaxy and the black hole in M87.</p>
+</div></section>
+
+<section id="use"><div class="wrap" style="display:grid;gap:22px">
+  <p class="eyebrow">Use it</p>
+  <h2>One line on top of matplotlib.</h2>
+<pre><span class="k">import</span> udeep.mpl <span class="k">as</span> hp
+
+img = hp.imshow(ax, ct, mode=<span class="s">"extend"</span>, knee=<span class="s">240</span>,
+                stretch={<span class="s">"kind"</span>: <span class="s">"linear"</span>, <span class="s">"lo"</span>: -160, <span class="s">"hi"</span>: 1850}, cmap=<span class="s">"grey"</span>,
+                headroom=4, unit=<span class="s">"HU"</span>, knee_rule=<span class="s">"preset; soft-tissue window"</span>)
+hp.colorbar(img, ax=ax, label=<span class="s">"HU"</span>)       <span class="c"># data units, with "SDR white 240" marked</span>
+fig.savefig(<span class="s">"figure.png"</span>)                   <span class="c"># the ordinary figure, unchanged</span>
+hp.savefig_hdr(fig, <span class="s">"figure.jpg"</span>)           <span class="c"># the same figure, plus a gain map</span></pre>
+  <p>The JPEG opens everywhere. SDR viewers show the ordinary figure; HDR viewers apply the gain up to their own
+    headroom (ISO 21496-1, the Ultra HDR layout). Axes and text stay at SDR white.</p>
+  <p>Using another tool? See <a href="apps/index.html">how scientific apps can adopt it</a>: Jupyter, napari, Makie, Fiji, 3D Slicer, ParaView and astronomy viewers.</p>
+  <p class="muted">Install from the repository (a PyPI release is not out yet): <code>pip install "udeep[mpl] @ git+https://github.com/ultradeeprange/udeep"</code></p>
+</div></section>
+
+<section id="today"><div class="wrap" style="display:grid;gap:22px">
+  <p class="eyebrow">What works today</p>
+  <h2>Measured, not assumed.</h2>
+  <p>Each result comes from a test page with an SDR control and a positive control
+    (<a href="check/index.html">run them yourself</a>). The literature, standards and all our results are on the <a href="evidence/index.html">evidence page</a>. So far: one iPhone 16 Pro (Photos and Safari) and one desktop
+    monitor (Edge on Windows 11), September 2026.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>What</th><th>Result</th><th>Implication</th></tr></thead>
+    <tbody>
+      <tr><td>Gain-map JPEG, 16-bit PNG (PQ), AVIF (PQ/HLG), HEVC video (PQ/HLG) on a web page</td><td class="yes">shows HDR</td><td>Static and moving HDR figures can be shared now.</td></tr>
+      <tr><td>Gain-map JPEG inside inline SVG</td><td class="yes">shows HDR</td><td>Vector axes and text around an HDR data layer.</td></tr>
+      <tr><td>Gain-map JPEG inside a standalone <code>.svg</code> file</td><td class="no">SDR only</td><td>SVG files must carry an HDR-encoded layer (AVIF PQ), which does survive.</td></tr>
+      <tr><td>Vector colours above white (<code>rec2100-*</code>, <code>srgb-linear</code> &gt; 1)</td><td class="no">not supported</td><td>No vector-only HDR yet; declare an SDR fallback.</td></tr>
+      <tr><td>10/12-bit AVIF ramps vs the same values in 16-bit PNG</td><td class="part">AVIF banded, PNG smooth</td><td>Some decoders drop precision. Use 16-bit PNG where gradients matter.</td></tr>
+      <tr><td>PDF</td><td class="no">no portable HDR</td><td>The SDR figure is the figure of record. The PDF Association is working on HDR, with JPEG XL.</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="check"><div class="wrap check">
+  <div class="plate"><img src="check/pattern/gainmap.jpg" width="1080" height="1080" loading="lazy"
+    alt="HDR check pattern: a white band containing squares at 2, 4 and 8 times SDR white."></div>
+  <div style="display:grid;gap:14px">
+    <p class="eyebrow">Is this screen showing HDR?</p>
+    <h2>Look at the white band.</h2>
+    <p>If you can see squares inside it, your screen and browser are showing HDR. The squares are 2×, 4× and 8× the
+      band's white. If the band is plain white, you are seeing the SDR version, which is exactly the fallback we want.</p>
+    <p class="muted">Judging HDR by eye needs a reference: an HDR figure alone is easy to misjudge. On a phone, use mid
+      brightness and turn Low Power Mode off.</p>
+    <div class="cta"><a class="btn ghost" href="check/index.html">All device checks</a></div>
+  </div>
+</div></section>
+
+<section id="profile"><div class="wrap" style="display:grid;gap:18px">
+  <p class="eyebrow">The profile</p>
+  <h2>A draft standard for data-referred figures.</h2>
+  <p>The UDeep Figure Profile is data-first. It covers the data (units, uncertainty, a validity mask), a declared
+    and reversible mapping from value to light, precision judged against the data as well as the eye, the metadata that records
+    all of it, the delivery forms (raster, vector, video, publication), comfort and accessibility, and a device-verification
+    protocol.</p>
+  <p class="muted">It is a working draft, not endorsed by any standards body, and its evidence comes from two devices so far.
+    Comments and device reports are welcome.</p>
+  <div class="cta"><a class="btn" href="profile/index.html">Read the profile</a>
+    <a class="btn ghost" href="standard/index.html">The standardisation approach</a>
+    <a class="btn ghost" href="evidence/index.html">The evidence</a>
+    <a class="btn ghost" href="https://github.com/ultradeeprange/udeep/issues">Report a device or comment</a></div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <p>UDeep · Mathew Newman (<a href="https://orcid.org/0000-0003-1784-3250">ORCID 0000-0003-1784-3250</a>). Code under BSD-3-Clause; text and profile under CC BY 4.0. To cite it, use the repository's <code>CITATION.cff</code>.</p>
+  <p>All figures on this page are made from synthetic data by <code>tools/make_demos.py</code> and <code>tools/make_device_tests.py</code>.</p>
+</div></footer>
+
+<script>
+  (function () {
+    // every toggle button names the image it controls and the file to show; switching is always user-started
+    document.querySelectorAll(".toggle button").forEach(btn => btn.addEventListener("click", () => {
+      document.getElementById(btn.dataset.img).src = btn.dataset.src;
+      document.querySelectorAll(`.toggle button[data-img="${btn.dataset.img}"]`).forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+    }));
+  })();
+</script>
+</body>
+</html>

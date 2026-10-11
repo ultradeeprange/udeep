@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+# the blind precision test answer key (regenerate with tools/make_device_tests.py)
+tools/precision_key.json
+data/
+.venv-eht/
+# Rust build output
+core/target/
+# Julia: resolved environments are per machine
+julia/**/Manifest.toml

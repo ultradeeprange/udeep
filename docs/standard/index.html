@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Standardisation · UDeep</title>
+<meta name="description" content="How the UDeep Figure Profile is built (data first, perception last) and the route to making it a standard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --faint: #6b7580;
+    --tag: #8cc2e6; --warm: #e8b04a; --good: #9fd49a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  h3 { font-size: 18px; line-height: 1.3; }
+  p { margin: 0; max-width: 70ch; }
+  ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 74ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover { color: var(--ink); }
+  .intro { padding-block: 48px 30px; display: grid; gap: 16px; }
+  section { padding-block: 40px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; gap: 18px; }
+
+  /* the layer stack: data at the bottom, the display at the top */
+  .stack { display: grid; gap: 8px; }
+  .layer { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 16px; padding: 14px 16px;
+           background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+  .layer .name { display: grid; gap: 2px; align-content: start; }
+  .layer .name b { font-family: var(--cond); font-size: 18px; }
+  .layer .status { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  .normative { color: var(--good); } .informative { color: var(--warm); }
+  .layer p { font-size: 15px; color: var(--soft); }
+  .layer.core { border-color: var(--yes-line); }
+
+  .steps { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .step { display: grid; gap: 6px; align-content: start; border-top: 2px solid var(--line); padding-top: 12px; }
+  .step .when { font-family: var(--mono); font-size: 12px; color: var(--warm); }
+  .step p { font-size: 15px; color: var(--soft); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 640px; width: 100%; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 640px) { .layer { grid-template-columns: 1fr; gap: 6px; } }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/standard/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Standardisation · UDeep">
+<meta property="og:description" content="How the UDeep Figure Profile is built (data first, perception last) and the route to making it a standard.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/standard/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">hdr<b>plot</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html" aria-current="page">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <p class="eyebrow">Standardisation approach · draft, 27 September 2026</p>
+  <h1>Data first. Perception last.</h1>
+  <p>A standard for scientific figures has to rest on what can be measured and checked: the data, its units and its
+    uncertainty, and a declared mapping from value to light. How things look to the eye matters only at the final
+    step, when the result is fitted to a particular screen. Draft v0.3 of the profile is organised in that order.</p>
+</div>
+
+<section id="layers"><div class="wrap">
+  <p class="eyebrow">The model</p>
+  <h2>Five layers, from the data up</h2>
+  <div class="stack">
+    <div class="layer"><div class="name"><span class="status informative">informative</span><b>5 · Presets</b></div>
+      <p>Named, reusable mappings, for example <i>Highlight</i> (sparse extremes above a high threshold) and <i>Extend</i>
+        (a second range above the main one). They are conveniences built on layer 2, not rules.</p></div>
+    <div class="layer"><div class="name"><span class="status informative">informative</span><b>4 · Display rendering</b></div>
+      <p>The only place perception enters: fitting to the display's headroom (ISO 21496-1 weights, a BT.2390-form roll-off),
+        dithering, and viewing conditions. Different screens may render differently; the file does not change.</p></div>
+    <div class="layer core"><div class="name"><span class="status normative">normative</span><b>3 · Encoding precision</b></div>
+      <p>Encoding must not add error larger than the data's own uncertainty. The eye's threshold (a DICOM GSDF JND) is a
+        second, lower limit that says when more bits stop being <i>visible</i>. It is not the target.</p></div>
+    <div class="layer core"><div class="name"><span class="status normative">normative</span><b>2 · Mapping</b></div>
+      <p>One declared, global, monotonic and invertible function from data value to light, in multiples of SDR white
+        (BT.2408). Invertible means a reader can always get from brightness back to the value. When the data <i>is</i> light
+        (luminance maps, calibrated images, surface brightness), the mapping is proportional, so the display shows the
+        true brightness ratios within its range. Otherwise, the knee is justified by the data: a physical threshold, a
+        stated false-alarm level, or a domain preset.</p></div>
+    <div class="layer core"><div class="name"><span class="status normative">normative</span><b>1 · Data</b></div>
+      <p>The values, their units, their uncertainty, and a validity mask (saturated, clipped, bloomed or otherwise bad
+        pixels, which never go above white), all kept at full precision. Every other layer is derived from this one.</p></div>
+  </div>
+  <p class="muted">Why this order: a standard rests on what can be tested. Layers 1–3 can be checked by a program
+    (<code>udeep.validate</code>). Layer 4 depends on the screen and the viewer, so it is guidance, measured with
+    the device checks and perceptual models, and never used as the basis for a rule.</p>
+</div></section>
+
+<section id="principles"><div class="wrap">
+  <p class="eyebrow">Design principles</p>
+  <h2>How the profile is written</h2>
+  <ul>
+    <li><b>A profile, not a new format.</b> It combines existing standards (BT.2100, ISO 21496-1, PNG <code>cICP</code>,
+      AVIF, JPEG XL, XMP, SVG). Anything that opens those files can open a conforming figure.</li>
+    <li><b>Safe fallback by construction.</b> The SDR version is the figure of record, so adopting the profile never
+      makes a figure worse on an ordinary screen or in print.</li>
+    <li><b>Testable requirements.</b> Every MUST can be checked by a program or a stated test. Evidence of benefit is
+      reported separately and is not written into the rules.</li>
+    <li><b>Small core, versioned.</b> The normative core stays short. Changes are versioned, with a change log and a
+      citable DOI for each version.</li>
+    <li><b>Open.</b> Text under CC BY 4.0, reference code under BSD-3, and no patent claims from the editors.</li>
+  </ul>
+</div></section>
+
+<section id="route"><div class="wrap">
+  <p class="eyebrow">The route</p>
+  <h2>From draft to standard</h2>
+  <div class="steps">
+    <div class="step"><span class="when">Stage 1 · now</span><h3>Community specification</h3>
+      <p>A public, versioned draft, an issue tracker for comments, a reference implementation in Python with ports in
+        JavaScript and Rust that are held to the same golden test vectors, and a conformance validator. A DOI for each
+        version is planned; none has been issued yet.</p></div>
+    <div class="step"><span class="when">Stage 2</span><h3>Independent implementations</h3>
+      <p>At least one implementation written by someone else, for example in another plotting ecosystem, that passes the
+        same conformance tests. Standards bodies look for this: W3C's Recommendation track normally expects two
+        independent implementations of each feature.</p></div>
+    <div class="step"><span class="when">Stage 3</span><h3>A home for the work</h3>
+      <p>A W3C Community Group. Anyone may propose one, and it launches with five supporters. Its reports are
+        community specifications, not W3C standards, but they are the recognised place to incubate a web-facing
+        specification.</p></div>
+    <div class="step"><span class="when">Stage 4</span><h3>Liaison, not reinvention</h3>
+      <p>Feed specific needs into the standards that already own each piece: CSS Color HDR (HDR colours for figure elements),
+        the PDF Association (HDR in documents), ISO/TC 42 through a national body (gain maps), and domain bodies for their
+        own conventions.</p></div>
+  </div>
+  <p class="muted">Precedents: FITS began as an astronomers' convention and was endorsed by the International Astronomical Union.
+    Gain maps began as company specifications (Adobe, Google) before ISO standardised the common model as ISO 21496-1 in 2025.
+    In both cases, community practice with working files came before the formal standard.</p>
+</div></section>
+
+<section id="iso"><div class="wrap">
+  <p class="eyebrow">ISO</p>
+  <h2>Where it fits in ISO</h2>
+  <p>ISO already standardises every building block the profile uses, and one ISO family, ISO 22028, is the natural home for what
+    is missing. The profile builds on these standards rather than competing with them.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>ISO standard</th><th>Committee</th><th>What it provides</th><th>Role in the profile</th></tr></thead>
+    <tbody>
+      <tr><td>ISO 22028-1</td><td>TC 42</td><td>Architecture for extended colour encodings, including <i>image states</i> (for example scene-referred and output-referred)</td><td>The frame for a new <b>data-referred</b> state</td></tr>
+      <tr><td>ISO/TS 22028-5:2023<br><span class="muted">(a full International Standard revision is in progress)</span></td><td>TC 42</td><td>HDR/WCG encodings for still images from BT.2100 (PQ, HLG); <i>nominal diffuse white</i>; metadata for scene- and display-referred images; reference viewing conditions</td><td>The encoding layer. Our "SDR white" is its nominal diffuse white</td></tr>
+      <tr><td>ISO 21496-1:2025</td><td>TC 42</td><td>Gain maps: an SDR image plus a map applied up to each display's headroom</td><td>The compatibility delivery; the SDR base is the figure of record</td></tr>
+      <tr><td>ISO 15076-1 (ICC.1)</td><td>TC 130</td><td>ICC colour profiles</td><td>Colour management of deliveries</td></tr>
+      <tr><td>ISO/IEC 18181</td><td>JTC 1/SC 29</td><td>JPEG XL: high bit depth, gain maps, extra channels</td><td>Archive delivery that can carry the data itself</td></tr>
+      <tr><td>ISO/IEC 23091-2 (ITU-T H.273)</td><td>JTC 1/SC 29</td><td>Colour code points (as in PNG <code>cICP</code>)</td><td>Signalling in PNG and AVIF</td></tr>
+      <tr><td>ISO 16684-1</td><td>TC 171</td><td>XMP metadata</td><td>Carrier for the declared mapping</td></tr>
+      <tr><td>ISO 32000-2</td><td>TC 171</td><td>PDF 2.0 (HDR is not yet portable)</td><td>The publication form; SDR is the figure of record</td></tr>
+      <tr><td>ISO 3664</td><td>TC 42</td><td>Viewing conditions for graphic technology and photography</td><td>Reference for recording viewing conditions in device tests</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The contribution ISO does not have</h3>
+  <p>ISO 22028 describes images that record a <i>scene</i> or are prepared for a <i>display</i>. A scientific figure is neither: its
+    brightness is a declared function of <i>measured data</i>. The candidate contribution is a <b>data-referred image state</b> and
+    its metadata, covering:</p>
+  <ul>
+    <li>the data unit and uncertainty;</li>
+    <li>the invertible mapping from value to light;</li>
+    <li>the knee and the rule that justifies it;</li>
+    <li>the validity mask.</li>
+  </ul>
+  <p>It would sit alongside the existing scene- and display-referred metadata of ISO 22028-5. That is a small, well-bounded
+    addition to an existing family, not a new format.</p>
+
+  <h3>How work gets into ISO</h3>
+  <div class="steps">
+    <div class="step"><span class="when">Route A · national body</span><h3>Through BSI</h3>
+      <p>In the UK, BSI committee CPW/42 mirrors ISO/TC 42 and prepares the UK's input to it. Experts join through BSI.
+        A national body such as BSI can propose a new work item, which the committee's members then vote on.</p></div>
+    <div class="step"><span class="when">Route B · liaison</span><h3>Through an organisation in liaison</h3>
+      <p>Organisations in liaison with a committee can also propose new work. They can comment on drafts, but they do not vote.</p></div>
+    <div class="step"><span class="when">Route C · fast track</span><h3>Publicly Available Specification</h3>
+      <p>ISO/IEC JTC 1 lets recognised submitters (W3C, OASIS, Khronos, the Joint Development Foundation) send a finished
+        specification straight to ballot, in under a year instead of up to four. glTF 2.0 reached ISO/IEC this way.
+        This route suits JTC 1 subjects, and requires a mature specification from such a body.</p></div>
+  </div>
+  <p><b>Suggested sequence.</b></p>
+  <ol style="margin:0;padding-left:1.4em;display:grid;gap:6px;max-width:74ch">
+    <li>Align the profile with ISO 22028-5 and ISO 21496-1 now (terms, metadata, references).</li>
+    <li>Build community practice and evidence (stages 1–2 above).</li>
+    <li>Engage BSI CPW/42 and propose a <b>Technical Report</b> (informative: the evidence and the data-referred model).</li>
+    <li>Then propose a <b>Technical Specification</b> (normative, published for trial use).</li>
+    <li>Then an International Standard or an amendment to ISO 22028-5.</li>
+  </ol>
+  <p class="muted">A trade-off to weigh: ISO documents are sold, and ISO holds the text's copyright. The community specification can stay
+    free alongside, as other transposed specifications have done. ISO timelines are measured in years, so the open profile
+    should keep moving meanwhile.</p>
+</div></section>
+
+<section id="changes"><div class="wrap">
+  <p class="eyebrow">What changes in the profile</p>
+  <h2>From v0.2 to v0.3</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>v0.2</th><th>v0.3 (6 October 2026)</th></tr></thead>
+    <tbody>
+      <tr><td>Highlight and Extend described alongside the rules</td><td>Moved to informative presets (layer 5)</td></tr>
+      <tr><td>Precision set by the eye (JND)</td><td>Precision set by the data's uncertainty; the JND kept as the visibility limit</td></tr>
+      <tr><td>The mapping must be global and monotonic</td><td>…and invertible, with the inverse stated, plus a proportional "physical" mapping for data that is light</td></tr>
+      <tr><td>Metadata: mapping only</td><td>Metadata also records the data's uncertainty and validity mask</td></tr>
+      <tr><td>Roll-off shape in the requirements</td><td>Moved to display rendering (layer 4)</td></tr>
+      <tr><td>Terms of its own ("SDR white")</td><td>ISO 22028-5 terms (nominal diffuse white), with ISO 22028-5 and 22028-1 as normative references and a data-referred image state</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted"><b>Since 6 October:</b> the draft has gained rules on 7 and 8 October, among them colour maps
+    defined as tables, digests that tie a file to its data and to its SDR figure, and an exact rule for how numbers
+    are written. Each is listed with its date in the profile's Annex E.</p>
+  <p class="muted"><b>Where the code stands:</b> the reference implementation's curve now follows v0.3. It rises all the way
+    to the top of the range, where the old one flattened: at 2× headroom the old curve squeezed 39 % of a CT range above the
+    knee into the last 3 % of brightness. The figures on this site use the new curve. The code now writes the v0.3
+    metadata into its files, and the gallery's files carry it. A validator (<code>udeep.validate</code>) checks a file against its own declaration, and every HDR figure in the gallery and on the home page passes the checks it can make from the file alone. A file does not carry its data, so the pixel checks need the figure that made the file.</p>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · text under CC BY 4.0. Comment on the approach in the <a href="https://github.com/ultradeeprange/udeep/issues">issue tracker</a>.</p></div></footer>
+</body>
+</html>

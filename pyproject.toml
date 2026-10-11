@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "udeep"
+version = "0.3.0.dev0"
+description = "Ultra Deep Range scientific figures: the ordinary plot everywhere, extra range on HDR displays"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [{ name = "Mathew Newman" }]
+requires-python = ">=3.11"
+# numpy 2.1 is the first with numpy.astype and the other Array API functions the mapping is written against
+dependencies = ["numpy>=2.1", "pillow>=10"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Intended Audience :: Science/Research",
+]
+
+[project.optional-dependencies]
+mpl = ["matplotlib>=3.8"]
+gpu = ["wgpu>=0.19"]
+test = ["pytest>=8", "matplotlib>=3.8", "array-api-strict"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+udeep = ["golden.json", "js/*.js", "js/*.mjs", "tables/*.f32", "tables/index.json", "shaders/*.wgsl"]
+
+[tool.ruff]
+src = ["src", "tools"]
+line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

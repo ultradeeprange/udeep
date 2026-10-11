@@ -1,0 +1,92 @@
+{
+ "format": "two segments (0..1, 1..headroom) of `nodes` x 3 little-endian float32, linear BT.709 RGB in multiples of SDR white; linear interpolation between nodes",
+ "cicp": {
+  "colour_primaries": 1,
+  "transfer_characteristics": 8,
+  "note": "ITU-T H.273 code points: 1 = BT.709 primaries, 8 = linear"
+ },
+ "version": 2,
+ "nodes": 4097,
+ "tables": {
+  "fire/1@2": {
+   "file": "fire-1-h2.f32",
+   "headroom": 2.0,
+   "sha256": "sha256:1104b3e56d546c3fd6ff62801bfb984c09b550ea2f95e791b4a020f69f513a74"
+  },
+  "fire/1@4": {
+   "file": "fire-1-h4.f32",
+   "headroom": 4.0,
+   "sha256": "sha256:bbe06aa434180fa2676c0bbfe71ce39d12c841b255167fb617c74372c8687f9d"
+  },
+  "fire/1@8": {
+   "file": "fire-1-h8.f32",
+   "headroom": 8.0,
+   "sha256": "sha256:491d7b9c0385f9115ab2ed2fc1b0b118d96f81d7de03be575e351ff1151d7f2f"
+  },
+  "fire/1@16": {
+   "file": "fire-1-h16.f32",
+   "headroom": 16.0,
+   "sha256": "sha256:3ed65b8df347ef2086d6031cd2cdf6bc7d3b9e4b01072d4e9d649fce4617824a"
+  },
+  "ice/1@2": {
+   "file": "ice-1-h2.f32",
+   "headroom": 2.0,
+   "sha256": "sha256:b33e76be5dd5bed06d123b774ed1343bbeb6117abe9c52e60668a670f33e3f2d"
+  },
+  "ice/1@4": {
+   "file": "ice-1-h4.f32",
+   "headroom": 4.0,
+   "sha256": "sha256:a5660805e49440b610e0605dadf98761d28d1d2d61a44452f26a2736c9381d3b"
+  },
+  "ice/1@8": {
+   "file": "ice-1-h8.f32",
+   "headroom": 8.0,
+   "sha256": "sha256:2917fb411214d97af4cccc23104794b4f6575a5853ff3907ce0be8c3d2182e4a"
+  },
+  "ice/1@16": {
+   "file": "ice-1-h16.f32",
+   "headroom": 16.0,
+   "sha256": "sha256:f5d3283918e4e8e4491720a96daa6cc0550a9d670a5f2d33f58c28f25fd4f4d6"
+  },
+  "fire/2@2": {
+   "file": "fire-2-h2.f32",
+   "headroom": 2.0,
+   "sha256": "sha256:bd6d097d4fcb46e473cd4b68a0fef20006e350ec4384370f32616636b385333c"
+  },
+  "fire/2@4": {
+   "file": "fire-2-h4.f32",
+   "headroom": 4.0,
+   "sha256": "sha256:8971396f63c7b9da95e161fec323c9cd257e57e94d94329b55f61ba5736995ed"
+  },
+  "fire/2@8": {
+   "file": "fire-2-h8.f32",
+   "headroom": 8.0,
+   "sha256": "sha256:e4b5cae69200a054120277be23074590a5acb76486a5118f87904b4a69616266"
+  },
+  "fire/2@16": {
+   "file": "fire-2-h16.f32",
+   "headroom": 16.0,
+   "sha256": "sha256:a322fe7e759ec525d2563ef0a5b8cbb2be35de84e9a1a0e291bc5c6445ec8bcf"
+  },
+  "ice/2@2": {
+   "file": "ice-2-h2.f32",
+   "headroom": 2.0,
+   "sha256": "sha256:f634a6971cad902f9ee5b421338956bd8b71d48b26f6b3ff23b73569558e2aea"
+  },
+  "ice/2@4": {
+   "file": "ice-2-h4.f32",
+   "headroom": 4.0,
+   "sha256": "sha256:3595f15663c011c1d694b8448814cee9bcfa5532f29b749f4f1a4d4664012d2f"
+  },
+  "ice/2@8": {
+   "file": "ice-2-h8.f32",
+   "headroom": 8.0,
+   "sha256": "sha256:c8c328bab7faa662cd6006146eff355bdda8551ed450ab06fc30e4f54e3a1c83"
+  },
+  "ice/2@16": {
+   "file": "ice-2-h16.f32",
+   "headroom": 16.0,
+   "sha256": "sha256:eca5c9524ba443641f4d267240701897898ee875f7bbdd53dedaf4d72052f118"
+  }
+ }
+}

@@ -1,0 +1,27 @@
+name = "UDeepCore"
+uuid = "8bd290d2-044a-4568-a643-c8ac16ee5d37"
+version = "0.3.0-DEV"
+authors = ["Mathew Newman"]
+
+[deps]
+Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+UDeepCoreMakieExt = "Makie"
+
+[compat]
+Makie = "0.24"
+julia = "1.10"
+
+[extras]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["CairoMakie", "JSON", "Test"]

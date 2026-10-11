@@ -1,0 +1,31 @@
+[package]
+name = "udeep-core"
+version = "0.3.0-dev"
+edition = "2024"
+license = "BSD-3-Clause"
+description = "The mapping from scientific data to light and colour of the UDeep Figure Profile: a small core with a C interface."
+repository = "https://github.com/ultradeeprange/udeep"
+publish = false
+
+[lib]
+name = "udeep_core"
+crate-type = ["rlib", "cdylib"]
+
+# The mapping, the metadata and the checks depend on nothing. Only the image writer needs other crates, and it
+# is behind a feature: build with `--features jpeg` to get it.
+[features]
+jpeg = ["dep:jpeg-encoder", "dep:jpeg-decoder"]
+
+[dependencies]
+jpeg-encoder = { version = "0.6", optional = true }
+jpeg-decoder = { version = "0.3", optional = true, default-features = false }
+
+# The golden-vector test reads JSON.
+[dev-dependencies]
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

@@ -1,0 +1,9 @@
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+UDeepCore = "8bd290d2-044a-4568-a643-c8ac16ee5d37"
+
+[sources]
+UDeepCore = {path = ".."}
+
+[compat]
+CairoMakie = "0.15"

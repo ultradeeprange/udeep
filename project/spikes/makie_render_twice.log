@@ -1,0 +1,10 @@
+eltype = ColorTypes.ARGB32  size = (1040, 1280)
+same figure rendered twice identical: true
+two separately built figures identical: true
+pixels changed: 864960 of 1331200  (65.0 %)
+changed bounding box rows (74, 921) cols (134, 1191)
+changed columns form 2 separate band(s)
+restored render identical to the first: true
+axis viewport (px, before scale): GeometryBasics.HyperRectangle{2, Int64}([66, 59], [494, 425])   colour-bar viewport: GeometryBasics.HyperRectangle{2, Int64}([578, 59], [18, 425])
+changed pixels outside both image rectangles: 0
+Makie 0.24.15  CairoMakie 0.15.15  Julia 1.13.0

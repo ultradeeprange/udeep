@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Evidence · UDeep</title>
+<meta name="description" content="What is known about HDR for scientific figures: vision science, standards, prior research, medical display studies, and UDeep's own measurements.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --faint: #6b7580;
+    --tag: #8cc2e6; --warm: #e8b04a; --good: #9fd49a; --bad: #e39a8a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  h3 { font-size: 18px; line-height: 1.3; }
+  p { margin: 0; max-width: 70ch; }
+  ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 74ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover { color: var(--ink); }
+
+  .intro { padding-block: 48px 30px; display: grid; gap: 16px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+  .toc a { color: var(--muted); }
+
+  section { padding-block: 40px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; gap: 18px; }
+
+  .keys { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .key { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+  .key .k { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+  .k.est { color: var(--good); } .k.meas { color: var(--tag); } .k.open { color: var(--warm); }
+  .key p { font-size: 15px; color: var(--soft); }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 680px; width: 100%; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .yes { color: var(--good); } .no { color: var(--bad); } .part { color: var(--warm); }
+  .note { font-size: 14px; color: var(--muted); max-width: 74ch; }
+
+  ol.refs { margin: 0; padding-left: 1.6em; display: grid; gap: 8px; font-size: 14px; color: var(--soft); max-width: 90ch; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/evidence/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Evidence · UDeep">
+<meta property="og:description" content="What is known about HDR for scientific figures: vision science, standards, prior research, medical display studies, and UDeep&#x27;s own measurements.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/evidence/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">hdr<b>plot</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html" aria-current="page">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <p class="eyebrow">Evidence · updated 8 October 2026</p>
+  <h1>What is known about HDR for scientific figures</h1>
+  <p>This page gathers what the literature establishes, what the standards say, and what we have measured,
+    each marked by how strong it is. Citations were checked against Crossref and against the papers' own abstracts.</p>
+  <nav class="toc" aria-label="On this page">
+    <a href="#summary">Summary</a><a href="#vision">Vision and bits</a><a href="#standards">Standards</a>
+    <a href="#research">Prior research</a><a href="#people">Does it help people?</a><a href="#medical">Medical imaging</a><a href="#measured">What we measured</a>
+    <a href="#realdata">Real data</a><a href="#devices">Devices</a><a href="#comfort">Comfort</a><a href="#testing">How to test</a><a href="#open">Open questions</a><a href="#refs">References</a>
+  </nav>
+</div>
+
+<section id="summary"><div class="wrap">
+  <h2>Summary</h2>
+  <div class="keys">
+    <div class="key"><span class="k est">Established</span><p>People see about 3.7 orders of magnitude at once [1]. An
+      8-bit SDR figure clips much of that; HDR displays can show it.</p></div>
+    <div class="key"><span class="k est">Established</span><p>12-bit PQ is at or below the visibility threshold across 0.001 to
+      10,000 cd/m² [2]. Nothing beyond 12 bits helps the eye [3].</p></div>
+    <div class="key"><span class="k meas">Measured</span><p>A 10-bit PQ step is 1.1 to 1.4 just-noticeable differences
+      (DICOM GSDF); a 12-bit step is about 0.33.</p></div>
+    <div class="key"><span class="k est">Established</span><p>Evidence on more grey levels is mixed. A pilot study found 10-bit better than 8-bit [4]; a three-site
+      study found no accuracy difference, only faster reading [19]. More luminance alone did not help [5]. An HDR prototype
+      display gave small gains on hard cases [6].</p></div>
+    <div class="key"><span class="k est">Established</span><p>What people prefer does not predict what is scientifically useful
+      (R² = 0.31) [7]. Preference alone is not evidence.</p></div>
+    <div class="key"><span class="k meas">Measured</span><p>HDR figures display today on a phone and a desktop monitor, as gain-map
+      JPEG, 16-bit PNG, AVIF and HDR video. PDF has no portable HDR yet [8].</p></div>
+    <div class="key"><span class="k meas">Measured</span><p>A roll-off that flattens at the top cannot be read back. At 2× headroom
+      it put 31.4 % of a CT's declared range into the last 3 % of brightness. The profile's curve now keeps rising.</p></div>
+    <div class="key"><span class="k meas">Measured</span><p>On six real datasets, HDR helped most where the range above white was
+      large (a gravitational wave at 327 × the noise) and added little where it was under 4 × (the M87 black hole).</p></div>
+    <div class="key"><span class="k open">Open</span><p>No study has shown that HDR helps people read scientific figures. Rendering scientific data <i>for</i>
+      HDR displays was explored in 2005, on the prototype displays of the time [23]. We found nothing since for today's
+      consumer HDR screens, and no standard for it.</p></div>
+  </div>
+</div></section>
+
+<section id="vision"><div class="wrap">
+  <p class="eyebrow">Vision and bits</p>
+  <h2>How much range and precision the eye can use</h2>
+  <ul>
+    <li><b>Range.</b> Adaptation spans about 14 orders of magnitude (starlight to sunlight), but the range seen <i>at once</i>
+      is about 3.7 orders [1]. A single view on a display fits within that.</li>
+    <li><b>Precision.</b> The DICOM Grayscale Standard Display Function (Barten's model) puts the smallest visible luminance
+      step at about 0.65 % above 100 cd/m², coarser in the dark (2.4 % at 1 cd/m²) [9].</li>
+    <li><b>Encoding.</b> PQ (SMPTE ST 2084) was designed so that 12-bit steps sit at or below threshold over
+      0.001–10,000 cd/m² [2]. An evaluation of HDR colour encodings found about 11 bits visually lossless [3].</li>
+    <li><b>Colour.</b> BT.2020 primaries cover about 76 % of visible chromaticities and almost all real surface colours.</li>
+  </ul>
+  <div class="scroll"><table>
+    <thead><tr><th>PQ bits</th><th>Step, in GSDF JNDs (10–3000 cd/m²)</th><th>Near black (0.5–3 cd/m²)</th><th>Reading</th></tr></thead>
+    <tbody>
+      <tr><td>8</td><td class="num">4.5–5.7</td><td class="num">3.4</td><td>visible banding</td></tr>
+      <tr><td>10</td><td class="num">1.1–1.4</td><td class="num">0.82</td><td>at threshold; dither smooth gradients</td></tr>
+      <tr><td>12</td><td class="num">0.27–0.35</td><td class="num">0.20</td><td>below threshold</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Computed by <code>udeep.jnd</code> (tested against the GSDF's published end points). The GSDF target is
+    not the most sensitive pattern, so these are lower bounds on visibility.</p>
+</div></section>
+
+<section id="standards"><div class="wrap">
+  <p class="eyebrow">Standards</p>
+  <h2>What already exists, and what it doesn't cover</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Standard</th><th>What it gives</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>ITU-R BT.2100, SMPTE ST 2084</td><td>PQ and HLG transfer functions, BT.2020 primaries</td><td class="yes">in use (TV, streaming)</td></tr>
+      <tr><td>ITU-R BT.2408</td><td>Reference white at 203 cd/m²: the basis for "multiples of SDR white"</td><td class="yes">in use</td></tr>
+      <tr><td>ITU-R BT.2390</td><td>The roll-off (EETF) used to fit content to a display. It flattens at the top, which suits pictures but cannot be read back to data</td><td class="yes">in use; the profile allows it for display rendering only</td></tr>
+      <tr><td>ISO 21496-1:2025</td><td>Gain maps: an SDR image plus a map that HDR displays apply up to their headroom (ISO/TC 42, July 2025) [18]</td><td class="yes">published</td></tr>
+      <tr><td>ITU-T H.273</td><td>Colour signalling code points (as in the PNG <code>cICP</code> chunk)</td><td class="yes">in use</td></tr>
+      <tr><td>DICOM PS3.14</td><td>A perceptually linear greyscale display function for medicine</td><td class="yes">in use; no HDR above white</td></tr>
+      <tr><td>CSS Color HDR (W3C)</td><td>HDR colours and <code>dynamic-range-limit</code> for the web</td><td class="part">editor's draft; the property ships, the colours do not</td></tr>
+      <tr><td>PDF (ISO 32000)</td><td>HDR only as "private data" that conforming viewers must ignore; JPEG XL chosen for future HDR [8]</td><td class="no">no portable HDR yet</td></tr>
+      <tr><td><i>Scientific figures</i></td><td>How data becomes brightness, the knee, the SDR fallback, verification</td><td class="no">nothing, which is what the draft profile addresses</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="research"><div class="wrap">
+  <p class="eyebrow">Prior research</p>
+  <h2>Nearby work, and how this differs</h2>
+  <ul>
+    <li><b>HDR data on ordinary (SDR) displays: the opposite direction.</b> Visibility-matching [10] and display-adaptive [11] tone
+      mapping compress a scene's range for a given display. Park &amp; Montag compared nine tone-mapping operators on scientific
+      images; the best depended on the data type [7]. Zhou et al. combined tone mapping with simulated glare to flag
+      high values and found the glare preattentive [12]. All of these keep the output within SDR.</li>
+    <li><b>Colour for science.</b> Colour maps should be perceptually uniform and readable by everyone [13]. Jzazbz is a uniform colour
+      space that extends to HDR [14]; UDeep's HDR colour maps are built in it. Astronomy's asinh stretch shows a wide range
+      in 8 bits [15].</li>
+    <li><b>Comparing figures.</b> Juxtaposition, superposition and explicit encoding [16]. UDeep's fair HDR/SDR toggle is a juxtaposition
+      that holds the SDR part identical.</li>
+    <li><b>Measuring visible differences.</b> ColorVideoVDP predicts visible differences with a model of the display and viewer [17].</li>
+  </ul>
+  <ul>
+    <li><b>Scientific data on HDR displays: the closest prior work.</b> Ghosh, Trentacoste and Heidrich rendered volume data
+      for HDR displays in 2005, when such displays were research prototypes [23]. HDR VolVis (2006) handled volume data with a
+      high range, for ordinary displays [24]. Vision scientists have built lab HDR luminance displays as instruments [25].</li>
+  </ul>
+  <p class="note">The difference: that early work targeted prototype hardware and one kind of rendering. None of it defines how a
+    scientific figure should carry its range on today's consumer HDR screens, with a declared mapping and an SDR figure of record,
+    and no file profile exists for it. The search so far covered the web, a scholarly full-text index and GitHub (September 2026). It is
+    not yet systematic, so "to our knowledge" is the right wording.</p>
+</div></section>
+
+<section id="people"><div class="wrap">
+  <p class="eyebrow">Does it help people?</p>
+  <h2>Observer studies with more range or more bits</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Study</th><th>Change</th><th>Task</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Hemminger et al. 1999 [5]</td><td>peak luminance 34 to 2056 cd/m² (film on a lightbox)</td><td>20 observers; simulated masses in mammograms</td>
+        <td class="part">no significant effect of luminance range</td></tr>
+      <tr><td>Tabár et al. 2010 [4]</td><td>8-bit vs 10-bit greyscale displays</td><td>10 radiologists, 33 screening studies (pilot)</td>
+        <td class="yes">Az 0.791 → 0.831, p = 0.016</td></tr>
+      <tr><td>Krupinski et al. 2007 [19]</td><td>8-bit vs 11-bit greyscale displays</td><td>18 radiologists at 3 sites, 100 chest images</td>
+        <td class="part">no difference in Az (0.828 vs 0.825); reading faster at 11-bit</td></tr>
+      <tr><td>Marchessoux et al. 2016 [6]</td><td>dual-LCD HDR prototype vs a standard medical display</td><td>8 radiologists, 214 chest images, simulated nodules</td>
+        <td class="part">figure of merit +0.09 % overall, +1.38 % on difficult nodules; &gt;30 % more true positives in the darkest regions</td></tr>
+      <tr><td>Park &amp; Montag 2007 [7]</td><td>nine tone-mapping operators (SDR output)</td><td>paired comparisons; preference vs "scientific usefulness"</td>
+        <td class="part">the two judgements correlate weakly (R² = 0.31)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Reading: extra <i>precision</i> has helped in one pilot study and made no accuracy difference (but faster reading) in a larger one; extra <i>luminance</i> alone has not; a true HDR display
+    helped a little, mostly in dark regions. None of these studies used scientific figures, so a task-based study is the missing
+    piece. Marchessoux's abstract gives no significance test for its differences.</p>
+</div></section>
+
+<section id="medical"><div class="wrap">
+  <p class="eyebrow">Medical imaging today</p>
+  <h2>The data has 12–16 bits; most of the display chain shows 8</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Part of the chain</th><th>What it holds or shows</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td>The data</td><td>CT, MR and DX: 12–16 bits stored in 16. Windowing (Window Center/Width, VOI LUT) maps it down to display levels</td><td>DICOM PS3.3 [20]</td></tr>
+      <tr><td>Diagnostic displays</td><td>10-bit input (1,024 simultaneous greys) through 12–14-bit internal look-up tables, for example Barco Coronis and EIZO RadiForce</td><td>vendor specifications</td></tr>
+      <tr><td>Graphics output</td><td>10-bit through OpenGL 30-bit, DirectX 10-bit/FP16, or AMD Pro. 12-bit only through a legacy NVIDIA packed-pixel DVI mode</td><td>NVIDIA, Microsoft documentation</td></tr>
+      <tr><td>Viewers</td><td>Documented &gt;8-bit output is rare. Of 18 workstations tested, only 3 of the 14 hospital ones passed a hardware/OS 10-bit test, and only one (Sectra) passed in the viewer too; RadiAnt states 8-bit output. For OHIF, DWV, Weasis, Horos/OsiriX and 3D Slicer, no 10-bit support was found</td><td>Chrzan &amp; Urbanik 2018 [21]; vendor statements</td></tr>
+      <tr><td>Guidelines</td><td>ACR–AAPM–SIIM (2012): no evidence that more than 8 bits changes interpretation; 10-bit needs the OS, software, graphics card and monitor to support it</td><td>[22]</td></tr>
+      <tr><td>HDR</td><td>No DICOM viewer renders above reference white. One research prototype display (2016) exists</td><td>[6]</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">So CT windowing is the Extend case in daily practice: the data holds two ranges, and the display shows one at a time.
+    An HDR mode could keep the chosen window unchanged and show what lies above it. Diagnostic use of any new display mode is
+    regulated, and would need clinical evidence first.</p>
+</div></section>
+
+<section id="measured"><div class="wrap">
+  <p class="eyebrow">What we measured</p>
+  <h2>Model predictions and engineering results</h2>
+  <p class="muted">Perceptual results are ColorVideoVDP predictions (in JOD, just-objectionable differences) with the display
+    modelled, gated by null and positive controls. They are predictions, not observer data.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Finding</th><th>Result</th><th>Strength</th></tr></thead>
+    <tbody>
+      <tr><td>A fair comparison must keep the SDR part identical</td><td>The white-point and stretch choice alone was 2–7× more visible than HDR's contribution</td><td>model, several datasets</td></tr>
+      <tr><td><b>Highlight</b> mode (sparse extremes above white)</td><td>A small, visible gain: −0.3 to −0.8 JOD on a 500 cd/m² monitor model; 10–60 % larger on an OLED TV model</td><td>model, 9 datasets</td></tr>
+      <tr><td><b>Extend</b> mode (a second range above white)</td><td>One CT slice: soft tissue matched its dedicated window (4.75 vs 4.63), and bone about matched a bone window (8.62 vs 8.65). SDR has to choose one.</td><td>model, one slice</td></tr>
+      <tr><td>HDR cannot restore lost data</td><td>A clipped astronomical mosaic gave the smallest effect (−0.15 JOD); the brightest solar pixels were saturation and blooming, which must be masked</td><td>model + data inspection</td></tr>
+      <tr><td>A smooth curve beat a hand-set second window</td><td>The BT.2390-style roll-off scored better than a second window set by hand. This comparison used the earlier, flat-topped curve and has not been repeated with the current one</td><td>model, one slice</td></tr>
+      <tr><td>A flat-topped roll-off cannot be read back to data</td><td>At 2× headroom, 31.4 % of the CT's declared range (39.1 % of the range above the knee, from 1220 HU up) fell in the last 3 % of brightness. Replaced by a cubic curve whose slope never falls below a set fraction of the average slope, so every value keeps its own brightness (profile 6.3)</td><td>computed, tested</td></tr>
+      <tr><td>Precision has two budgets</td><td>One is for the eye (the table under <a href="#vision">Vision and bits</a>). The other is for the data: the rounding step, traced back to data units, should stay under a tenth of the noise. An 8-bit gain-map JPEG meets neither above white, so the profile calls it a rendering, not a record</td><td>computed</td></tr>
+      <tr><td>Do the colour maps survive colour-vision deficiency?</td><td>Lightness was checked at every point of both maps under simulated protanopia, deuteranopia and tritanopia [28]. The first version of the maps had small faults: <code>ice</code> dipped for red-green deficiencies near 15 % of white, each map fell at one point at 2× headroom, and the brightest colour of both was about 0.1 % short of white. Every fall was under 0.05 % of the lightness range. The second version (<code>fire/2</code>, <code>ice/2</code>, 10 October 2026) has none: lightness rises at every point for normal vision and all three deficiencies, and the top is exactly white. 83–94 % of <code>fire</code>'s perceptual length survives a deficiency, and 80–98 % of <code>ice</code>'s. The first version stays available so older files can be read</td><td>computed, simulated vision</td></tr>
+      <tr><td>How far an 8-bit gain-map JPEG is from carrying the data</td><td>On the synthetic CT (noise 6 HU, range −160 to 1850 HU, 4× headroom), one stored level spans up to 19.5 HU. Rounding is 0.94 of the noise at its worst, against a limit of 0.1, and it is over the limit across 92 % of the range. The writer now reports this when it saves</td><td>computed, synthetic data</td></tr>
+      <tr><td>Gain maps overshoot at sharp edges</td><td>JPEG error in the base image, multiplied by the gain, pushed a colour bar's edge 20–27 % past the headroom. Fixed: compute the gain against the decoded base and store the gain map at top quality. Residual ≤5 %.</td><td>measured, tested</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="realdata"><div class="wrap">
+  <p class="eyebrow">Real data</p>
+  <h2>What six real datasets taught</h2>
+  <p class="muted">From building the <a href="../gallery/index.html">gallery</a>. Each figure's numbers are printed by the build
+    and kept in the repository.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Dataset</th><th>What happened</th><th>Lesson</th></tr></thead>
+    <tbody>
+      <tr><td>GW150914 (LIGO)</td><td>A knee set from the noise statistics failed its own check on raw strain: noise crossed it 45 times in 9,984 tiles, where one was expected. After whitening, 92 tiles exceeded the one-in-100 level against 92.2 expected</td><td>A statistical knee is only as good as the noise model. Check it on noise-only data, and stop the build if it fails</td></tr>
+      <tr><td>GW250114 (LIGO)</td><td>The signal peaks at 327 × the mean noise power</td><td>The strongest case: a faint noise floor and a very bright signal in one figure</td></tr>
+      <tr><td>Chest CT (LIDC-IDRI)</td><td>The scan is contrast-enhanced: 89 % of the pixels above the knee are blood at 240–500 HU, not bone. Covering bone to 1900 HU left the blood crowded near white; the range was cut to 700 HU</td><td>Look at what is actually above the knee. The declared range is a trade-off, and the figure should state it</td></tr>
+      <tr><td>The Sun at 171 Å (SDO/AIA)</td><td>The brightest pixels are detector saturation</td><td>Mask saturated pixels. They must not be lifted above white</td></tr>
+      <tr><td>M51 (Hubble)</td><td>The file has no data-quality layer, so saturated foreground stars could not be masked</td><td>Say so on the figure when a mask is not possible</td></tr>
+      <tr><td>M87* (Event Horizon Telescope)</td><td>The image spans less than 4 × above its white. An SDR figure scaled to the peak shows the same structure</td><td>HDR is not always worth it. A small range fits in SDR</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="devices"><div class="wrap">
+  <p class="eyebrow">Devices</p>
+  <h2>What displays HDR today</h2>
+  <p class="muted">Tested on an iPhone 16 Pro (Photos and Safari) and a desktop monitor (Edge 153, Windows 11), September 2026,
+    with the <a href="../check/index.html">device checks</a>. Each test had an SDR control and a positive control.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>What</th><th>Result</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr><td>Gain-map JPEG in iOS Photos</td><td class="yes">HDR</td><td>Shareable now</td></tr>
+      <tr><td>Gain-map JPEG, 16-bit PNG (PQ), AVIF (PQ, HLG), HEVC video (PQ, HLG) on a web page</td><td class="yes">HDR</td><td>Static and moving figures both work</td></tr>
+      <tr><td>Gain-map JPEG inside inline SVG</td><td class="yes">HDR</td><td>Vector axes around an HDR data layer</td></tr>
+      <tr><td>Gain-map JPEG inside a standalone <code>.svg</code> file</td><td class="no">SDR only</td><td>SVG files need an AVIF PQ layer, which works</td></tr>
+      <tr><td>Vector colours above white</td><td class="no">not supported</td><td>No pure-vector HDR yet</td></tr>
+      <tr><td>10/12-bit AVIF ramps</td><td class="part">banded</td><td>The same values in 16-bit PNG looked smooth, so the decoder loses precision</td></tr>
+      <tr><td>Blind banding test (16-bit PNG rounded to 10–16 bits)</td><td class="part">all smooth</td><td>Ran without a coarse positive control. A repeat with 8/9-bit strips is pending</td></tr>
+      <tr><td>12-bit HEVC / AV1 video playback</td><td class="part">pending</td><td>Test built; result not yet in</td></tr>
+      <tr><td>Panel bit depth, any iPhone</td><td class="no">not published</td><td>No official figure or independent measurement exists; Apple states "true 10-bit" only for the Pro Display XDR</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="comfort"><div class="wrap">
+  <p class="eyebrow">Comfort and accessibility</p>
+  <h2>What guidance exists for bright content</h2>
+  <ul>
+    <li><b>Flashing is limited; steady brightness is not.</b> WCAG 2.3.1 and ITU-R BT.1702 limit flashes to three per second.
+      A review of international guidelines found only two that address HDR, and both concern flashing [26]. We found no
+      numerical limit on static brightness or bright area.</li>
+    <li><b>The agreed mitigation is user control.</b> The CSS HDR draft says that "some individuals may have a sensitivity to
+      very bright colors, so user agents should provide a mechanism to limit the maximum luminance at user option" [27].</li>
+    <li><b>Bright areas are assumed to be small.</b> HDR production practice reserves levels above reference white for
+      small highlights.</li>
+  </ul>
+  <p class="note">So the profile forbids flashing above white, requires that switching between HDR and SDR is started by the
+    user, and asks pages to offer a limit. Every page on this site has a "Limit HDR" control. A static HDR figure is not a
+    flash hazard; an animation or video can be.</p>
+</div></section>
+
+<section id="testing"><div class="wrap">
+  <p class="eyebrow">How to test</p>
+  <h2>Lessons from getting it wrong</h2>
+  <ul>
+    <li><b>Put a reference in the image.</b> CT figures at 2× white were judged "not HDR" on a screen that clearly showed HDR for a
+      pattern with a 1× white band beside the brighter squares.</li>
+    <li><b>Use controls.</b> An SDR control must not glow, and a positive control must glow. Without them, "everything looks
+      smooth" cannot be told apart from "the test cannot show bands".</li>
+    <li><b>Blind the banding test.</b> Shuffle the strips and keep the key.</li>
+    <li><b>Verify the stimulus.</b> Decode every file before showing it. One common image library silently reads 16-bit colour PNGs
+      as 8-bit.</li>
+    <li><b>View locally.</b> Remote-desktop sessions deliver 8-bit SDR.</li>
+    <li><b>Record conditions:</b> device, OS and browser versions, brightness, and room light.</li>
+  </ul>
+</div></section>
+
+<section id="open"><div class="wrap">
+  <p class="eyebrow">Open questions</p>
+  <h2>What would settle it</h2>
+  <ul>
+    <li>A task study: can people find a faint feature, or read a value, faster or more accurately with HDR figures than with SDR?</li>
+    <li>More devices in the evidence table: Android, Windows laptops, OLED TVs, Macs.
+      <a href="../about/index.html#report">Send a report</a>.</li>
+    <li>Whether steady brightness above white is uncomfortable, at what level and area. No guideline gives a number.</li>
+    <li>The model comparisons above, repeated with the current curve.</li>
+    <li>Whether 12-bit video plays, and whether decoders can keep 12 bits for stills.</li>
+    <li>Gain-map AVIF, and a CSS media-query SDR fallback inside SVG. Both are untested.</li>
+    <li>A systematic literature search before any claim of novelty.</li>
+  </ul>
+</div></section>
+
+<section id="refs"><div class="wrap">
+  <p class="eyebrow">References</p>
+  <ol class="refs">
+    <li>Kunkel, T. &amp; Reinhard, E. (2010). A reassessment of the simultaneous dynamic range of the human visual system. <i>Proc. APGV</i>, 17–24. <a href="https://doi.org/10.1145/1836248.1836251">doi:10.1145/1836248.1836251</a></li>
+    <li>Miller, S., Nezamabadi, M. &amp; Daly, S. (2013). Perceptual signal coding for more efficient usage of bit codes. <i>SMPTE Motion Imaging J.</i> 122(4), 52–59. <a href="https://doi.org/10.5594/j18290">doi:10.5594/j18290</a></li>
+    <li>Boitard, R., Mantiuk, R. K. &amp; Pouli, T. (2015). Evaluation of color encodings for high dynamic range pixels. <i>Proc. SPIE</i> 9394, 93941K. <a href="https://doi.org/10.1117/12.2077715">doi:10.1117/12.2077715</a></li>
+    <li>Tabár, L. K., Niño, A. S., Schreiber, E. et al. (2010). Three digital mammography display configurations: observer performance in a pilot ROC study. <i>Digital Mammography (IWDM 2010)</i>, LNCS, 280–287. <a href="https://doi.org/10.1007/978-3-642-13666-5_38">doi:10.1007/978-3-642-13666-5_38</a></li>
+    <li>Hemminger, B. M., Dillon, A. W., Johnston, R. E. et al. (1999). Effect of display luminance on the feature detection rates of masses in mammograms. <i>Medical Physics</i> 26(11), 2266–2272. <a href="https://doi.org/10.1118/1.598740">doi:10.1118/1.598740</a></li>
+    <li>Marchessoux, C., de Paepe, L., Vanovermeire, O. &amp; Albani, L. (2016). Clinical evaluation of a medical high dynamic range display. <i>Medical Physics</i> 43(7), 4023–4031. <a href="https://doi.org/10.1118/1.4953187">doi:10.1118/1.4953187</a></li>
+    <li>Park, S. H. &amp; Montag, E. D. (2007). Evaluating tone mapping algorithms for rendering non-pictorial (scientific) high-dynamic-range images. <i>J. Visual Communication and Image Representation</i> 18(5), 415–428. <a href="https://doi.org/10.1016/j.jvcir.2007.06.008">doi:10.1016/j.jvcir.2007.06.008</a></li>
+    <li>PDF Association, Imaging Model TWG (2025). <i>FAQ on HDR in PDF: Focus on PDF/A and PDF/X</i>. <a href="https://pdfa.org/resource/faq-on-hdr-in-pdf-focus-on-pdf-a-and-pdf-x/">pdfa.org</a></li>
+    <li>NEMA. <i>DICOM PS3.14: Grayscale Standard Display Function</i>; Barten, P. G. J. (1999). <i>Contrast Sensitivity of the Human Eye and Its Effects on Image Quality</i>. SPIE Press.</li>
+    <li>Ward Larson, G., Rushmeier, H. &amp; Piatko, C. (1997). A visibility matching tone reproduction operator for high dynamic range scenes. <i>IEEE TVCG</i> 3(4), 291–306. <a href="https://doi.org/10.1109/2945.646233">doi:10.1109/2945.646233</a></li>
+    <li>Mantiuk, R., Daly, S. &amp; Kerofsky, L. (2008). Display adaptive tone mapping. <i>ACM TOG</i> 27(3). <a href="https://doi.org/10.1145/1360612.1360667">doi:10.1145/1360612.1360667</a></li>
+    <li>Zhou, L., Rivinius, M., Johnson, C. R. &amp; Weiskopf, D. (2020). Photographic high-dynamic-range scalar visualization. <i>IEEE TVCG</i> 26(6), 2156–2167. <a href="https://doi.org/10.1109/TVCG.2020.2970522">doi:10.1109/TVCG.2020.2970522</a></li>
+    <li>Crameri, F., Shephard, G. E. &amp; Heron, P. J. (2020). The misuse of colour in science communication. <i>Nature Communications</i> 11, 5444. <a href="https://doi.org/10.1038/s41467-020-19160-7">doi:10.1038/s41467-020-19160-7</a></li>
+    <li>Safdar, M., Cui, G., Kim, Y. J. &amp; Luo, M. R. (2017). Perceptually uniform color space for image signals including high dynamic range and wide gamut. <i>Optics Express</i> 25(13), 15131. <a href="https://doi.org/10.1364/OE.25.015131">doi:10.1364/OE.25.015131</a></li>
+    <li>Lupton, R., Blanton, M. R., Fekete, G. et al. (2004). Preparing red-green-blue images from CCD data. <i>PASP</i> 116(816), 133–137. <a href="https://doi.org/10.1086/382245">doi:10.1086/382245</a></li>
+    <li>Gleicher, M., Albers, D., Walker, R. et al. (2011). Visual comparison for information visualization. <i>Information Visualization</i> 10(4), 289–309. <a href="https://doi.org/10.1177/1473871611416549">doi:10.1177/1473871611416549</a></li>
+    <li>Mantiuk, R. K., Hanji, P., Ashraf, M., Asano, Y. &amp; Chapiro, A. (2024). ColorVideoVDP: a visual difference predictor for image, video and display distortions. <i>ACM TOG</i> 43(4). <a href="https://doi.org/10.1145/3658144">doi:10.1145/3658144</a></li>
+    <li>ISO 21496-1:2025, <i>Digital photography: gain map metadata for image conversion, Part 1: dynamic range conversion</i>. <a href="https://www.iso.org/standard/86775.html">iso.org</a></li>
+    <li>Krupinski, E. A., Siddiqui, K., Siegel, E. et al. (2007). Influence of 8-bit vs. 11-bit digital displays on observer performance and visual search: a multi-center evaluation. <i>J. Society for Information Display</i> 15(6), 385–390. <a href="https://doi.org/10.1889/1.2749324">doi:10.1889/1.2749324</a></li>
+    <li>DICOM PS3.3, Information Object Definitions: C.8.2 (CT Image), C.11.2 (VOI LUT). <a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.11.2.html">dicom.nema.org</a></li>
+    <li>Chrzan, R. &amp; Urbanik, A. (2018). The assessment of diagnostic medical images using 10-bit grayscale: fact or myth? <i>Polish Journal of Radiology</i> 83, e127–e132. <a href="https://doi.org/10.5114/pjr.2018.75877">doi:10.5114/pjr.2018.75877</a></li>
+    <li>ACR–AAPM–SIIM Technical Standard for Electronic Practice of Medical Imaging (2012 version). <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3553359/">PMC3553359</a></li>
+    <li>Ghosh, A., Trentacoste, M. &amp; Heidrich, W. (2005). Volume rendering for high dynamic range displays. <i>Fourth International Workshop on Volume Graphics</i>. <a href="https://doi.org/10.1109/vg.2005.194102">doi:10.1109/vg.2005.194102</a></li>
+    <li>Yuan, X., Nguyen, M. X., Chen, B. &amp; Porter, D. H. (2006). HDR VolVis: high dynamic range volume visualization. <i>IEEE TVCG</i>. <a href="https://doi.org/10.1109/tvcg.2006.72">doi:10.1109/tvcg.2006.72</a></li>
+    <li>Hung, C. P., Callahan-Flintoft, C., Walker, A. J. et al. (2020). A 100,000-to-1 high dynamic range (HDR) luminance display for investigating visual perception. <i>J. Neuroscience Methods</i>. <a href="https://doi.org/10.1016/j.jneumeth.2020.108684">doi:10.1016/j.jneumeth.2020.108684</a></li>
+    <li>Jordan, J. B. &amp; Vanderheiden, G. C. (2024). International guidelines for photosensitive epilepsy: gap analysis and recommendations. <i>ACM Transactions on Accessible Computing</i> 17, 1–35. <a href="https://doi.org/10.1145/3694790">doi:10.1145/3694790</a></li>
+    <li>W3C. <i>CSS Color HDR Module Level 1</i> (editor's draft), Accessibility Considerations. <a href="https://drafts.csswg.org/css-color-hdr/">drafts.csswg.org</a></li>
+    <li>Machado, G. M., Oliveira, M. M. &amp; Fernandes, L. A. F. (2009). A physiologically-based model for simulation of color vision deficiency. <i>IEEE TVCG</i> 15(6), 1291–1298. <a href="https://doi.org/10.1109/TVCG.2009.113">doi:10.1109/TVCG.2009.113</a></li>
+  </ol>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · text under CC BY 4.0. Corrections welcome as <a href="https://github.com/ultradeeprange/udeep/issues">issues</a>.</p></div></footer>
+</body>
+</html>
