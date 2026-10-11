@@ -1,0 +1,18 @@
+{
+ "id": "2026-09-27-iphone-16-pro",
+ "date": "2026-09-27",
+ "source": "profile, Annex B (the editor's observation)",
+ "device": "iPhone 16 Pro",
+ "os": null,
+ "browser": "Safari, version not recorded",
+ "brightness": null,
+ "auto_brightness": null,
+ "ambient": null,
+ "direct": true,
+ "results": {
+  "pattern": {"F0": "sdr", "F1": "hdr", "F2": "hdr", "F3": "hdr", "F4": "hdr", "F5": "hdr", "F6": "hdr"},
+  "svg": {"S2": "hdr", "S3": "hdr", "S4": "sdr", "S5": "hdr", "S6": "hdr"},
+  "vector": {"V1": "same white", "V2": "black", "V3": "black"}
+ },
+ "notes": "Observed by eye on 2026-09-26 and 27, before Annex A.4 was in force, so the OS and browser versions and the viewing conditions were not written down. Annex B does not say what the two controls of the SVG page showed. An earlier precision run is described in Annex B (B6); it had no 8- and 9-bit controls and is not recorded here."
+}

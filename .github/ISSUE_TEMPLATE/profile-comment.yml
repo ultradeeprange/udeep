@@ -1,0 +1,32 @@
+name: Comment on the profile
+description: A part of the draft profile that is wrong, unclear, or missing.
+title: "Profile: "
+labels: ["profile"]
+body:
+  - type: input
+    id: section
+    attributes:
+      label: Section
+      description: The number of the clause or annex, as in the draft.
+      placeholder: "7.2.1; Annex A.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of comment
+      options: ["It is wrong", "It is unclear", "Something is missing", "It cannot be implemented as written", "Other"]
+    validations:
+      required: true
+  - type: textarea
+    id: comment
+    attributes:
+      label: Comment
+      description: What the problem is, and the evidence or the case that shows it.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed wording or change
+      description: Optional. If you have a replacement in mind, give it.

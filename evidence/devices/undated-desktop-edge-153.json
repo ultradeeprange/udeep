@@ -1,0 +1,16 @@
+{
+ "id": "undated-desktop-edge-153",
+ "date": null,
+ "source": "profile, Annex B (the editor's observation)",
+ "device": null,
+ "os": "Windows 11",
+ "browser": "Edge 153",
+ "brightness": null,
+ "auto_brightness": null,
+ "ambient": null,
+ "direct": null,
+ "results": {
+  "vector": {"V1": "same white", "V2": "black", "V3": "black"}
+ },
+ "notes": "A desktop HDR monitor; Annex B (B5) records the browser and system only."
+}

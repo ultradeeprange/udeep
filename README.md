@@ -117,17 +117,26 @@ Two modes use the same tone curve:
 | `src/udeep/golden.json` | the contract: 82 reference cases of 14 kinds, each with its stated tolerance. Python reproduces all of them; the JavaScript port the 47 it implements; for the Rust core, all 14 kinds are implemented; it reproduces all 74 cases |
 | `tests/` | pytest suite (`pip install -e ".[test]" && pytest`) |
 | `profile/` | the UDeep Figure Profile |
+| `evidence/` | device reports: one record each in `devices/`, and the table made from them by `tools/evidence.py` |
 | `docs/` | the GitHub Pages site: demos and device checks |
 | `tools/` | `make_demos.py` (synthetic demos), `make_showcase.py` (real-data gallery; needs `astropy h5py scipy pydicom`), `make_device_tests.py` (device-check pages; needs `imagecodecs` and `imageio-ffmpeg`), `precision_budget.py` |
 
 ## Report your device
 
-Run the [device checks](https://ultradeeprange.github.io/udeep/check/) and open an issue with:
-- your device, OS and browser versions;
-- your brightness setting and room light;
-- which items showed HDR.
+Run the [device checks](https://ultradeeprange.github.io/udeep/check/) and
+[open a device report](https://github.com/ultradeeprange/udeep/issues/new?template=device-report.yml): a form that
+asks for your device, system and browser versions, your brightness setting and room light, and what each check
+showed. It takes about two minutes.
 
-The profile's evidence annex grows from these reports.
+Each report is kept as a record in [`evidence/devices/`](evidence/), and [`evidence/README.md`](evidence/README.md)
+is the table made from them. A page of checks counts only if its controls behaved, and a value a report did not
+give stays "not recorded".
+
+## Taking part
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) says what help is most useful and how to work on the code. Questions go in
+[Discussions](https://github.com/ultradeeprange/udeep/discussions); what has changed is in
+[`CHANGELOG.md`](CHANGELOG.md).
 
 ## Citing
 

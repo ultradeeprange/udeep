@@ -55,15 +55,23 @@ import json
 from udeep.export import srgb_oetf
 
 cm = importlib.import_module("udeep.cmap")           # the package also exports a function called cmap
+TABLE_TOLERANCE = 2e-6                               # relative and absolute: udeep.golden.TABLE
 
 
 @pytest.mark.parametrize("version", sorted(cm.DEFINITIONS))
 @pytest.mark.parametrize("name", ["fire", "ice"])
 @pytest.mark.parametrize("headroom", cm.REGISTERED_HEADROOMS)
 def test_shipped_tables_are_what_the_generator_makes(name, headroom, version):
-    """Every version, the old ones too: a file made with one must be readable for good."""
+    """Every version, the old ones too: a file made with one must be readable for good.
+
+    The shipped table is the definition (profile 6.10); the generator is how it was made. Another system's maths
+    library rounds the last bits of a power or a cube root differently (first seen on Linux, 2026-10-11: a few
+    units in the last place of a float32), so the generator must give the shipped table to the table tolerance
+    of the golden vectors, not bit for bit."""
     shipped, made = cm.table(name, headroom, version), cm.generate(name, headroom, version=version)
-    assert shipped.nodes == cm.NODES and shipped.to_bytes() == made.to_bytes()
+    assert shipped.nodes == made.nodes == cm.NODES
+    for stored, again in ((shipped.below, made.below), (shipped.above, made.above)):
+        assert np.allclose(again, stored, rtol=TABLE_TOLERANCE, atol=TABLE_TOLERANCE)
     index = json.loads((cm.TABLES / "index.json").read_text(encoding="utf-8"))
     assert index["tables"][f"{name}/{version}@{headroom:g}"]["sha256"] == shipped.digest
 
@@ -137,7 +145,9 @@ def test_below_white_a_map_does_not_depend_on_the_headroom(name):
 @pytest.mark.parametrize("name", ["fire", "ice"])
 def test_lookup_is_exact_at_nodes_and_close_between(name):
     nodes = np.concatenate([np.linspace(0.0, 1.0, cm.NODES), np.linspace(1.0, 4.0, cm.NODES)[1:]])
-    assert np.array_equal(cmap(nodes, name, 4.0), cm.search(nodes, name, 4.0))
+    # at a node the table holds the generator's own value: to the last bit where the table was made, and to the
+    # table tolerance under another maths library
+    assert np.allclose(cmap(nodes, name, 4.0), cm.search(nodes, name, 4.0), rtol=TABLE_TOLERANCE, atol=TABLE_TOLERANCE)
     y = np.random.default_rng(1).uniform(0.0, 4.0, 200_000)
     got, exact = cmap(y, name, 4.0).astype(float), cm.search(y, name, 4.0).astype(float)
     code = lambda rgb, s: srgb_oetf(np.clip(rgb / s, 0.0, 1.0)) * 255.0

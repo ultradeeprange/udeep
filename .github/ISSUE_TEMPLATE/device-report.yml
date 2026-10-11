@@ -1,0 +1,136 @@
+name: Device report
+description: What the device checks showed on your screen. About two minutes.
+title: "Device report: "
+labels: ["device report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Run the [device checks](https://ultradeeprange.github.io/udeep/check/) and write down what you see.
+        Do only the pages you have time for, and leave the rest as they are. A report is kept as a record in
+        [`evidence/devices/`](https://github.com/ultradeeprange/udeep/tree/main/evidence), with a link back to this issue.
+  - type: input
+    id: device
+    attributes:
+      label: Device and model
+      placeholder: "iPhone 16 Pro; or laptop / monitor make and model"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and version
+      placeholder: "iOS 26.0; Windows 11 25H2; macOS 26.1"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser or application, and version
+      placeholder: "Safari 26.0; Chrome 141; Edge 141"
+    validations:
+      required: true
+  - type: input
+    id: brightness
+    attributes:
+      label: Brightness setting
+      placeholder: "about 50 %; Windows SDR content brightness 40"
+  - type: dropdown
+    id: auto_brightness
+    attributes:
+      label: Automatic brightness
+      options: ["off", "on", "not known"]
+    validations:
+      required: true
+  - type: input
+    id: ambient
+    attributes:
+      label: Room light
+      placeholder: "dark room; office lighting; daylight by a window"
+  - type: checkboxes
+    id: direct
+    attributes:
+      label: Viewing path
+      options:
+        - label: I looked at the screen itself, not through remote desktop or screen sharing (those deliver SDR).
+          required: true
+  - type: textarea
+    id: pattern
+    attributes:
+      label: Format check
+      description: "For each item: hdr (the 2x, 4x and 8x squares show inside the white band), sdr (the band is plain white), or not shown."
+      render: text
+      value: |
+        F0:
+        F1:
+        F2:
+        F3:
+        F4:
+        F5:
+        F6:
+  - type: textarea
+    id: svg
+    attributes:
+      label: SVG check
+      description: "For each item: hdr, sdr, or not shown."
+      render: text
+      value: |
+        S0:
+        S1:
+        S2:
+        S3:
+        S4:
+        S5:
+        S6:
+  - type: textarea
+    id: vector
+    attributes:
+      label: Vector fills above white
+      description: "The three squares at the foot of the SVG check. For each: black, same white, or brighter."
+      render: text
+      value: |
+        V1:
+        V2:
+        V3:
+  - type: textarea
+    id: video
+    attributes:
+      label: Video check
+      description: "For each item: hdr (plays, and the squares show), sdr (plays, band plain white), or does not play."
+      render: text
+      value: |
+        V1:
+        V2:
+        V3:
+        V4:
+        V5:
+  - type: textarea
+    id: precision
+    attributes:
+      label: Precision check
+      description: "For each letter: bands, faint, or smooth. The test is blind: the key is not published."
+      render: text
+      value: |
+        DA:
+        DB:
+        DC:
+        DD:
+        DE:
+        DF:
+        WA:
+        WB:
+        WC:
+        WD:
+        WE:
+        WF:
+        BA:
+        BB:
+        BC:
+        BD:
+        BE:
+        BF:
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Whatever seemed odd, or that the questions above did not let you say.

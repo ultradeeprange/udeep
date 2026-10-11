@@ -2,7 +2,7 @@
 //! be cut anywhere and its pieces mapped on separate threads with the same result, bit for bit. Standard-library
 //! threads only: the core keeps no dependencies.
 
-use std::{num::NonZero, ops::Range, thread};
+use std::{num::NonZero, ops::Range, sync::OnceLock, thread};
 
 use crate::Mapping;
 
@@ -10,8 +10,19 @@ use crate::Mapping;
 /// more than one thread per `MIN_PER_THREAD` values (starting a thread costs more than mapping a few thousand).
 pub fn threads_for(requested: usize, n: usize) -> usize {
     const MIN_PER_THREAD: usize = 16_384;
-    let available = if requested == 0 { thread::available_parallelism().map_or(1, NonZero::get) } else { requested };
-    available.min(n / MIN_PER_THREAD).max(1)
+    let most = n / MIN_PER_THREAD;
+    if most <= 1 {
+        return 1; // too few values for a second thread: the cores are not even counted
+    }
+    let available = if requested == 0 { cores() } else { requested };
+    available.min(most).max(1)
+}
+
+/// The cores available to this process, counted once. On Linux the count reads the process's limits from files,
+/// which takes tens of microseconds: more than a small call. A limit changed while the process runs is not seen.
+fn cores() -> usize {
+    static CORES: OnceLock<usize> = OnceLock::new();
+    *CORES.get_or_init(|| thread::available_parallelism().map_or(1, NonZero::get))
 }
 
 /// Run `work` over `0..n` cut into `threads` ranges of nearly equal length, each on a thread of its own. With one

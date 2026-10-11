@@ -282,10 +282,13 @@ def build_index(names: list[str]) -> None:
              "precision": ("Which strips have bands?", "A blind banding test: PQ ramps rounded to 8 to 16 bits.")}
     lis = "".join(f'<div class="row"><p><a href="{n}/index.html"><b>{items[n][0]}</b></a></p><p class="muted">{items[n][1]}</p></div>'
                   for n in names)
+    REPORT = ('<div class="row"><p><a href="https://github.com/ultradeeprange/udeep/issues/new?template=device-report.yml">'
+              '<b>Report what you saw</b></a></p><p class="muted">A form on GitHub, about two minutes. Reports are kept as '
+              'records in the repository, in <code>evidence/</code>.</p></div>')
     body = ("<h1>Device checks</h1><p>Test pages from the profile's Annex A. Each has a control that must not glow and a "
             "positive control that must. If a control fails, the result doesn't count.</p>"
             "<p class=\"muted\">Record your device, OS and browser versions, brightness setting and room light with your "
-            "result. Remote-desktop sessions deliver SDR, so don't use them.</p>" + lis)
+            "result. Remote-desktop sessions deliver SDR, so don't use them.</p>" + lis + REPORT)
     doc_path = CHECK / "index.html"
     page(doc_path, "Device checks", body, depth=1)
     s = doc_path.read_text(encoding="utf-8").replace('<a href="../index.html">device checks</a>', "device checks")
