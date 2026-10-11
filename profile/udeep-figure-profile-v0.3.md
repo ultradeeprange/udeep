@@ -167,10 +167,12 @@ Perception enters only at layer 4. No requirement in layers 1 to 3 is based on h
     once published, is never changed and never withdrawn: a correction is a new version. Registered today:
     `fire/1`, `ice/1`, `fire/2` and `ice/2`; version 2 is the one to use (§10, point 10).
   - *Added 2026-10-11.* An implementation MUST take a registered map from its published table, and MUST NOT
-    compute it afresh. The program that made the tables does not give the same numbers on every system: run under
-    another mathematics library it differed from the published tables by a few units in the last place of a
-    32-bit number (observed on Linux; the tables were made on Windows). That is far below anything a screen
-    shows, but it is not the same table, and the table's digest would differ.
+    compute it afresh. The program that made the tables does not give the same numbers on every machine: its
+    results depend on which processor-specific routines its numerical libraries choose. Where a version-2 map
+    holds a channel at the edge of the gamut, the table has a value that is almost zero (below 4e-8 of white),
+    and there the recomputed tables differed from the published ones, by at most 7e-13 of white (observed on
+    Linux, 2026-10-11; the tables were made on Windows). That is far below anything a screen shows, but it is not
+    the same table, and the table's digest would differ.
   - **Any other map, or any other reference headroom,** MUST be carried in the file as its table
     (`udeep:ColourMapTable`). An embedded table MAY have fewer nodes.
   - `grey` is the identity: colour equals light on all three channels.
@@ -730,8 +732,8 @@ Each line is one normative addition or change, with the date it was made.
   headroom before writing. The statement that the reference writer stayed within ~5 % of the headroom is
   withdrawn: with a colour map it did not (58 of 190 test figures, at worst 1.093 ×). A note records that another
   JPEG decoder reads lifted pixels several per cent differently.
-- 2026-10-11 · **A registered map is taken from its table, never recomputed** (6.10): the generator differs in
-  the last bits from one system's mathematics library to another's.
+- 2026-10-11 · **A registered map is taken from its table, never recomputed** (6.10): the generator's
+  results depend on the machine it runs on, in the values of a version-2 table that are almost zero.
 - 2026-10-11 · **Renamed** (§8, §10): the profile is the UDeep Figure Profile. The metadata prefix is `udeep` in place of
   `scihdr`, with a new provisional namespace, and the digests are taken over `udeep-data-1` and `udeep-rgb8-1` in
   place of `hdrplot-data-1` and `hdrplot-rgb8-1`, so every digest changes. No file was published under the old names.

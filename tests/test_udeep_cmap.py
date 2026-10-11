@@ -64,10 +64,11 @@ TABLE_TOLERANCE = 2e-6                               # relative and absolute: ud
 def test_shipped_tables_are_what_the_generator_makes(name, headroom, version):
     """Every version, the old ones too: a file made with one must be readable for good.
 
-    The shipped table is the definition (profile 6.10); the generator is how it was made. Another system's maths
-    library rounds the last bits of a power or a cube root differently (first seen on Linux, 2026-10-11: a few
-    units in the last place of a float32), so the generator must give the shipped table to the table tolerance
-    of the golden vectors, not bit for bit."""
+    The shipped table is the definition (profile 6.10); the generator is how it was made. Its last bits depend on
+    the machine: NumPy's power routine and OpenBLAS's matrix inverse are chosen for the processor. In a version-2
+    table that moves the values that are almost zero (below 4e-8 of white) by up to 7e-13 of white (seen on Linux,
+    2026-10-11; project/performance-scope.md, 4g). So the generator must give the shipped table to the table
+    tolerance of the golden vectors, not bit for bit."""
     shipped, made = cm.table(name, headroom, version), cm.generate(name, headroom, version=version)
     assert shipped.nodes == made.nodes == cm.NODES
     for stored, again in ((shipped.below, made.below), (shipped.above, made.above)):
@@ -146,7 +147,7 @@ def test_below_white_a_map_does_not_depend_on_the_headroom(name):
 def test_lookup_is_exact_at_nodes_and_close_between(name):
     nodes = np.concatenate([np.linspace(0.0, 1.0, cm.NODES), np.linspace(1.0, 4.0, cm.NODES)[1:]])
     # at a node the table holds the generator's own value: to the last bit where the table was made, and to the
-    # table tolerance under another maths library
+    # table tolerance on another machine
     assert np.allclose(cmap(nodes, name, 4.0), cm.search(nodes, name, 4.0), rtol=TABLE_TOLERANCE, atol=TABLE_TOLERANCE)
     y = np.random.default_rng(1).uniform(0.0, 4.0, 200_000)
     got, exact = cmap(y, name, 4.0).astype(float), cm.search(y, name, 4.0).astype(float)

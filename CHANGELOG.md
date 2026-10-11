@@ -29,9 +29,11 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 - **Fixed, found by the first run on Linux:** a small call into the Rust core took about twenty times as long there
   as the plain call, because the available cores were counted on every call; they are now counted once, and not at
   all for a small call.
-- **Changed, found by the same run:** the colour-table generator does not give the shipped tables bit for bit under
-  another mathematics library (a few units in the last place of a float32). The shipped tables are the definition
-  (profile 6.10, which now says an implementation must not recompute them); the test compares to the table
-  tolerance, and `tools/make_tables.py` never rewrites a table that exists.
+- **Changed, found by the same run:** the colour-table generator does not give the shipped version-2 tables bit
+  for bit on another machine. The differences are confined to table values that are almost zero (below 4e-8 of
+  white; at most 7e-13 of white apart), and come from processor-specific routines in NumPy and OpenBLAS, not from
+  the operating system. The shipped tables are the definition (profile 6.10, which now says an implementation
+  must not recompute them); the test compares to the table tolerance, and `tools/make_tables.py` never rewrites a
+  table that exists. Details and measurements: `project/performance-scope.md`, section 4g.
 - **Device evidence is kept in the repository**: an issue form for reports, one record per report in
   `evidence/devices/`, and a table made from the records.

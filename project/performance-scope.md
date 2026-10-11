@@ -426,26 +426,72 @@ decodes its two JPEGs on a thread each. What is left is matplotlib drawing the f
 ## 4g. What the first run on Linux found (2026-10-11)
 
 The tests had only ever run on one Windows machine. Their first run on GitHub's Linux machines failed in two
-places, and both were faults of ours, not of the tests' machine.
+places, and both were faults of ours, not of the tests' machine. The causes below were then isolated the same day
+on a Linux machine in the cloud (Ubuntu 24.04, 4 virtual processors with AVX-512, glibc 2.39, NumPy 2.4.6 with
+OpenBLAS 0.3.31, rustc 1.97.0). It is a shared machine, so every timing is given with its spread. An earlier
+version of this section gave both causes as assumptions, and described the table difference wrongly as "a few
+units in the last place"; it is corrected here.
 
-1. **A small call into the core was about twenty times slower than it should be.** With `threads = 0` (every
-   available core) the core asked the system how many cores it had on every call. On Linux that count is
-   understood to read the process's limits from files (not checked here; the timing is what was seen). The test that a one-value call starts no thread measured 36.9 µs for the
-   parallel entry point against 1.56 µs for the serial one; on Windows the same test had always passed. The core
-   now counts the cores once, and does not count them at all when there are too few values for a second thread
-   (`par::threads_for`). The figures are one measurement on a shared machine, taken from the failing test's own
-   message; the fix was not timed separately, only shown to bring the test back inside its bound (five times the
-   serial call, plus 5 µs).
-2. **The colour tables are not regenerated bit for bit.** `udeep.cmap.generate` gave, for the version-2 tables,
-   numbers a few units in the last place of a float32 away from the shipped ones; the version-1 tables came out
-   exact. The cause is taken to be the mathematics library (powers and cube roots are not rounded the same way
-   by every library); that was not isolated further. The shipped table is the definition (profile 6.10), so
-   nothing a file means has changed, but two things relied on exact regeneration and no longer do: the test, which
-   now holds the generator to the table tolerance (2e-6), and `tools/make_tables.py`, which now never rewrites a
-   table that exists.
+### A small call into the core was slow
 
-Neither is a fault in Rust, NumPy or the system's library, and none has been reported to them: counting cores is
-not promised to be fast, and no mathematics library promises correctly rounded powers.
+With `threads = 0` (every available core) the core asked the system how many cores it had on every call.
+
+- **The count itself takes about 13 µs.** `std::thread::available_parallelism()` alone: median 12.9 to 13.7 µs a
+  call over three runs of 200 batches of 1,000 calls (90th percentile 17 to 21 µs).
+- **It reads files every time.** Traced with `strace`: 22 system calls a call, among them opening and reading
+  `/proc/self/cgroup` and the process's CPU limit files, and `sched_getaffinity`. The machine had version-1
+  control groups; Rust's source notes that this case may also scan the mount points.
+- **Rust says not to do what we did.** The standard library's own description of the function (rustc 1.97,
+  `library/std/src/thread/functions.rs`) says the value is "not cached and instead recomputed every time this
+  function is called. It should not be called from hot code."
+- **The fix removes it.** The core now counts the cores once, and not at all when there are too few values for a
+  second thread (`par::threads_for`). One value, median microseconds a call, with the 10th and 90th percentiles
+  (201 samples, each the mean of 300 calls, the two versions interleaved):
+
+  | | serial | threads = 1 | threads = 0 | threads = 8 |
+  |---|---|---|---|---|
+  | before | 0.66 [0.64, 0.99] | 0.77 [0.74, 1.16] | 13.0 [12.6, 17.1] | 0.77 [0.74, 1.17] |
+  | after | 0.67 [0.64, 1.01] | 0.77 [0.74, 1.18] | 0.78 [0.74, 1.19] | 0.76 [0.73, 1.19] |
+
+- **The parallel path is unchanged.** Four million values, median milliseconds (21 samples): serial 18.5 before
+  and 18.2 after; `threads = 0` 6.8 before and 7.3 after, a difference inside the spread (5.2 to 8.6).
+- **What caching gives up.** A CPU limit changed while the process runs is not seen. The failing test on GitHub
+  had measured 36.9 µs against 1.56 µs for the serial call: one measurement, on another shared machine.
+
+### The colour tables are not regenerated bit for bit
+
+- **Only the version-2 tables, and only where they are almost zero.** Of the 24,582 numbers in a table, 975
+  (`fire/2`) and 1,789 (`ice/2`) differed from the shipped ones, all in the segment below white, the same at every
+  headroom. Every one of them is a value below 4e-8 of white, and the largest difference is 7e-13 of white. As a
+  fraction of such a small number that is large: up to 0.3 %, or about 42,000 units in the last place of a float32.
+  Nothing a screen shows is affected, and the test's tolerance (2e-6, absolute) is far wider.
+- **Why version 2 and not version 1.** Where a colour is held at the edge of the gamut, version 1 leaves an exact
+  zero in the channel; version 2 leaves the small remainder of the arithmetic (about 3,000 such values in a
+  table). A remainder near zero is the difference of nearly equal numbers, so the last bit of an earlier step
+  decides it.
+- **The cause is not the operating system's mathematics library.** Two things change those last bits, and both
+  are chosen by the processor, not by Linux or Windows:
+  - *NumPy's power function.* With its AVX-512 routine, 5 to 8 % of the powers on this path are one unit in the
+    last place away from the correctly rounded result (refereed with mpmath at 200 bits). Turning that routine
+    off (`NPY_DISABLE_CPU_FEATURES`) changes the tables.
+  - *The matrix inverse.* The three inverted colour matrices come from OpenBLAS, which picks a routine for the
+    processor; another choice (`OPENBLAS_CORETYPE`) gives inverses that differ in the last bits, and other tables.
+
+  So two machines running the same system can disagree, and the tables shipped are those of the machine that
+  made them.
+- **Which is nearer right.** Against tables computed with correctly rounded powers, the shipped `fire/2` table
+  differs in 251 numbers and the one made on this Linux machine in 822.
+- **What would make it reproducible.** Setting to zero every table value below 1e-7 gave the same bytes under
+  every combination tried, and the same bytes as the shipped tables treated the same way. That is a change to the
+  table, so it would be a version 3; it has not been made. Computing with exact inverses and correctly rounded
+  functions (mpmath) is also reproducible, at about 43 s for two tables against 0.14 s.
+
+The shipped table is the definition (profile 6.10), so nothing a file means has changed. Two things relied on
+exact regeneration and no longer do: the test, which holds the generator to the table tolerance, and
+`tools/make_tables.py`, which never rewrites a table that exists.
+
+Neither is a fault in Rust, NumPy or OpenBLAS, and none has been reported to them: Rust documents the cost, and
+no library promises correctly rounded powers or bit-identical inverses across processors.
 
 ## 5. Order
 

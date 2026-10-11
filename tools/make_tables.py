@@ -6,8 +6,9 @@ A map's definition is never changed once shipped: a change is a new version besi
     python tools/make_tables.py
 
 A table that exists is never rewritten. The shipped file is the definition, and the generator does not give the
-same last bits under every system's mathematics library (found on Linux, 2026-10-11), so writing it again from
-another machine would change the definition without anyone meaning to. The run checks instead that the generator
+same bytes on every machine: the values of a version-2 table that are almost zero depend on which processor-specific
+routines NumPy and OpenBLAS choose (found on Linux, 2026-10-11; project/performance-scope.md, 4g). Writing a table
+again from another machine would change the definition without anyone meaning to. The run checks instead that the generator
 still gives each existing table to the table tolerance, and stops if it does not: then the definition was edited,
 and wants a new version. A table that was never published can be made again by deleting its file first.
 
@@ -47,7 +48,7 @@ def main() -> None:
                     if not np.allclose(made, kept, rtol=TOLERANCE, atol=TOLERANCE):
                         raise SystemExit(f"{file}: the generator no longer gives this table: its definition was "
                                          "changed. Make a new version, or delete the file if it was never published.")
-                    state = "kept" if path.read_bytes() == t.to_bytes() else "kept (this system differs in the last bits)"
+                    state = "kept" if path.read_bytes() == t.to_bytes() else "kept (this machine gives other bytes)"
                     t = cm.Table(name, headroom, kept[:len(kept) // 2], kept[len(kept) // 2:])
                 else:
                     path.write_bytes(t.to_bytes())

@@ -18,9 +18,9 @@ pub fn threads_for(requested: usize, n: usize) -> usize {
     available.min(most).max(1)
 }
 
-/// The cores available to this process, counted once. On Linux the count was measured at tens of microseconds
-/// (it is understood to read the process's limits from files): more than a small call. A limit changed while the
-/// process runs is not seen.
+/// The cores available to this process, counted once. On Linux the count reads the process's limits from files
+/// on every call, about 13 microseconds where it was measured: far more than a small call. The standard library
+/// says it "should not be called from hot code". A limit changed while the process runs is not seen.
 fn cores() -> usize {
     static CORES: OnceLock<usize> = OnceLock::new();
     *CORES.get_or_init(|| thread::available_parallelism().map_or(1, NonZero::get))
