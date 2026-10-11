@@ -2,18 +2,21 @@
 
 **Ultra Deep Range scientific figures: more range, more levels, and a record of how data became light.**
 
-An ordinary figure has 256 levels and stops at white. The data behind it usually has more of both: values
-far above whatever was placed at white, and steps finer than one level. UDeep is a draft standard and a set of
-tools for figures that keep them, and that say in the file how the data became brightness.
+An ordinary figure discards data. It holds 256 levels and stops at white, whilst the measurement behind it
+would usually hold more of both: values well above whatever was placed at white, and steps finer than a single
+level. UDeep is a draft standard, and a set of tools, for figures that keep what they can of this and state in
+the file how the data became brightness.
 
-- **Range.** Values above a declared, meaningful *knee* appear brighter than white on an HDR display. The SDR
-  version is exactly the figure you would have made anyway; a gain map (ISO 21496-1 / Ultra HDR layout) carries
-  the rest, and each display applies it up to its own headroom. Everything below the knee is untouched.
-- **Depth.** The file states how large a step in the data one stored level is, and sets it against the data's own
-  uncertainty. A file that holds the data to within its noise is a *data record*; one that does not is a
-  *rendering*, and says so. An 8-bit gain-map JPEG is always a rendering; 12-bit PQ and 16-bit PNG hold more.
-- **Record.** The mapping from data to light is written into the file, so the figure can be inverted,
-  reproduced and checked.
+- **Range.** An ordinary figure stops at white. Here, values above a declared, meaningful *knee* appear brighter
+  than white on an HDR display. The SDR version remains exactly the figure one would have made anyway; a gain map
+  (ISO 21496-1 / Ultra HDR layout) carries the remainder, of which each display applies only as much as its own
+  headroom allows. Everything below the knee is untouched.
+- **Depth.** More levels are of use only where the data warrants them. The file therefore states how large a step
+  in the data one stored level is, set against the data's own uncertainty. A file that holds the data to within
+  its noise is a *data record*; one that does not is a *rendering*, and says so. It must be noted that an 8-bit
+  gain-map JPEG is always a rendering: 12-bit PQ and 16-bit PNG hold more.
+- **Record.** No figure file says how it was made. The mapping from data to light is therefore written into the
+  file, so that the figure could be inverted, reproduced and checked.
 
 - **Site and demos:** <https://ultradeeprange.github.io/udeep/>, including device checks you can run on your
   own screen
