@@ -1,5 +1,7 @@
 # UDeep
 
+[![tests](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml/badge.svg)](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml)
+
 **Ultra Deep Range scientific figures: more range, more levels, and a record of how data became light.**
 
 An ordinary figure discards data. It holds 256 levels and stops at white, whilst the measurement behind it
