@@ -1,13 +1,19 @@
 # UDeep
 
-*Ultra Deep Range figures: more range, more levels, and a record of how data became light.*
+**Ultra Deep Range scientific figures: more range, more levels, and a record of how data became light.**
 
-**Scientific figures that are the ordinary plot on every screen, and that show what lies above white on
-an HDR display.**
+An ordinary figure has 256 levels and stops at white. The data behind it usually has more of both: values
+far above whatever was placed at white, and steps finer than one level. UDeep is a draft standard and a set of
+tools for figures that keep them, and that say in the file how the data became brightness.
 
-UDeep writes a figure whose SDR version is exactly the figure you would have made anyway, plus a gain
-map that HDR displays apply up to their own headroom (ISO 21496-1 / Ultra HDR layout). Values above a
-declared, meaningful *knee* glow brighter than white. Everything below the knee is untouched.
+- **Range.** Values above a declared, meaningful *knee* appear brighter than white on an HDR display. The SDR
+  version is exactly the figure you would have made anyway; a gain map (ISO 21496-1 / Ultra HDR layout) carries
+  the rest, and each display applies it up to its own headroom. Everything below the knee is untouched.
+- **Depth.** The file states how large a step in the data one stored level is, and sets it against the data's own
+  uncertainty. A file that holds the data to within its noise is a *data record*; one that does not is a
+  *rendering*, and says so. An 8-bit gain-map JPEG is always a rendering; 12-bit PQ and 16-bit PNG hold more.
+- **Record.** The mapping from data to light is written into the file, so the figure can be inverted,
+  reproduced and checked.
 
 - **Site and demos:** <https://ultradeeprange.github.io/udeep/>, including device checks you can run on your
   own screen
