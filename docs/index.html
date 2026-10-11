@@ -48,6 +48,7 @@
   .badge { display: inline-block; font-family: var(--mono); font-size: 12px; color: var(--warm); border: 1px solid var(--warm-line); padding: 2px 8px; border-radius: 3px; }
 
   figure.demo { margin: 0; display: grid; gap: 10px; }
+  .pair { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
   .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; width: max-content; max-width: 100%; }
   .toggle button { font: 600 13px var(--sans); color: var(--muted); background: transparent; border: 0; padding: 7px 14px; cursor: pointer; }
   .toggle button[aria-pressed="true"] { background: var(--raise); color: var(--ink); }
@@ -154,6 +155,29 @@
       on an HDR display its texture appears above white. On an SDR screen the two buttons look the same, by design.</figcaption>
   </figure>
 </div>
+
+<section id="name"><div class="wrap" style="display:grid;gap:22px">
+  <p class="eyebrow">What the name means</p>
+  <h2>Ultra Deep Range: more range, and more depth.</h2>
+  <div class="pair">
+    <figure class="demo">
+      <div class="plate themed"><picture><source data-dark srcset="assets/intro_range_dark_sdr.png" media="(prefers-color-scheme: dark)"><img data-themed src="assets/intro_range_sdr.png" width="1350" height="705"
+        alt="Two panels of a synthetic CT phantom. Left, the ordinary figure: the bone ring is flat white. Right, a simulation of an HDR display, all four times dimmer: the bone ring shows its texture."></picture></div>
+      <figcaption><b>Range.</b> Synthetic CT phantom. The ordinary figure places 240 HU at white, so the bone above
+        it is flat. An HDR display shows the same file with the bone brighter than white, and its texture returns.
+        The right-hand panel only simulates this, by dimming everything fourfold; the file itself is the figure at
+        the top of this page.</figcaption>
+    </figure>
+    <figure class="demo">
+      <div class="plate themed"><picture><source data-dark srcset="assets/intro_depth_dark_sdr.png" media="(prefers-color-scheme: dark)"><img data-themed src="assets/intro_depth_sdr.png" width="1350" height="705"
+        alt="Two panels of the same smooth synthetic field seen through a narrow window of its range. Stored in 8 bits it is seven flat bands; stored in 12 bits it is smooth."></picture></div>
+      <figcaption><b>Depth.</b> Synthetic, noise-free data. A window 2.6&nbsp;% of the full range wide is stretched
+        to fill the screen, as one would when looking for faint structure. Stored in 8 bits the window holds 7
+        levels; in 12 bits, 107. Whether the coarser steps matter depends on the data's noise &mdash; which is the
+        comparison the file records.</figcaption>
+    </figure>
+  </div>
+</div></section>
 
 <section id="why"><div class="wrap" style="display:grid;gap:22px">
   <p class="eyebrow">Why this, why now</p>

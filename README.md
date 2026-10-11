@@ -18,6 +18,18 @@ the file how the data became brightness.
 - **Record.** No figure file says how it was made. The mapping from data to light is therefore written into the
   file, so that the figure could be inverted, reproduced and checked.
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/intro_range_dark_sdr.png"><img src="docs/assets/intro_range_sdr.png" alt="Two panels of a synthetic CT phantom. Left, the ordinary figure: the bone ring is flat white. Right, a simulation of an HDR display, all four times dimmer: the bone ring shows its texture." width="720"></picture>
+
+*Range. Synthetic CT phantom. The ordinary figure places 240 HU at white, so the bone above it is flat. An HDR
+display shows the same file with the bone brighter than white. The right-hand panel only simulates this, by
+dimming everything fourfold; the file itself is [`docs/assets/extend_hdr.jpg`](docs/assets/extend_hdr.jpg).*
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/intro_depth_dark_sdr.png"><img src="docs/assets/intro_depth_sdr.png" alt="Two panels of the same smooth synthetic field seen through a narrow window of its range. Stored in 8 bits it is seven flat bands; stored in 12 bits it is smooth." width="720"></picture>
+
+*Depth. Synthetic, noise-free data. A window 2.6 % of the full range wide is stretched to fill the screen, as one
+would when looking for faint structure. Stored in 8 bits the window holds 7 levels; in 12 bits, 107. Whether the
+coarser steps matter depends on the data's noise, which is the comparison the file records.*
+
 - **Site and demos:** <https://ultradeeprange.github.io/udeep/>, including device checks you can run on your
   own screen
 - **Profile (draft standard):** [`profile/udeep-figure-profile-v0.3.md`](profile/udeep-figure-profile-v0.3.md)
