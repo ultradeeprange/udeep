@@ -382,7 +382,7 @@ def test_a_figure_at_an_unregistered_headroom_carries_its_colour_map(tmp_path):
         path = tmp_path / f"h{headroom:g}.jpg"
         hp.savefig_hdr(fig, path)
         m = read_metadata(path)
-        assert m.colour_map == "fire/2" and (m.colour_map_table is not None) == carried
+        assert m.colour_map == "fire/3" and (m.colour_map_table is not None) == carried
         if carried:
             assert Table.from_text("fire", 3.0, m.colour_map_table).digest == shipped("fire", 3.0).digest
         r = hp.validate(fig, path)

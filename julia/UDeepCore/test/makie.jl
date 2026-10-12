@@ -75,7 +75,7 @@ declared_in(file) = String(copy(file))
         file = read(path)
         @test file[1:2] == [0xff, 0xd8] && occursin("urn:iso:std:iso:ts:21496:-1", declared_in(file))
         d = hdr_declaration(fig)
-        @test d.mapping === m && d.data_unit == "K" && d.preset == "highlight" && d.colour_map == "fire/2"
+        @test d.mapping === m && d.data_unit == "K" && d.preset == "highlight" && d.colour_map == "fire/3"
         @test d.derived_mask == "isolated-3x3" && d.derived_masked == 1 && d.masked == 0
         @test d.data_digest == digest_data(scene_data()) && d.data_source == "doi:10.0000/example"
         @test d.record == "rendering" && d.sdr_digest === nothing && d.data_unit_code == "K"

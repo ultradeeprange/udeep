@@ -1,6 +1,6 @@
 # UDeep Figure Profile — draft v0.3
 
-Status: **working draft**, 2026-10-11. Not endorsed by any standards body. Editor: Mathew Newman
+Status: **working draft**, 2026-10-12. Not endorsed by any standards body. Editor: Mathew Newman
 (ORCID 0000-0003-1784-3250). Reference implementation: `udeep` (Python), with a JavaScript port, a Rust core and
 golden test vectors (§10). Supersedes v0.2 (2026-09-27); changes from v0.2 are listed in Annex D, and changes made
 since the first v0.3 draft of 2026-10-06 in Annex E.
@@ -165,14 +165,16 @@ Perception enters only at layer 4. No requirement in layers 1 to 3 is based on h
   - **Registered maps** are named `name/version` and are published as tables of 4,097 nodes per segment for the
     reference headrooms 2, 4, 8 and 16. Below white a registered map does not depend on the headroom. A version,
     once published, is never changed and never withdrawn: a correction is a new version. Registered today:
-    `fire/1`, `ice/1`, `fire/2` and `ice/2`; version 2 is the one to use (§10, point 10).
+    `fire/1`, `ice/1`, `fire/2`, `ice/2`, `fire/3` and `ice/3`; version 3 is the one to use (§10, point 10).
   - *Added 2026-10-11.* An implementation MUST take a registered map from its published table, and MUST NOT
     compute it afresh. The program that made the tables does not give the same numbers on every machine: its
     results depend on which processor-specific routines its numerical libraries choose. Where a version-2 map
     holds a channel at the edge of the gamut, the table has a value that is almost zero (below 4e-8 of white),
     and there the recomputed tables differed from the published ones, by at most 7e-13 of white (observed on
     Linux, 2026-10-11; the tables were made on Windows). That is far below anything a screen shows, but it is not
-    the same table, and the table's digest would differ.
+    the same table, and the table's digest would differ. *Added 2026-10-12.* Version 3 has no such values (§10,
+    point 10), and the program gave its tables bit for bit on every machine and setting tried. The rule stands all
+    the same: the published table is the definition, and the program is only how it was made.
   - **Any other map, or any other reference headroom,** MUST be carried in the file as its table
     (`udeep:ColourMapTable`). An embedded table MAY have fewer nodes.
   - `grey` is the identity: colour equals light on all three channels.
@@ -446,7 +448,7 @@ read 1.048 ×. So a writer's check holds exactly only on the decoder it was made
 2026-10-11 the reference package writes and reads with the Rust core's decoder wherever that library is present, so
 that its own files are read by the decoder that checked them.
 
-The conformance suite is the reference implementation's golden vectors (`golden.json`, format 2): 82 cases of
+The conformance suite is the reference implementation's golden vectors (`golden.json`, format 2): 90 cases of
 14 kinds. They cover the stages, the colour-map tables, mapping records run forwards and backwards, stored levels
 and the data criterion under each noise model, the mask rule, the digests, the metadata's serialised form, the
 generated caption and the ISO 21496-1 block's bytes. Every case states how closely a result must agree. Four
@@ -461,9 +463,9 @@ classes are in use:
 
 A case's own statement governs; this table reports what the file holds on 2026-10-10.
 
-Implementations, on 2026-10-10. The Python reference generates the suite and reproduces all 82 cases. The
-JavaScript port reproduces 47: every case of the 11 kinds it implements. It does not compute stored levels and
-does not write the metadata or the caption. The Rust core implements all 14 kinds; it reproduces all 82 cases.
+Implementations, on 2026-10-12. The Python reference generates the suite and reproduces all 90 cases. The
+JavaScript port reproduces 55: every case of the 11 kinds it implements. It does not compute stored levels and
+does not write the metadata or the caption. The Rust core implements all 14 kinds; it reproduces all 90 cases.
 A Julia binding calls the Rust core and takes the mapping and digest cases from the same file. Decoder checks
 against libultrahdr were made on an earlier build and have not been repeated.
 
@@ -528,8 +530,14 @@ Open issues:
     - Perceptual length kept under a deficiency: 83–94 % for `fire/2`, 80–98 % for `ice/2` (74–97 % for `ice/1`).
     - `fire/2` differs from `fire/1` by at most 0.2 % of white in any channel. `ice/2` differs from `ice/1` by up
       to 15 % of white in one channel, in the dark blues, and by under 0.3 % of the headroom above white.
-    - Version 1 stays registered and unchanged, so every file that names it can still be read; new figures use
-      version 2.
+    - *Added 2026-10-12.* `fire/3` and `ice/3` are version 2 with every table value below 1e-7 of white set to
+      zero: about 3,000 values in each table, all below 4e-8 of white, in channels held at the edge of the gamut.
+      Those values were the remainder of the arithmetic, and depended on the processor the tables were made on
+      (6.10). No colour moves by as much as 1e-7 of white, so everything said of version 2 above holds for
+      version 3. Its tables were made again bit for bit on two systems, with and without the processor-specific
+      routines of the numerical libraries.
+    - Versions 1 and 2 stay registered and unchanged, so every file that names one can still be read; new figures
+      use version 3.
 
     6.9 now says what "strictly increasing" is measured on and for whom. Still open: no tolerance is stated for
     an embedded table, and nothing checks one.
@@ -734,6 +742,9 @@ Each line is one normative addition or change, with the date it was made.
   JPEG decoder reads lifted pixels several per cent differently.
 - 2026-10-11 · **A registered map is taken from its table, never recomputed** (6.10): the generator's
   results depend on the machine it runs on, in the values of a version-2 table that are almost zero.
+- 2026-10-12 · **Third versions of the registered maps** (6.10, §10 point 10): `fire/3` and `ice/3` are version 2
+  with every table value below 1e-7 of white set to zero, so that the tables can be made again bit for bit on any
+  machine. Versions 1 and 2 stay registered. The golden vectors grow from 82 to 90 cases.
 - 2026-10-11 · **Renamed** (§8, §10): the profile is the UDeep Figure Profile. The metadata prefix is `udeep` in place of
   `scihdr`, with a new provisional namespace, and the digests are taken over `udeep-data-1` and `udeep-rgb8-1` in
   place of `hdrplot-data-1` and `hdrplot-rgb8-1`, so every digest changes. No file was published under the old names.

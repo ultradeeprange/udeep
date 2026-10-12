@@ -43,7 +43,7 @@ def test_the_pages_copies_are_the_projects_own_files():
     for name in maps:
         for headroom in re.findall(r'value="(\d+)"', heads):
             assert (VIEW / "tables" / f"{name.replace('/', '-')}-h{headroom}.f32").is_file(), (name, headroom)
-    assert maps == ["fire/2", "ice/2"]
+    assert maps == ["fire/3", "ice/3"]
 
 
 # ---- the viewer's shader, on a GPU

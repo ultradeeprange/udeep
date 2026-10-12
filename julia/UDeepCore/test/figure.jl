@@ -83,11 +83,11 @@ end
         @test length(colour_table("fire", 4.0)) == 2 * 4097 * 3
         @test colour_table("ice", 2.0) !== colour_table("ice", 8.0)
         # the name alone is the current version; an older one stays readable under its own name
-        @test colour_table("fire", 4.0) === colour_table("fire/2", 4.0) && colour_table("fire/1", 4.0) != colour_table("fire", 4.0)
-        @test colour_table("fire", 4.0)[end - 2:end] == Float32[4, 4, 4]                  # version 2 ends exactly white
+        @test colour_table("fire", 4.0) === colour_table("fire/3", 4.0) && colour_table("fire/1", 4.0) != colour_table("fire", 4.0)
+        @test colour_table("fire", 4.0)[end - 2:end] == Float32[4, 4, 4]                  # versions 2 and 3 end exactly white
         @test colour_table("fire/1", 4.0)[end - 2:end] != Float32[4, 4, 4]                # version 1 did not
-        @test UDeepCore.colour_map_name("ice") == "ice/2" && UDeepCore.colour_map_name("ice/1") == "ice/1"
-        @test_throws ArgumentError colour_table("fire/3", 4.0)
+        @test UDeepCore.colour_map_name("ice") == "ice/3" && UDeepCore.colour_map_name("ice/1") == "ice/1"
+        @test_throws ArgumentError colour_table("fire/4", 4.0)
         @test_throws ArgumentError colour_table("fire", 3.0)                              # not a registered headroom
         @test_throws ArgumentError colour_table("viridis", 4.0)
         m = Mapping(:linear, 0.0, 100.0, 50.0, 4.0)

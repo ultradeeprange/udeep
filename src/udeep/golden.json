@@ -809,7 +809,7 @@
     ],
     "name": "fire",
     "headroom": 4.0,
-    "table": "fire-2-h4.f32"
+    "table": "fire-3-h4.f32"
    },
    "out": [
     [
@@ -820,17 +820,17 @@
     [
      0.5005161762237549,
      0.09318623691797256,
-     8.404985152310473e-09
+     0.0
     ],
     [
      0.6612704992294312,
      0.36013010144233704,
-     1.942635030616202e-08
+     0.0
     ],
     [
      0.827616810798645,
      0.6251837611198425,
-     6.085933090815843e-09
+     0.0
     ],
     [
      0.8794485330581665,
@@ -905,22 +905,22 @@
     [
      0.4417057044939562,
      0.04485016570849854,
-     2.0015059080821224e-09
+     0.0
     ],
     [
      0.5984777791283348,
      0.21639035958593547,
-     1.0930649723208773e-08
+     0.0
     ],
     [
      0.7043561603806235,
      0.41492596485398037,
-     1.5663642321457655e-08
+     0.0
     ],
     [
      0.8199980167475615,
      0.6088132807124745,
-     1.2717678860487442e-08
+     0.0
     ],
     [
      0.8602885387160562,
@@ -1077,7 +1077,7 @@
     ],
     "name": "ice",
     "headroom": 4.0,
-    "table": "ice-2-h4.f32"
+    "table": "ice-3-h4.f32"
    },
    "out": [
     [
@@ -1086,17 +1086,17 @@
      0.0
     ],
     [
-     1.0935043093240893e-08,
+     0.0,
      0.186471089720726,
      0.5194608569145203
     ],
     [
-     1.9292290431849324e-08,
+     0.0,
      0.4600580334663391,
      0.6710889339447021
     ],
     [
-     1.0451224774499224e-08,
+     0.0,
      0.7268370389938354,
      0.8517646193504333
     ],
@@ -1171,27 +1171,27 @@
      0.02757945230603218
     ],
     [
-     1.949035248346157e-09,
+     0.0,
      0.1177549296346578,
      0.5152056414430792
     ],
     [
-     2.0872653985809283e-08,
+     0.0,
      0.32364770028807904,
      0.5897862443923951
     ],
     [
-     3.920105289590928e-09,
+     0.0,
      0.5180435320247303,
      0.7133332571116361
     ],
     [
-     2.2599764460805307e-08,
+     0.0,
      0.7112277915261009,
      0.8420950402346524
     ],
     [
-     2.423647929234835e-08,
+     0.0,
      0.907771636659449,
      0.9567155517664824
     ],
@@ -1499,6 +1499,110 @@
    },
    "out": {
     "sha256": "sha256:eca5c9524ba443641f4d267240701897898ee875f7bbdd53dedaf4d72052f118",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_fire/3@2": {
+   "kind": "table",
+   "args": {
+    "file": "fire-3-h2.f32",
+    "headroom": 2.0
+   },
+   "out": {
+    "sha256": "sha256:a346ae84b0575a1b063dc68b3ad42bb19bb4ec47837fb137465a57c128e26747",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_fire/3@4": {
+   "kind": "table",
+   "args": {
+    "file": "fire-3-h4.f32",
+    "headroom": 4.0
+   },
+   "out": {
+    "sha256": "sha256:30b5470b9afd763594e612bd5d1bdf001e5fa23a13df722bf381e05ca63d7389",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_fire/3@8": {
+   "kind": "table",
+   "args": {
+    "file": "fire-3-h8.f32",
+    "headroom": 8.0
+   },
+   "out": {
+    "sha256": "sha256:e796697a0ce38c83d16151e00d938179132c7647b56f175ea36eea8160b319c0",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_fire/3@16": {
+   "kind": "table",
+   "args": {
+    "file": "fire-3-h16.f32",
+    "headroom": 16.0
+   },
+   "out": {
+    "sha256": "sha256:558732ec29990fc87dcfac4e3317756f0be2becb34e0636b078a7932257bc6b2",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_ice/3@2": {
+   "kind": "table",
+   "args": {
+    "file": "ice-3-h2.f32",
+    "headroom": 2.0
+   },
+   "out": {
+    "sha256": "sha256:ccfcb79a2bc873b3a084b047b1549a273206ab4baa5eb9148f14ddb7de4fae84",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_ice/3@4": {
+   "kind": "table",
+   "args": {
+    "file": "ice-3-h4.f32",
+    "headroom": 4.0
+   },
+   "out": {
+    "sha256": "sha256:ed68639e1f350065e509c62feb3f7ffaae405a3ad5cdd0ac394a2f349de72305",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_ice/3@8": {
+   "kind": "table",
+   "args": {
+    "file": "ice-3-h8.f32",
+    "headroom": 8.0
+   },
+   "out": {
+    "sha256": "sha256:ae9aaeb77134c8afd0dbb56124ddafec1c6ea22b033586d61846e0c9b2ab5796",
+    "nodes": 4097,
+    "bytes": 98328
+   },
+   "exact": true
+  },
+  "table_ice/3@16": {
+   "kind": "table",
+   "args": {
+    "file": "ice-3-h16.f32",
+    "headroom": 16.0
+   },
+   "out": {
+    "sha256": "sha256:db2323ad5e1f1c9f5533eef2ed49ad90bfb8fb59ea4d4bc416f81af15d3f2479",
     "nodes": 4097,
     "bytes": 98328
    },
@@ -2007,7 +2111,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 10.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "x": [
@@ -2156,38 +2260,38 @@
      ],
      [
       0.2629494249820709,
-      3.631235179213459e-09,
+      0.0,
       0.02285910844802856
      ],
      [
       0.44883692264556885,
       0.05004899501800538,
-      3.769895506877734e-09
+      0.0
      ],
      [
       0.5449262142181397,
       0.14013762176036834,
-      2.0731734995397307e-09
+      0.0
      ],
      [
       0.613723874092102,
       0.24453611969947817,
-      6.59921743917422e-09
+      0.0
      ],
      [
       0.6612704992294312,
       0.36013010144233704,
-      1.942635030616202e-08
+      0.0
      ],
      [
       0.7368770241737366,
       0.46141523122787476,
-      6.7782559121094e-09
+      0.0
      ],
      [
       0.8002603173255921,
       0.5690816640853881,
-      5.575225880960368e-09
+      0.0
      ],
      [
       0.8371523976325989,
@@ -2281,7 +2385,7 @@
     "abs": 2e-06
    },
    "tables": [
-    "fire-2-h2.f32"
+    "fire-3-h2.f32"
    ]
   },
   "levels_offset_fire": {
@@ -2296,7 +2400,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 10.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2319,7 +2423,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h2.f32"
+    "fire-3-h2.f32"
    ]
   },
   "levels_offset_fire_poisson": {
@@ -2334,7 +2438,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 10.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2358,7 +2462,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h2.f32"
+    "fire-3-h2.f32"
    ]
   },
   "levels_offset_fire_relative": {
@@ -2373,7 +2477,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 10.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2397,7 +2501,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h2.f32"
+    "fire-3-h2.f32"
    ]
   },
   "levels_offset_fire_tolerance": {
@@ -2412,7 +2516,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 10.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2435,7 +2539,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h2.f32"
+    "fire-3-h2.f32"
    ]
   },
   "mapping_log_ice": {
@@ -2450,7 +2554,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "x": [
@@ -2603,42 +2707,42 @@
       0.3090474367141724
      ],
      [
-      1.8827950754029724e-09,
+      0.0,
       0.12619874477386475,
       0.5127718448638916
      ],
      [
-      7.85961074001196e-09,
+      0.0,
       0.24249407351017005,
       0.5442152261734009
      ],
      [
-      1.1793421972329479e-08,
+      0.0,
       0.3515875577926636,
       0.6063043355941773
      ],
      [
-      1.9292290431849324e-08,
+      0.0,
       0.4600580334663391,
       0.6710889339447021
      ],
      [
-      1.2297652851602287e-08,
+      0.0,
       0.5659274458885194,
       0.746902370452881
      ],
      [
-      1.3570127199710006e-08,
+      0.0,
       0.6729342460632326,
       0.8179310798645021
      ],
      [
-      2.012389828110135e-08,
+      0.0,
       0.7809937357902528,
       0.884529459476471
      ],
      [
-      2.4059167458287875e-08,
+      0.0,
       0.8900376200675966,
       0.9469831228256225
      ],
@@ -2724,7 +2828,7 @@
     "abs": 2e-06
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_log_ice": {
@@ -2739,7 +2843,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2762,7 +2866,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_log_ice_poisson": {
@@ -2777,7 +2881,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2801,7 +2905,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_log_ice_relative": {
@@ -2816,7 +2920,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2839,7 +2943,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_log_ice_tolerance": {
@@ -2854,7 +2958,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -2877,7 +2981,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "mapping_asinh_ice": {
@@ -2892,7 +2996,7 @@
      "stretch_width": 0.1,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "x": [
@@ -3045,42 +3149,42 @@
       0.2875633288086923
      ],
      [
-      5.04727626664253e-09,
+      0.0,
       0.11058644853009311,
       0.5182704011985788
      ],
      [
-      7.551967054101328e-09,
+      0.0,
       0.22325816035478818,
       0.5346816600969448
      ],
      [
-      1.172161038816627e-08,
+      0.0,
       0.3264454212570139,
       0.5914327465326892
      ],
      [
-      9.46336478396965e-09,
+      0.0,
       0.4287551229142499,
       0.6519587261650233
      ],
      [
-      2.6583222261332122e-08,
+      0.0,
       0.5290266059671178,
       0.7211355297598095
      ],
      [
-      1.785235027247442e-08,
+      0.0,
       0.6294471280464428,
       0.7897047966068383
      ],
      [
-      3.224764796914567e-08,
+      0.0,
       0.7308306193358585,
       0.8542220279069778
      ],
      [
-      3.163131019288022e-08,
+      0.0,
       0.8331139794363245,
       0.9149511321075167
      ],
@@ -3166,7 +3270,7 @@
     "abs": 2e-06
    },
    "tables": [
-    "ice-2-h4.f32"
+    "ice-3-h4.f32"
    ]
   },
   "levels_asinh_ice": {
@@ -3181,7 +3285,7 @@
      "stretch_width": 0.1,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3204,7 +3308,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h4.f32"
+    "ice-3-h4.f32"
    ]
   },
   "levels_asinh_ice_poisson": {
@@ -3219,7 +3323,7 @@
      "stretch_width": 0.1,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3243,7 +3347,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h4.f32"
+    "ice-3-h4.f32"
    ]
   },
   "levels_asinh_ice_relative": {
@@ -3258,7 +3362,7 @@
      "stretch_width": 0.1,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3282,7 +3386,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h4.f32"
+    "ice-3-h4.f32"
    ]
   },
   "levels_asinh_ice_tolerance": {
@@ -3297,7 +3401,7 @@
      "stretch_width": 0.1,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3320,7 +3424,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h4.f32"
+    "ice-3-h4.f32"
    ]
   },
   "mapping_proportional_fire": {
@@ -3335,7 +3439,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "x": [
@@ -3485,17 +3589,17 @@
      [
       0.4488369226455689,
       0.0500489950180054,
-      3.769895506877883e-09
+      0.0
      ],
      [
       0.613723874092102,
       0.24453611969947825,
-      6.599217439175272e-09
+      0.0
      ],
      [
       0.7368770241737366,
       0.46141523122787487,
-      6.778255912111894e-09
+      0.0
      ],
      [
       0.8371523976325989,
@@ -3609,7 +3713,7 @@
     "abs": 2e-06
    },
    "tables": [
-    "fire-2-h4.f32"
+    "fire-3-h4.f32"
    ]
   },
   "levels_proportional_fire": {
@@ -3624,7 +3728,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3647,7 +3751,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h4.f32"
+    "fire-3-h4.f32"
    ]
   },
   "levels_proportional_fire_poisson": {
@@ -3662,7 +3766,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3686,7 +3790,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h4.f32"
+    "fire-3-h4.f32"
    ]
   },
   "levels_proportional_fire_relative": {
@@ -3701,7 +3805,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3725,7 +3829,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h4.f32"
+    "fire-3-h4.f32"
    ]
   },
   "levels_proportional_fire_tolerance": {
@@ -3740,7 +3844,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=1",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -3763,7 +3867,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "fire-2-h4.f32"
+    "fire-3-h4.f32"
    ]
   },
   "mapping_capped_grey": {
@@ -4644,7 +4748,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=2",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "x": [
@@ -4797,42 +4901,42 @@
       0.3090474367141724
      ],
      [
-      1.8827950754029724e-09,
+      0.0,
       0.12619874477386475,
       0.5127718448638916
      ],
      [
-      7.85961074001196e-09,
+      0.0,
       0.24249407351017005,
       0.5442152261734009
      ],
      [
-      1.1793421972329479e-08,
+      0.0,
       0.3515875577926636,
       0.6063043355941773
      ],
      [
-      1.9292290431849324e-08,
+      0.0,
       0.4600580334663391,
       0.6710889339447021
      ],
      [
-      1.2297652851602287e-08,
+      0.0,
       0.5659274458885194,
       0.746902370452881
      ],
      [
-      1.3570127199710006e-08,
+      0.0,
       0.6729342460632326,
       0.8179310798645021
      ],
      [
-      2.012389828110135e-08,
+      0.0,
       0.7809937357902528,
       0.884529459476471
      ],
      [
-      2.4059167458287875e-08,
+      0.0,
       0.8900376200675966,
       0.9469831228256225
      ],
@@ -4918,7 +5022,7 @@
     "abs": 2e-06
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_exit_two_ice": {
@@ -4933,7 +5037,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=2",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -4956,7 +5060,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_exit_two_ice_poisson": {
@@ -4971,7 +5075,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=2",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -4995,7 +5099,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_exit_two_ice_relative": {
@@ -5010,7 +5114,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=2",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -5033,7 +5137,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "levels_exit_two_ice_tolerance": {
@@ -5048,7 +5152,7 @@
      "stretch_width": 1.0,
      "stretch_offset": 0.0,
      "above_knee": "hermite; exit=2",
-     "colour_map": "ice/2",
+     "colour_map": "ice/3",
      "colour_map_table": null
     },
     "samples": 4097,
@@ -5071,7 +5175,7 @@
     "abs": 1e-09
    },
    "tables": [
-    "ice-2-h8.f32"
+    "ice-3-h8.f32"
    ]
   },
   "mask_isolated": {
@@ -5242,7 +5346,7 @@
      "derived_masked": 1797,
      "record": "rendering",
      "preset": "highlight",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "rounding_to_noise": 0.0015,
      "data_digest": "sha256:abababababababababababababababababababababababababababababababab",
      "data_source": "doi:10.0000/example; https://example.org/a.fits",
@@ -5252,7 +5356,7 @@
      "image_state": "data-referred"
     }
    },
-   "out": "<rdf:Description rdf:about=\"\" xmlns:udeep=\"https://ultradeeprange.github.io/udeep/ns/0.3/\" udeep:DataUnit='DN per 4 × 4 binned pixel &amp; \"quoted\" &lt;text&gt;' udeep:Stretch=\"asinh\" udeep:RangeLow=\"0\" udeep:RangeHigh=\"16383\" udeep:Knee=\"2625.5\" udeep:KneeRule=\"percentile; the 99th percentile of the unmasked pixels\" udeep:ReferenceHeadroom=\"4\" udeep:MaxDataStep=\"189.70123456789\" udeep:NoiseModel=\"poisson\" udeep:NoiseParameter=\"0.25\" udeep:StretchWidth=\"150\" udeep:StretchOffset=\"0\" udeep:AboveKnee=\"hermite; exit=1\" udeep:Masked=\"198\" udeep:DerivedMask=\"isolated-3x3\" udeep:DerivedMasked=\"1797\" udeep:Record=\"rendering\" udeep:Preset=\"highlight\" udeep:ColourMap=\"fire/2\" udeep:RoundingToNoise=\"0.0015\" udeep:DataDigest=\"sha256:abababababababababababababababababababababababababababababababab\" udeep:DataSource=\"doi:10.0000/example; https://example.org/a.fits\" udeep:DataUnitCode=\"1\" udeep:SdrDigest=\"sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\" udeep:Version=\"0.3\" udeep:ImageState=\"data-referred\"/>",
+   "out": "<rdf:Description rdf:about=\"\" xmlns:udeep=\"https://ultradeeprange.github.io/udeep/ns/0.3/\" udeep:DataUnit='DN per 4 × 4 binned pixel &amp; \"quoted\" &lt;text&gt;' udeep:Stretch=\"asinh\" udeep:RangeLow=\"0\" udeep:RangeHigh=\"16383\" udeep:Knee=\"2625.5\" udeep:KneeRule=\"percentile; the 99th percentile of the unmasked pixels\" udeep:ReferenceHeadroom=\"4\" udeep:MaxDataStep=\"189.70123456789\" udeep:NoiseModel=\"poisson\" udeep:NoiseParameter=\"0.25\" udeep:StretchWidth=\"150\" udeep:StretchOffset=\"0\" udeep:AboveKnee=\"hermite; exit=1\" udeep:Masked=\"198\" udeep:DerivedMask=\"isolated-3x3\" udeep:DerivedMasked=\"1797\" udeep:Record=\"rendering\" udeep:Preset=\"highlight\" udeep:ColourMap=\"fire/3\" udeep:RoundingToNoise=\"0.0015\" udeep:DataDigest=\"sha256:abababababababababababababababababababababababababababababababab\" udeep:DataSource=\"doi:10.0000/example; https://example.org/a.fits\" udeep:DataUnitCode=\"1\" udeep:SdrDigest=\"sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd\" udeep:Version=\"0.3\" udeep:ImageState=\"data-referred\"/>",
    "exact": true,
    "note": "one rdf:Description; properties in the order of the reference record; text XML-escaped; each float as the shortest text that reads back to the same float64 (udeep.metadata.float_text): plain digits when the decimal point falls after digit -3 to 16 of the shortest digits, with no '.0' on a whole number ('4', '16383', '0.25', '0.0001'); otherwise an exponent with a sign and at least two digits ('1e+16', '1e-05', '1.5e-07')"
   },
@@ -5308,7 +5412,7 @@
      "derived_masked": 1797,
      "record": "rendering",
      "preset": "highlight",
-     "colour_map": "fire/2",
+     "colour_map": "fire/3",
      "rounding_to_noise": 0.0015,
      "data_digest": "sha256:abababababababababababababababababababababababababababababababab",
      "data_source": "doi:10.0000/example; https://example.org/a.fits",

@@ -3,8 +3,8 @@
 
 const REGISTERED_HEADROOMS = (2.0, 4.0, 8.0, 16.0)
 const COLOUR_MAPS = ("fire", "ice")
-const COLOUR_MAP_VERSION = 2             # what new figures use; version 1 stays readable
-const COLOUR_MAP_VERSIONS = (1, 2)
+const COLOUR_MAP_VERSION = 3             # what new figures use; versions 1 and 2 stay readable
+const COLOUR_MAP_VERSIONS = (1, 2, 3)
 const ISOLATED = "isolated-3x3"
 const NOISE_MODELS = (unknown = 0x00000000, constant = 0x00000001, poisson = 0x00000002, relative = 0x00000003,
                       tolerance = 0x00000004)
@@ -70,7 +70,7 @@ function colour_table(name::AbstractString, headroom::Real)
     end
 end
 
-"`colour_map_name(name)`: what a file declares for a map: `\"grey\"`, or name/version such as `\"fire/2\"`."
+"`colour_map_name(name)`: what a file declares for a map: `\"grey\"`, or name/version such as `\"fire/3\"`."
 colour_map_name(name::AbstractString) = name == "grey" ? "grey" : join(map_and_version(name), "/")
 
 "A map's name and version: `\"fire\"` is the current version, `\"fire/1\"` that one."

@@ -57,7 +57,7 @@ class Mapping:
     stretch_width: float = 1.0           # asinh: the width of the linear part
     stretch_offset: float = 0.0          # subtracted from the data first
     above_knee: str = ABOVE_KNEE
-    colour_map: str = "grey"             # "grey", or a registered map as name/version, such as "fire/2"
+    colour_map: str = "grey"             # "grey", or a registered map as name/version, such as "fire/3"
     colour_map_table: str | None = None  # the map's table itself (Table.to_text), when it is not a registered one
 
     def __post_init__(self):

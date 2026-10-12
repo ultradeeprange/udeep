@@ -60,7 +60,7 @@ def test_the_reference_validator_accepts_the_julia_figure(written):
 def test_the_julia_figure_declares_what_was_drawn(written):
     d = read_metadata(written / "figure.jpg")
     assert (d.stretch, d.range_low, d.range_high, d.knee, d.reference_headroom) == ("linear", 0.0, 100.0, 50.0, 4.0)
-    assert (d.data_unit, d.data_unit_code, d.preset, d.colour_map, d.record) == ("K", "K", "highlight", "fire/2", "rendering")
+    assert (d.data_unit, d.data_unit_code, d.preset, d.colour_map, d.record) == ("K", "K", "highlight", "fire/3", "rendering")
     assert (d.noise_model, d.noise_parameter) == ("constant", 2.5)
     assert (d.derived_mask, d.derived_masked, d.masked) == ("isolated-3x3", 4, 0)      # the four single pixels
     assert d.data_digest == digest_data(pattern())

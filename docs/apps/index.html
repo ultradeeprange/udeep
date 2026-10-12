@@ -166,9 +166,9 @@
 
 <section id="core"><div class="wrap">
   <h2>The shared core</h2>
-  <p>The reference implementation today is Python (<code>udeep</code>). It reproduces all 82 golden vectors, which come
-    in 14 kinds. A JavaScript port reproduces the 47 that it implements (11 kinds: it does not compute stored levels
-    or write the metadata and caption). A small native core with a C interface exists in Rust: all 14 kinds are implemented; it reproduces all 82 cases. It has an
+  <p>The reference implementation today is Python (<code>udeep</code>). It reproduces all 90 golden vectors, which come
+    in 14 kinds. A JavaScript port reproduces the 55 that it implements (11 kinds: it does not compute stored levels
+    or write the metadata and caption). A small native core with a C interface exists in Rust: all 14 kinds are implemented; it reproduces all 90 cases. It has an
     optional gain-map JPEG writer, and no PNG writer or validator yet. The aim is that every language and app
     shares one implementation:</p>
 <pre>core (Rust, C ABI):  scale · tone curve · colour maps · PQ/HLG · gain map · metadata · validate

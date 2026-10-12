@@ -5,7 +5,7 @@
   "transfer_characteristics": 8,
   "note": "ITU-T H.273 code points: 1 = BT.709 primaries, 8 = linear"
  },
- "version": 2,
+ "version": 3,
  "nodes": 4097,
  "tables": {
   "fire/1@2": {
@@ -87,6 +87,46 @@
    "file": "ice-2-h16.f32",
    "headroom": 16.0,
    "sha256": "sha256:eca5c9524ba443641f4d267240701897898ee875f7bbdd53dedaf4d72052f118"
+  },
+  "fire/3@2": {
+   "file": "fire-3-h2.f32",
+   "headroom": 2.0,
+   "sha256": "sha256:a346ae84b0575a1b063dc68b3ad42bb19bb4ec47837fb137465a57c128e26747"
+  },
+  "fire/3@4": {
+   "file": "fire-3-h4.f32",
+   "headroom": 4.0,
+   "sha256": "sha256:30b5470b9afd763594e612bd5d1bdf001e5fa23a13df722bf381e05ca63d7389"
+  },
+  "fire/3@8": {
+   "file": "fire-3-h8.f32",
+   "headroom": 8.0,
+   "sha256": "sha256:e796697a0ce38c83d16151e00d938179132c7647b56f175ea36eea8160b319c0"
+  },
+  "fire/3@16": {
+   "file": "fire-3-h16.f32",
+   "headroom": 16.0,
+   "sha256": "sha256:558732ec29990fc87dcfac4e3317756f0be2becb34e0636b078a7932257bc6b2"
+  },
+  "ice/3@2": {
+   "file": "ice-3-h2.f32",
+   "headroom": 2.0,
+   "sha256": "sha256:ccfcb79a2bc873b3a084b047b1549a273206ab4baa5eb9148f14ddb7de4fae84"
+  },
+  "ice/3@4": {
+   "file": "ice-3-h4.f32",
+   "headroom": 4.0,
+   "sha256": "sha256:ed68639e1f350065e509c62feb3f7ffaae405a3ad5cdd0ac394a2f349de72305"
+  },
+  "ice/3@8": {
+   "file": "ice-3-h8.f32",
+   "headroom": 8.0,
+   "sha256": "sha256:ae9aaeb77134c8afd0dbb56124ddafec1c6ea22b033586d61846e0c9b2ab5796"
+  },
+  "ice/3@16": {
+   "file": "ice-3-h16.f32",
+   "headroom": 16.0,
+   "sha256": "sha256:db2323ad5e1f1c9f5533eef2ed49ad90bfb8fb59ea4d4bc416f81af15d3f2479"
   }
  }
 }

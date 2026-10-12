@@ -114,7 +114,7 @@ Two modes use the same tone curve:
 | `docs/view/` | a live view in the browser (WebGPU): data drawn through the reference shader, above white on an HDR screen |
 | `julia/UDeepCore/` | a Julia binding to the core, with a Makie extension that saves HDR figures (CairoMakie) |
 | `src/udeep/shaders/mapping.wgsl` | the mapping as a WebGPU shader; `udeep.gpu` runs it (needs `pip install wgpu`) |
-| `src/udeep/golden.json` | the contract: 82 reference cases of 14 kinds, each with its stated tolerance. Python reproduces all of them; the JavaScript port the 47 it implements; for the Rust core, all 14 kinds are implemented; it reproduces all 74 cases |
+| `src/udeep/golden.json` | the contract: 90 reference cases of 14 kinds, each with its stated tolerance. Python reproduces all of them; the JavaScript port the 55 it implements; for the Rust core, all 14 kinds are implemented; it reproduces all 74 cases |
 | `tests/` | pytest suite (`pip install -e ".[test]" && pytest`) |
 | `profile/` | the UDeep Figure Profile |
 | `evidence/` | device reports: one record each in `devices/`, and the table made from them by `tools/evidence.py` |

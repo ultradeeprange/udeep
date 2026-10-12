@@ -6,7 +6,7 @@ from udeep import golden
 
 KINDS = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "mask_isolated", "digest_data",
          "digest_pixels", "xmp", "caption", "iso21496"}
-COUNTS = {"scale": 3, "tone": 11, "pq_encode": 1, "srgb_oetf": 1, "cmap": 2, "table": 16, "mapping": 8, "levels": 32,
+COUNTS = {"scale": 3, "tone": 11, "pq_encode": 1, "srgb_oetf": 1, "cmap": 2, "table": 24, "mapping": 8, "levels": 32,
           "mask_isolated": 1, "digest_data": 1, "digest_pixels": 2, "xmp": 2, "caption": 1, "iso21496": 1}
 
 
@@ -24,7 +24,7 @@ def cases_of(kind: str) -> dict:
 
 def test_the_contract_has_the_cases_it_is_said_to_have():
     cases = committed()["cases"]
-    assert {kind: len(cases_of(kind)) for kind in KINDS} == COUNTS and len(cases) == sum(COUNTS.values()) == 82
+    assert {kind: len(cases_of(kind)) for kind in KINDS} == COUNTS and len(cases) == sum(COUNTS.values()) == 90
 
 
 def test_the_data_criterion_is_pinned_for_every_noise_model():

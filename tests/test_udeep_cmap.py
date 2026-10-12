@@ -71,6 +71,8 @@ def test_shipped_tables_are_what_the_generator_makes(name, headroom, version):
     tolerance of the golden vectors, not bit for bit."""
     shipped, made = cm.table(name, headroom, version), cm.generate(name, headroom, version=version)
     assert shipped.nodes == made.nodes == cm.NODES
+    if version >= 3:                                  # made to be the same on every machine: bit for bit
+        assert shipped.to_bytes() == made.to_bytes()
     for stored, again in ((shipped.below, made.below), (shipped.above, made.above)):
         assert np.allclose(again, stored, rtol=TABLE_TOLERANCE, atol=TABLE_TOLERANCE)
     index = json.loads((cm.TABLES / "index.json").read_text(encoding="utf-8"))
@@ -81,13 +83,15 @@ def test_version_1_is_still_the_table_it_was_and_version_2_is_another():
     # digests of two version-1 tables as first shipped (2026-10-08): a version, once shipped, never changes
     assert cm.table("fire", 4.0, 1).digest.startswith("sha256:bbe06aa43418")
     assert cm.table("ice", 2.0, 1).digest.startswith("sha256:b33e76be5dd5")
-    assert cm.VERSION == 2 and cm.table("fire", 4.0).digest == cm.table("fire", 4.0, 2).digest
+    assert cm.table("fire", 4.0, 2).digest.startswith("sha256:8971396f63c7")      # as published 2026-10-11
+    assert cm.table("fire", 4.0, 3).digest.startswith("sha256:30b5470b9afd")      # as published 2026-10-12
+    assert cm.VERSION == 3 and cm.table("fire", 4.0).digest == cm.table("fire", 4.0, 3).digest
     assert cm.table("fire", 4.0, 2).digest != cm.table("fire", 4.0, 1).digest
-    assert cm.identifier("ice") == "ice/2" and cm.identifier("ice", 1) == "ice/1"
-    assert cm.parse("fire/1") == ("fire", 1) and cm.parse("fire/2") == ("fire", 2)
-    assert cm.parse("fire/3") is None and cm.parse("viridis/1") is None and cm.parse("fire") is None
+    assert cm.identifier("ice") == "ice/3" and cm.identifier("ice", 1) == "ice/1"
+    assert cm.parse("fire/1") == ("fire", 1) and cm.parse("fire/2") == ("fire", 2) and cm.parse("ice/3") == ("ice", 3)
+    assert cm.parse("fire/4") is None and cm.parse("viridis/1") is None and cm.parse("fire") is None
     with pytest.raises(ValueError, match="version"):
-        cm.table("fire", 4.0, 3)
+        cm.table("fire", 4.0, 4)
 
 
 # Every node of a VERSION 1 table after which luminance does not rise, found 2026-10-08: (map, reference headroom,
@@ -154,6 +158,19 @@ def test_lookup_is_exact_at_nodes_and_close_between(name):
     code = lambda rgb, s: srgb_oetf(np.clip(rgb / s, 0.0, 1.0)) * 255.0
     assert np.abs(code(got, 1.0) - code(exact, 1.0))[y <= 1.0].max() < 0.3      # measured 0.22 / 0.14 (fire / ice)
     assert np.abs(code(got, 4.0) - code(exact, 4.0)).max() < 0.15               # measured 0.08
+
+
+@pytest.mark.parametrize("name", ["fire", "ice"])
+@pytest.mark.parametrize("headroom", cm.REGISTERED_HEADROOMS)
+def test_version_3_is_version_2_without_its_remainders(name, headroom):
+    """Version 3 exists so that the generator gives the same table on every machine: version 2's values below a
+    ten-millionth of white, which depended on the processor, are zero. Nothing else is touched."""
+    two, three = cm.table(name, headroom, 2), cm.table(name, headroom, 3)
+    for old, new in ((two.below, three.below), (two.above, three.above)):
+        small = old < cm.FLOOR[3]
+        assert np.array_equal(new[~small], old[~small]) and not new[small].any()
+        assert not ((new > 0.0) & (new < cm.FLOOR[3])).any()
+    assert (two.below < cm.FLOOR[3]).sum() > 1000 and np.abs(three.below - two.below).max() < cm.FLOOR[3]
 
 
 def test_outside_the_range_takes_the_end_colour():

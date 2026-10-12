@@ -54,7 +54,7 @@
     }
     return { data: d, width: nt, height: nf, unit: "× mean noise power", name: "Synthetic spectrogram: a chirp in noise",
              mapping: { stretch: "linear", range_low: 0, range_high: 20, knee: 9.21, reference_headroom: 4,
-                        stretch_width: 1, stretch_offset: 0, above_knee: "hermite; exit=1", colour_map: "fire/2" },
+                        stretch_width: 1, stretch_offset: 0, above_knee: "hermite; exit=1", colour_map: "fire/3" },
              mode: "highlight", rule: "statistical; noise alone exceeds it once in 10,000 tiles (ln 10⁴ × the mean)" };
   }
 

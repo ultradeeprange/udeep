@@ -8,7 +8,7 @@ white, float32), with linear interpolation between nodes. `cmap` looks colours u
     table(name, headroom)      the Table: shipped for the registered headrooms (2, 4, 8, 16), built otherwise
     search(y, name, headroom)  the generator that tables are made from (tools/make_tables.py); not for runtime use
 
-A map's definition has a version, and a file names both ("fire/2"). Every version stays registered, so that a file
+A map's definition has a version, and a file names both ("fire/3"). Every version stays registered, so that a file
 made with an older one can always be read; new figures use the current one (VERSION). Each function takes
 `version=` for an older one.
 
@@ -26,6 +26,12 @@ dipped for red-green colour-vision deficiencies. Version 2 measures chroma from 
 lightness, so that no chroma is exactly grey and the top is exactly white; and its ice map asks for less chroma at
 its second node (0.13 against 0.16), which keeps it off that edge. In version 2 lightness rises at every node of
 every shipped table, for normal vision and for each simulated deficiency (udeep.vision; tested).
+
+Version 3 is version 2 with every value below FLOOR (1e-7 of white) set to zero. Where version 2 holds a channel at
+the edge of the gamut it leaves the small remainder of the arithmetic, a few hundred-millionths of white, and that
+remainder depends on which processor-specific routines NumPy and OpenBLAS choose: the generator did not give the
+same table on every machine (project/performance-scope.md, 4g). With the remainders removed it does, so a version-3
+table can be checked by making it again. No colour moves by more than FLOOR.
 """
 from __future__ import annotations
 
@@ -54,8 +60,10 @@ DEFINITIONS = {                              # by version; a version, once shipp
     1: {"fire": _FIRE, "ice": _ICE},
     2: {"fire": _FIRE, "ice": {**_ICE, "chroma": [0.0, 0.13, 0.12, 0.07]}},
 }
-GREY_AXIS = {1: False, 2: True}              # is chroma measured from the grey of the same lightness (see above)
-VERSION = 2                                  # what new figures use
+DEFINITIONS[3] = DEFINITIONS[2]              # the same colours; see FLOOR
+GREY_AXIS = {1: False, 2: True, 3: True}     # is chroma measured from the grey of the same lightness (see above)
+FLOOR = {1: 0.0, 2: 0.0, 3: 1e-7}            # a value below this, in multiples of white, is stored as zero
+VERSION = 3                                  # what new figures use
 MAPS = DEFINITIONS[VERSION]                  # the current definitions; every version has the same names
 BISECTION_STEPS = 24
 NODES = 4097                                 # per segment, in a shipped table
@@ -117,6 +125,7 @@ def search(y, name: str = "fire", headroom: float = 4.0, version: int = VERSION)
         fits = np.all((rgb >= -slack) & (rgb <= upper + slack), axis=-1)
         lo, hi = np.where(fits, mid, lo), np.where(fits, hi, mid)
     rgb = np.clip(colour(lo), 0.0, upper)
+    rgb = np.where(rgb < FLOOR[version], 0.0, rgb)
     return np.where(np.isnan(y)[..., None], np.nan, rgb).astype(np.float32)
 
 
@@ -168,7 +177,7 @@ class Table:
 
 
 def identifier(name: str, version: int = VERSION) -> str:
-    """How a file names a map: the name and the version of its definition, such as "fire/2"."""
+    """How a file names a map: the name and the version of its definition, such as "fire/3"."""
     return f"{name}/{version}"
 
 

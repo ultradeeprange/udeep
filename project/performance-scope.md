@@ -483,7 +483,11 @@ With `threads = 0` (every available core) the core asked the system how many cor
   differs in 251 numbers and the one made on this Linux machine in 822.
 - **What would make it reproducible.** Setting to zero every table value below 1e-7 gave the same bytes under
   every combination tried, and the same bytes as the shipped tables treated the same way. That is a change to the
-  table, so it would be a version 3; it has not been made. Computing with exact inverses and correctly rounded
+  table, so it is a new version: `fire/3` and `ice/3`, made on 2026-10-12. On the Windows machine (no AVX-512) the
+  generator gave the same version-3 bytes with NumPy's AVX2 routines on and off and under three OpenBLAS routines
+  (Haswell, Sandybridge, Prescott), two of which do not reproduce version 2 even there; the digest of the eight
+  tables is the one the Linux machine had found for the same treatment. The test now requires version 3 to be
+  regenerated bit for bit, so every run on GitHub's Linux and Windows machines checks it. Computing with exact inverses and correctly rounded
   functions (mpmath) is also reproducible, at about 43 s for two tables against 0.14 s.
 
 The shipped table is the definition (profile 6.10), so nothing a file means has changed. Two things relied on

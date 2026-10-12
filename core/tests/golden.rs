@@ -283,7 +283,7 @@ fn the_golden_file_holds_the_cases_this_test_was_written_for() {
         ("pq_encode", 1),
         ("scale", 3),
         ("srgb_oetf", 1),
-        ("table", 16),
+        ("table", 24),
         ("tone", 11),
         ("xmp", 2),
     ];
