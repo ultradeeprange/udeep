@@ -7,8 +7,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import markdown
-
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "profile" / "udeep-figure-profile-v0.3.md"
 OUT = ROOT / "docs" / "profile" / "index.html"
@@ -54,6 +52,8 @@ STYLE = """
 """
 
 if __name__ == "__main__":
+    import markdown                   # only the build needs it: the reference page borrows STYLE without it
+
     text = SRC.read_text(encoding="utf-8")
     md = markdown.Markdown(extensions=["tables", "toc", "sane_lists"], extension_configs={"toc": {"toc_depth": "2-2"}})
     body = md.convert(text)
