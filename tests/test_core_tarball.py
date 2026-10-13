@@ -42,7 +42,8 @@ def test_the_archive_depends_on_the_library_alone(tmp_path):
     b = tool.pack(wheel(tmp_path, "win_amd64", "udeep_core.dll"), tmp_path / "b").read_bytes()
     other = tool.pack(wheel(tmp_path, "win_amd64", "udeep_core.dll", b"another build"), tmp_path / "c").read_bytes()
     assert a == b != other
-    assert tarfile.open(fileobj=io.BytesIO(a)).getmember("lib").isdir()
+    with tarfile.open(fileobj=io.BytesIO(a)) as tar:
+        assert tar.getmember("lib").isdir()
 
 
 def test_a_wheel_without_the_core_or_for_an_unknown_platform_is_refused(tmp_path):
