@@ -9,6 +9,10 @@
 
     python -m udeep.validate figure.jpg ...    # exit status 1 if any file fails
 
+Two kinds of file are checked: the gain-map JPEG, which is always a rendering, and the 16-bit PQ PNG
+(udeep.export.write_png_pq), which may declare itself a data record. For the PNG the check that matters is that
+claim: the file's levels are worked out again and set against the stated uncertainty (profile 7.3.1).
+
 A file carries its declared mapping but not its data, so on its own it can show that the declaration is
 complete and consistent, that the mapping can be inverted, that nothing exceeds the headroom and that the stated
 precision is right. Whether the pixels are that mapping of the data (points 3 to 5) needs the figure as well.
@@ -29,11 +33,13 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, JpegImagePlugin
 
-from udeep.export import srgb_oetf
+from udeep.color import REF_WHITE_NITS
+from udeep.export import read_png_pq, srgb_oetf
 from udeep.gainmap import read_gainmap_jpeg, read_iso_metadata
 from udeep.metadata import (
     Declaration,
     data_steps,
+    data_steps_pq16,
     digest_data,
     digest_pixels,
     missing_properties,
@@ -52,6 +58,8 @@ BASE_OUTLIER_CODES, BASE_OUTLIER_FRACTION = 8.0, 1e-3       # file's own JPEG qu
 HDR_MEDIAN_ERROR = 0.03          # median relative error allowed on the lifted pixels
 LEAK_LEVEL, LEAK_FRACTION = 1.10, 1e-4      # pixels that must stay at or below white, and how many may ring above
 NEEDS_FIGURE = (("3", "sdr base"), ("4", "hdr rendering"), ("5", "held pixels"))
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+PNG_HEADROOM_TOLERANCE = 1.001   # a 16-bit PQ PNG is lossless: only its own rounding may pass the headroom
 
 
 @dataclass(frozen=True)
@@ -150,7 +158,8 @@ def _metadata(report: Report, path, raw: bytes) -> tuple[Declaration, float] | N
     except (ValueError, OverflowError) as err:
         return add("fail", f"the gain map's hdrgm:HDRCapacityMax cannot be read: {_why(err)}")
     if file_headroom is None:
-        return add("fail", "no gain map found (hdrgm:HDRCapacityMax); only gain-map JPEGs can be checked")
+        return add("fail", "no gain map found (hdrgm:HDRCapacityMax): the file is neither a gain-map JPEG nor a "
+                           "16-bit PQ PNG, the two kinds that can be checked")
     problems = []
     if missing:
         problems.append("the file does not carry " + ", ".join(f"udeep:{name}" for name in missing)
@@ -296,9 +305,111 @@ def _pixels(report: Report, path, hdr, expected: tuple) -> None:
                f"are above {LEAK_LEVEL} x white")
 
 
+def _png_metadata(report: Report, raw: bytes) -> Declaration | None:
+    """1, for a PNG: the declaration is there, complete and consistent."""
+    add = lambda status, detail: report.add("1", "metadata", status, detail)
+    xmp = packet(raw)
+    if xmp is None:
+        return add("fail", "the file carries no udeep metadata")
+    try:
+        d, missing = parse(xmp), missing_properties(xmp)
+    except (ValueError, TypeError) as err:
+        return add("fail", f"the declaration is not valid: {err}")
+    report.declaration = d
+    problems = []
+    if missing:
+        problems.append("the file does not carry " + ", ".join(f"udeep:{name}" for name in missing)
+                        + ", which every stored figure must (profile 8.1)")
+    colours, why = _colour_map(d)
+    if colours == "fail" and d.colour_map is not None:
+        problems.append(why)
+    if problems:
+        add("fail", "; ".join(problems))
+    else:
+        stated = (f"{d.stretch} stretch, knee {d.knee:.4g} {d.data_unit} ({d.knee_rule.split(';')[0]}), headroom "
+                  f"{d.reference_headroom:.4g}; a 16-bit PQ PNG")
+        add("pass", f"complete and consistent; {stated}" if colours == "known" else
+            f"consistent, but it cannot be told whether anything is absent: {why}; {stated}")
+    return d
+
+
+def _png_light(report: Report, path, d: Declaration):
+    """4a, for a PNG: nothing exceeds the headroom. Returns the light the file holds."""
+    light = read_png_pq(path)                                  # ValueError if it is a PNG of another kind
+    peak = float(light.max())
+    report.add("4", "headroom", "pass" if peak <= d.reference_headroom * PNG_HEADROOM_TOLERANCE else "fail",
+               f"brightest value {peak:.4f} x white, against a headroom of {d.reference_headroom:.4g}; white is taken "
+               f"as {REF_WHITE_NITS:g} cd/m2, which the file does not state")
+    return light
+
+
+def _png_precision(report: Report, d: Declaration) -> None:
+    """6, for a PNG: the stated precision, and above all the claim to be a data record (profile 7.3.1)."""
+    add = lambda status, detail: report.add("6", "precision", status, detail)
+    colours, why = _colour_map(d)
+    if colours != "known":
+        return add("skipped", f"the levels cannot be worked out: {why}")
+    steps = data_steps_pq16(d.mapping)
+    step = float(steps[1].max())
+    against = rounding_to_noise(d.mapping, (d.noise_model, d.noise_parameter), steps=steps)
+    stated, actual = d.rounding_to_noise, None if against is None else min(against["worst"], 1e9)
+    if not abs(step - d.max_data_step) <= STEP_TOLERANCE * abs(d.max_data_step):
+        return add("fail", f"MaxDataStep is stated as {d.max_data_step:.4g} but is {step:.4g} {d.data_unit}")
+    if stated is not None and (actual is None or not abs(stated - actual) <= STEP_TOLERANCE * actual):
+        return add("fail", f"RoundingToNoise is stated as {stated:.4g} but is "
+                           + ("not defined for unknown noise" if actual is None else f"{actual:.4g}"))
+    levels = f"{len(steps[1]):,} levels, MaxDataStep {step:.4g} {d.data_unit} as stated"
+    if against is None:
+        return add("pass", f"{levels}; declared a rendering, and with the noise unknown it could be nothing else")
+    worst = "more than 100 times" if against["worst"] > 100.0 else f"{against['worst']:.2g} of"
+    measure = f"rounding is {worst} the stated uncertainty at its worst, against a limit of {against['limit']:g}"
+    if d.record == "data-record" and not against["meets"]:
+        return add("fail", f"{levels}; declared a data record, but {measure}: "
+                           f"{100.0 * against['failing_fraction']:.2g} % of the range is over it (profile 7.3.1)")
+    if d.record == "data-record":
+        return add("pass", f"{levels}; a data record, as declared: {measure}")
+    add("pass", f"{levels}; declared a rendering: {measure}"
+                + (", so it could have been declared a data record" if against["meets"] else ""))
+
+
+def _png_data(report: Report, d: Declaration, light, data) -> None:
+    """7, for a PNG that says it is a data record: the data comes back out of it."""
+    add = lambda status, detail: report.add("7", "data read back", status, detail)
+    if data is None:
+        return add("skipped", "the data was not supplied to compare with what the file holds")
+    if d.colour_map != "grey":
+        return add("skipped", f"the colour map is {d.colour_map}: turning a colour back into a value is not done here")
+    values = np.asarray(data, dtype=np.float64)
+    back = d.mapping.value(np.asarray(light)[..., 1])          # grey: any channel is the light
+    if back.shape != values.shape:
+        return add("fail", f"the file is {back.shape[1]} x {back.shape[0]} and the data {values.shape}")
+    inside = np.isfinite(values) & (values >= d.range_low) & (values <= d.range_high)
+    worst = float(np.abs(back - values)[inside].max()) if inside.any() else 0.0
+    limit = 0.5 * d.max_data_step * (1.0 + STEP_TOLERANCE)
+    add("pass" if worst <= limit else "fail",
+        f"every value inside the declared range is read back to within {worst:.3g} {d.data_unit} "
+        f"(half the widest step is {0.5 * d.max_data_step:.3g})"
+        + (f"; {int((~inside).sum()):,} values lie outside the range and are not held" if (~inside).any() else ""))
+
+
+def _validate_png(report: Report, path, raw: bytes, data, data_digest: str | None) -> Report:
+    d = _guarded(report, (("1", "metadata"),), "the metadata", _png_metadata, raw)
+    if d is None:
+        return report
+    _guarded(report, (("2", "mapping"),), "the declared mapping", _mapping, d)
+    light = _guarded(report, (("4", "headroom"),), "the image", _png_light, path, d)
+    _guarded(report, (("6", "precision"),), "the stated precision", _png_precision, d)
+    _guarded(report, (("7", "data link"),), "the data supplied", _data_link, d, data, data_digest)
+    if light is not None:
+        _guarded(report, (("7", "data read back"),), "the data supplied", _png_data, d, light, data)
+    for point, name in (("7", "sdr link"), *NEEDS_FIGURE):
+        report.add(point, name, "skipped", "applies to a gain-map JPEG: this file holds one image and no SDR base")
+    return report
+
+
 def validate(path, expected: tuple | None = None, data=None, sdr=None, data_digest: str | None = None,
              sdr_digest: str | None = None) -> Report:
-    """Check the gain-map JPEG at `path`. `expected` is (sdr, hdr): the fair SDR figure and the HDR figure as
+    """Check the gain-map JPEG, or the 16-bit PQ PNG, at `path`. `expected` is (sdr, hdr): the fair SDR figure and the HDR figure as
     linear RGB arrays in multiples of SDR white, for the checks that need the pixels (udeep.mpl.validate
     supplies them from a figure). `data` is the array the figure was made from and `sdr` the path of its SDR figure
     of record: each is compared with the digest the file declares (or pass the digests themselves).
@@ -310,6 +421,8 @@ def validate(path, expected: tuple | None = None, data=None, sdr=None, data_dige
     except OSError as err:
         report.add("1", "metadata", "fail", f"the file cannot be read: {_why(err)}")
         return report
+    if raw[:8] == PNG_SIGNATURE:
+        return _validate_png(report, path, raw, data, data_digest)
     found = _guarded(report, (("1", "metadata"),), "the metadata", _metadata, path, raw)
     if found is None:
         return report
@@ -337,7 +450,7 @@ def main(argv: list[str] | None = None) -> int:
         sdr = paths[at + 1] if at + 1 < len(paths) else None
         del paths[at:at + 2]
     if not paths or (sdr is not None and len(paths) != 1):
-        print("usage: python -m udeep.validate FILE.jpg [FILE.jpg ...]\n"
+        print("usage: python -m udeep.validate FILE [FILE ...]            (gain-map JPEGs and 16-bit PQ PNGs)\n"
               "       python -m udeep.validate FILE.jpg --sdr FIGURE.png    (also check the SDR figure of record)")
         return 2
     if hasattr(sys.stdout, "reconfigure"):

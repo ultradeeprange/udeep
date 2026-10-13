@@ -38,7 +38,7 @@ def pattern() -> np.ndarray:
 
 @pytest.fixture(scope="module")
 def written(tmp_path_factory):
-    built = subprocess.run([CARGO, "build", "--release", "--features", "jpeg"], cwd=ROOT / "core", capture_output=True,
+    built = subprocess.run([CARGO, "build", "--release", "--features", "jpeg,png"], cwd=ROOT / "core", capture_output=True,
                            text=True, check=False)
     assert built.returncode == 0, built.stderr[-2000:]
     out = tmp_path_factory.mktemp("julia")

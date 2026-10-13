@@ -38,7 +38,7 @@ jobs:
       - name: Build the Rust core
         run: |
           rustup update stable
-          cargo build --release --features jpeg --manifest-path core/Cargo.toml
+          cargo build --release --features jpeg,png --manifest-path core/Cargo.toml
       - name: Install
         run: python -m pip install -e ".[test]"
       - name: Test
@@ -51,9 +51,9 @@ jobs:
       - uses: actions/checkout@v4
       - run: rustup update stable
       - name: Test
-        run: cargo test --release --features jpeg --manifest-path core/Cargo.toml
+        run: cargo test --release --features jpeg,png --manifest-path core/Cargo.toml
       - name: Clippy
-        run: cargo clippy --release --features jpeg --manifest-path core/Cargo.toml -- -D warnings
+        run: cargo clippy --release --features jpeg,png --manifest-path core/Cargo.toml -- -D warnings
 
   julia:
     name: Julia package
@@ -67,6 +67,6 @@ jobs:
       - name: Build the Rust core
         run: |
           rustup update stable
-          cargo build --release --features jpeg --manifest-path core/Cargo.toml
+          cargo build --release --features jpeg,png --manifest-path core/Cargo.toml
       - name: Test
         run: julia --project=julia/UDeepCore -e 'using Pkg; Pkg.test()'

@@ -4,12 +4,12 @@
 
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
+use serde_json::{Value, json};
 use udeep_core::{
     Declaration, Error, Levels, Mapping, Noise, Stretch, Table, UNBOUNDED, caption, colours, declaration::exit_slope,
     description, digest_data, digest_pixels, float_text, format_g, iso21496_block, isolated, levels, par, pq_encode,
     rounding_to_noise, scale, sha256, srgb_oetf, tone,
 };
-use serde_json::{Value, json};
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("src").join("udeep")

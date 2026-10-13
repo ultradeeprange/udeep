@@ -30,6 +30,7 @@ if pure:
 
 assert path is not None and path.parent == package / "_lib", f"the core was looked for and found at {path}"
 assert core.available() and core.enabled() and core.files(), "the core is there but is not in use"
+assert core.png(), "the core was built without its png feature: it cannot write a 16-bit PQ PNG"
 
 data = np.random.default_rng(3).exponential(20.0, (96, 128))
 stretch = {"kind": "linear", "lo": 0.0, "hi": 100.0}
@@ -51,4 +52,8 @@ for name, error in errors.items():
     assert np.median(error) < 0.02 and np.quantile(error, 0.99) < 0.2, f"{name}: the file does not read as written"
 assert abs(np.median(errors["core"]) - np.median(errors["reference"])) < 0.005, "the two implementations' files differ"
 assert np.asarray(read_c).max() <= 4.0 + 1e-6, "the core wrote a file that reads above its headroom"
-print("udeep", package, "| core", path.name, "in use | figure written and read by both implementations")
+with tempfile.TemporaryDirectory() as folder:
+    from udeep import read_png_pq, write_png_pq
+    write_png_pq(view_c.hdr, Path(folder) / "f.png")
+    assert np.abs(read_png_pq(Path(folder) / "f.png") - view_c.hdr).max() < 3e-3, "the 16-bit PNG does not read back"
+print("udeep", package, "| core", path.name, "in use | JPEG written and read by both implementations | PNG read back")

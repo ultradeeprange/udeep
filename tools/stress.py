@@ -12,7 +12,7 @@ What is compared:
 
 Each time is the best of a few runs. The machine does other things meanwhile and has shown slow stretches of up to
 about 2.7 times, so read a single number as good to perhaps 30 %; the ratios between columns are steadier.
-Needs the Rust core built (cargo build --release --features jpeg in core/); the GPU column needs wgpu.
+Needs the Rust core built (cargo build --release --features jpeg,png in core/); the GPU column needs wgpu.
 """
 from __future__ import annotations
 

@@ -25,11 +25,15 @@ pub mod ffi;
 #[cfg(feature = "jpeg")]
 pub mod gainmap;
 pub mod par;
+#[cfg(feature = "png")]
+pub mod png;
 pub mod record;
 pub mod sha256;
 
 pub use declaration::{Declaration, caption, description, float_text, format_g};
-pub use record::{Criterion, Levels, Noise, UNBOUNDED, digest_data, digest_pixels, levels, rounding_to_noise};
+pub use record::{
+    Criterion, Levels, Noise, UNBOUNDED, digest_data, digest_pixels, levels, levels_pq16, rounding_to_noise,
+};
 
 /// How close to either end of the range the curve can place a knee. A record whose knee is nearer the bottom than
 /// this, or nearer the top without being exactly at it, is refused ([`Mapping::validate`]).
@@ -403,6 +407,23 @@ pub fn pq_encode(nits: f64) -> f64 {
     const C3: f64 = 2392.0 / 4096.0 * 32.0;
     let y = (nits.clamp(0.0, 10000.0) / 10000.0).powf(M1);
     ((C1 + C2 * y) / (1.0 + C3 * y)).powf(M2)
+}
+
+/// Linear BT.709/sRGB primaries -> linear BT.2020 primaries (ITU-R BT.2087), as the reference has it.
+pub const SRGB_TO_BT2020: [[f64; 3]; 3] =
+    [[0.6274039, 0.3292830, 0.0433131], [0.0690973, 0.9195404, 0.0113623], [0.0163914, 0.0880133, 0.8955953]];
+
+/// A 3 x 3 matrix times a vector.
+pub fn matrix3(m: &[[f64; 3]; 3], v: [f64; 3]) -> [f64; 3] {
+    [0, 1, 2].map(|i| m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2])
+}
+
+/// The three 16-bit codes a 16-bit PQ file stores for one colour: linear RGB (BT.709 primaries, multiples of
+/// white), to BT.2020, to PQ with white at `white_nits`, rounded to 16 bits. A NaN is stored as 0, as the
+/// reference stores it.
+pub fn pq16_codes(rgb: [f64; 3], white_nits: f64) -> [u16; 3] {
+    let rgb = rgb.map(|c| if c.is_nan() { 0.0 } else { c });
+    matrix3(&SRGB_TO_BT2020, rgb).map(|c| (pq_encode(c.max(0.0) * white_nits) * 65535.0).round_ties_even() as u16)
 }
 
 /// Linear light in `[0, 1]` -> sRGB signal; values outside are clipped.

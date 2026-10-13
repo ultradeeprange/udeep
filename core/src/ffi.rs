@@ -506,6 +506,39 @@ pub unsafe extern "C" fn udeep_levels(
     max_data_step: *mut f64,
     rounding_to_noise: *mut f64,
 ) -> i32 {
+    unsafe {
+        levels_of(
+            mapping,
+            table,
+            nodes,
+            scaled_by,
+            samples,
+            noise_model,
+            noise_parameter,
+            max_data_step,
+            rounding_to_noise,
+            std::ptr::null_mut(),
+            false,
+        )
+    }
+}
+
+/// What [`udeep_levels`] and [`udeep_levels_pq16`] share. `scaled_by` is the headroom the 8-bit file is written
+/// for, or the white level in cd/m^2 of the 16-bit one.
+#[allow(clippy::too_many_arguments)]
+unsafe fn levels_of(
+    mapping: *const Mapping,
+    table: *const f32,
+    nodes: usize,
+    scaled_by: f64,
+    samples: usize,
+    noise_model: u32,
+    noise_parameter: f64,
+    max_data_step: *mut f64,
+    rounding_to_noise: *mut f64,
+    count: *mut usize,
+    pq16: bool,
+) -> i32 {
     let Some(m) = (unsafe { mapping.as_ref() }) else { return Error::NullPointer as i32 };
     if max_data_step.is_null() || rounding_to_noise.is_null() {
         return Error::NullPointer as i32;
@@ -532,13 +565,164 @@ pub unsafe extern "C" fn udeep_levels(
     if noise.is_some() && !(noise_parameter.is_finite() && noise_parameter > 0.0) {
         return Error::BadDeclaration as i32;
     }
-    let levels = record::levels(m, lookup.as_ref(), scaled_by, samples);
+    let levels = if pq16 {
+        record::levels_pq16(m, lookup.as_ref(), scaled_by, samples)
+    } else {
+        record::levels(m, lookup.as_ref(), scaled_by, samples)
+    };
     let ratio = noise.map_or(f64::NAN, |n| record::rounding_to_noise(&levels, n).worst.min(record::UNBOUNDED));
     unsafe {
         max_data_step.write(levels.max_data_step());
         rounding_to_noise.write(ratio);
+        if !count.is_null() {
+            count.write(levels.width.len());
+        }
     }
     OK
+}
+
+/// As [`udeep_levels`], for a 16-bit PQ file with SDR white at `white_nits` (the reference uses 203): there
+/// is one code for each colour and no split at the knee. `samples` should be about a million (the reference
+/// uses 1048576), since such a file has tens of thousands of levels. `count`, if not null, receives the number
+/// of levels found.
+///
+/// # Safety
+/// As for [`udeep_levels`]; `count` must be null or point to a writable `size_t`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_levels_pq16(
+    mapping: *const Mapping,
+    table: *const f32,
+    nodes: usize,
+    white_nits: f64,
+    samples: usize,
+    noise_model: u32,
+    noise_parameter: f64,
+    max_data_step: *mut f64,
+    rounding_to_noise: *mut f64,
+    count: *mut usize,
+) -> i32 {
+    if !(white_nits.is_finite() && white_nits > 0.0) {
+        return Error::BadDeclaration as i32;
+    }
+    unsafe {
+        levels_of(
+            mapping,
+            table,
+            nodes,
+            white_nits,
+            samples,
+            noise_model,
+            noise_parameter,
+            max_data_step,
+            rounding_to_noise,
+            count,
+            true,
+        )
+    }
+}
+
+/// A 16-bit PQ PNG of `rgb` (`height * width * 3` `double`s, row by row: linear RGB, BT.709 primaries, multiples
+/// of SDR white), with `1.0` written at `white_nits`. `xmp` is an XMP packet to carry (the declaration), of
+/// `xmp_length` bytes, or null with a length of 0. The bytes are returned in `data` and `length`; release them
+/// with [`udeep_bytes_free`].
+///
+/// # Safety
+/// `rgb` must point to `height * width * 3` readable `double`s, `xmp` to `xmp_length` readable bytes (or be null
+/// with a length of 0), `data` and `length` to writable locations.
+#[cfg(feature = "png")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_png_pq(
+    rgb: *const f64,
+    width: usize,
+    height: usize,
+    white_nits: f64,
+    xmp: *const u8,
+    xmp_length: usize,
+    data: *mut *mut u8,
+    length: *mut usize,
+) -> i32 {
+    if rgb.is_null() || data.is_null() || length.is_null() || (xmp.is_null() && xmp_length > 0) {
+        return Error::NullPointer as i32;
+    }
+    if !(white_nits.is_finite() && white_nits > 0.0) {
+        return Error::BadImage as i32;
+    }
+    let Some(count) = width.checked_mul(height).and_then(|n| n.checked_mul(3)) else { return Error::BadImage as i32 };
+    let values = unsafe { std::slice::from_raw_parts(rgb, count) };
+    let packet = if xmp_length == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(xmp, xmp_length) } };
+    match crate::png::write_png_pq(values, width, height, white_nits, packet) {
+        Ok(bytes) => {
+            let boxed = bytes.into_boxed_slice();
+            unsafe {
+                length.write(boxed.len());
+                data.write(Box::into_raw(boxed).cast::<u8>());
+            }
+            OK
+        }
+        Err(_) => Error::BadImage as i32,
+    }
+}
+
+/// The size of a 16-bit PQ PNG's image. `UDEEP_ERROR_BAD_IMAGE` if the bytes are a PNG of another kind,
+/// `UDEEP_ERROR_CODEC` if they are not a whole PNG.
+///
+/// # Safety
+/// `file` must point to `length` readable bytes; `width` and `height` to writable locations.
+#[cfg(feature = "png")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_png_pq_size(
+    file: *const u8,
+    length: usize,
+    width: *mut usize,
+    height: *mut usize,
+) -> i32 {
+    use crate::png::PngError;
+    if file.is_null() || width.is_null() || height.is_null() {
+        return Error::NullPointer as i32;
+    }
+    match crate::png::png_pq_size(unsafe { std::slice::from_raw_parts(file, length) }) {
+        Ok((w, h)) => {
+            unsafe {
+                width.write(w);
+                height.write(h);
+            }
+            OK
+        }
+        Err(PngError::Corrupt) => Error::Codec as i32,
+        Err(_) => Error::BadImage as i32,
+    }
+}
+
+/// A 16-bit PQ PNG as light: `out` receives `height * width * 3` `double`s, linear RGB (BT.709 primaries) in
+/// multiples of the white written at `white_nits`, row by row. `n` is the room in `out`, in values; it must be
+/// exactly that many. Errors as for [`udeep_png_pq_size`], and `UDEEP_ERROR_BAD_IMAGE` if `n` is wrong.
+///
+/// # Safety
+/// `file` must point to `length` readable bytes and `out` to `n` writable `double`s.
+#[cfg(feature = "png")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_png_pq_read(
+    file: *const u8,
+    length: usize,
+    white_nits: f64,
+    out: *mut f64,
+    n: usize,
+) -> i32 {
+    use crate::png::PngError;
+    if file.is_null() || out.is_null() {
+        return Error::NullPointer as i32;
+    }
+    if !(white_nits.is_finite() && white_nits > 0.0) {
+        return Error::BadImage as i32;
+    }
+    match crate::png::read_png_pq(unsafe { std::slice::from_raw_parts(file, length) }, white_nits) {
+        Ok((values, _, _)) if values.len() == n => {
+            unsafe { std::ptr::copy_nonoverlapping(values.as_ptr(), out, n) };
+            OK
+        }
+        Err(PngError::Corrupt) => Error::Codec as i32,
+        Ok(_) | Err(_) => Error::BadImage as i32,
+    }
 }
 
 unsafe fn signal(f: fn(f64) -> f64, x: *const f64, out: *mut f64, n: usize) -> i32 {

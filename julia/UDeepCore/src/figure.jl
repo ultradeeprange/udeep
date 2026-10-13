@@ -244,7 +244,7 @@ of `hdr` on the core's own decoder: the writer decodes its gain map and lowers i
 if it cannot. Keep `gain_quality` at 100 unless the figure is grey: below it a gain map is unreliable with a
 colour map (`"fire"`, `"ice"`), with this writer or any other, and the call may be refused.
 
-Needs a core library built with `--features jpeg`.
+Needs a core library built with `--features jpeg,png`.
 """
 function gainmap_jpeg(sdr::AbstractArray{<:Real, 3}, hdr::AbstractArray{<:Real, 3}, headroom::Real;
                       quality::Integer = 95, gain_quality::Integer = 100, description::AbstractString = "")
@@ -252,7 +252,7 @@ function gainmap_jpeg(sdr::AbstractArray{<:Real, 3}, hdr::AbstractArray{<:Real, 
         throw(DimensionMismatch("sdr and hdr must both be height x width x 3; got $(size(sdr)) and $(size(hdr))"))
     writer = Libdl.dlsym(handle(), :udeep_gainmap_jpeg; throw_error = false)
     writer === nothing && error("this core library has no JPEG writer: build it with `cargo build --release " *
-                                "--features jpeg`")
+                                "--features jpeg,png`")
     base, lifted = convert(Vector{Float64}, row_order(sdr)), convert(Vector{Float64}, row_order(hdr))
     text = Vector{UInt8}(codeunits(description))
     data, length_ = Ref(Ptr{UInt8}(C_NULL)), Ref(Csize_t(0))
@@ -285,7 +285,7 @@ function gainmap_from_renders(base::AbstractArray{UInt8, 3}, scaled::AbstractArr
         throw(DimensionMismatch("the four renders must all be height x width x 3"))
     writer = Libdl.dlsym(handle(), :udeep_gainmap_from_renders; throw_error = false)
     writer === nothing && error("this core library has no JPEG writer: build it with `cargo build --release " *
-                                "--features jpeg`")
+                                "--features jpeg,png`")
     rows = map(r -> convert(Vector{UInt8}, row_order(r)), (base, scaled, black, white))
     text = Vector{UInt8}(codeunits(description))
     data, length_, lifted = Ref(Ptr{UInt8}(C_NULL)), Ref(Csize_t(0)), Ref(Csize_t(0))

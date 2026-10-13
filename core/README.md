@@ -23,6 +23,8 @@ vectors (`../src/udeep/golden.json`).
 | the reference's checks on a mapping record and on a declaration | |
 | a C interface over buffers, with error codes | |
 | **with the `jpeg` feature:** a gain-map JPEG writer (Ultra HDR layout, ISO 21496-1 block, the declared metadata) | |
+| **with the `png` feature:** a 16-bit PQ PNG writer and reader (`cICP`, the declaration as XMP): the form in which a file can be a data record | |
+| the stored levels of a 16-bit PQ file (`levels_pq16`), with no feature needed | |
 
 By default the library depends on no other crate and reads or writes no image formats. The gain-map JPEG writer
 is behind the `jpeg` feature, which brings in two pure-Rust crates, `jpeg-encoder` and `jpeg-decoder` (both
@@ -33,10 +35,10 @@ the difference between two JPEG encoders. It draws nothing.
 ## Build and test
 
     cargo test                      # all 82 golden cases, each to its own stated tolerance
-    cargo test --features jpeg      # the same, and the gain-map JPEG writer's own test
+    cargo test --features jpeg,png      # the same, and the gain-map JPEG writer's own test
     cargo build --release           # target/release/udeep_core.dll (.so, .dylib)
-    cargo build --release --features jpeg     # the same, with the gain-map JPEG writer
-    cargo clippy --all-targets --features jpeg -- -D warnings
+    cargo build --release --features jpeg,png     # the same, with the gain-map JPEG writer
+    cargo clippy --all-targets --features jpeg,png -- -D warnings
 
 The test fails if any case is skipped, and a second test fails if the golden file no longer holds the kinds and
 numbers of cases this port was written against.

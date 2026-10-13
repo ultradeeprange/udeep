@@ -147,10 +147,17 @@ int32_t udeep_levels(const udeep_mapping *mapping, const float *table, size_t no
                        size_t samples, uint32_t noise_model, double noise_parameter, double *max_data_step,
                        double *rounding_to_noise);
 
+/* As udeep_levels, for a 16-bit PQ file with SDR white at white_nits (the reference uses 203): one code for each
+ * colour, and no split at the knee. samples should be about a million (the reference uses 1048576): such a file
+ * has tens of thousands of levels. count, if not NULL, receives the number of levels found. */
+int32_t udeep_levels_pq16(const udeep_mapping *mapping, const float *table, size_t nodes, double white_nits,
+                            size_t samples, uint32_t noise_model, double noise_parameter, double *max_data_step,
+                            double *rounding_to_noise, size_t *count);
+
 /* Release bytes returned by this library. */
 void udeep_bytes_free(uint8_t *data, size_t length);
 
-/* ---- Only in a library built with the `jpeg` feature (the reader's two functions are at the end of this part) (cargo build --release --features jpeg). ----
+/* ---- Only in a library built with the `jpeg` feature (the reader's two functions are at the end of this part) (cargo build --release --features jpeg,png). ----
  *
  * Write a gain-map JPEG (Ultra HDR layout, with the ISO 21496-1 block) into memory owned by the library.
  * sdr: linear RGB in 0..1; hdr: linear RGB in multiples of SDR white; each height * width * 3 doubles, row by row.
@@ -185,6 +192,23 @@ int32_t udeep_gainmap_from_renders(const uint8_t *base, const uint8_t *scaled, c
                                      const uint8_t *white, size_t width, size_t height, double headroom,
                                      uint32_t quality, uint32_t gain_quality, const char *description,
                                      size_t description_length, uint8_t **data, size_t *length, size_t *lifted);
+
+/* ---- Only in a library built with the `png` feature (cargo build --release --features jpeg,png).
+ *
+ * A 16-bit PQ PNG (BT.2020 primaries, PQ, full range, declared in a cICP chunk) of rgb: height * width * 3 doubles,
+ * row by row, linear RGB with BT.709 primaries in multiples of SDR white; 1.0 is written at white_nits. xmp: an
+ * XMP packet to carry (the declaration), xmp_length bytes, or NULL and 0. The bytes come back in *data and *length
+ * (release them with udeep_bytes_free). A NaN is written as 0. This is the form in which a file can be a data
+ * record (profile 7.3): see udeep_levels_pq16. */
+int32_t udeep_png_pq(const double *rgb, size_t width, size_t height, double white_nits, const uint8_t *xmp,
+                       size_t xmp_length, uint8_t **data, size_t *length);
+
+/* Reading one back: its size, and its light, height * width * 3 doubles (linear RGB, BT.709 primaries, multiples of
+ * the white written at white_nits), row by row; n must be exactly that many. Any of PNG's row filters is read.
+ * UDEEP_ERROR_BAD_IMAGE: a PNG of another kind (not 16 bits a channel, not RGB, interlaced, or not declared
+ * BT.2020 PQ), or n is wrong. UDEEP_ERROR_CODEC: not a whole PNG, or a checksum fails. */
+int32_t udeep_png_pq_size(const uint8_t *file, size_t length, size_t *width, size_t *height);
+int32_t udeep_png_pq_read(const uint8_t *file, size_t length, double white_nits, double *out, size_t n);
 
 #ifdef __cplusplus
 }

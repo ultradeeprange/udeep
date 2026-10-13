@@ -22,6 +22,7 @@ using SHA: sha256
 export Mapping, light, light!, sdr_light, value, colours, digest_data, digest_pixels, core_version
 export value_at, srgb_encode, srgb_decode, isolated, colour_table, hdr_view, HdrView, levels, Declaration
 export description, caption, gainmap_jpeg, gainmap_from_renders, hdrimage!, hdrcolorbar!, save_hdr, hdr_declaration, hdr_caption, hdr_theme
+export levels_pq16, png_pq, read_png_pq, xmp_packet
 
 const STRETCHES = (linear = 0x00000000, log = 0x00000001, asinh = 0x00000002, proportional = 0x00000003)
 const ERRORS = Dict(
@@ -81,7 +82,7 @@ function handle()
     if HANDLE[] == C_NULL
         path = library_path()
         isfile(path) || error("the udeep core library is not at $path: build it with `cargo build --release " *
-                              "--features jpeg` in core/, or set ENV[\"UDEEP_CORE_LIB\"]")
+                              "--features jpeg,png` in core/, or set ENV[\"UDEEP_CORE_LIB\"]")
         HANDLE[] = Libdl.dlopen(path)
     end
     return HANDLE[]
@@ -183,5 +184,6 @@ function digest_pixels(rgb::AbstractArray{UInt8, 3})
 end
 
 include("figure.jl")
+include("png.jl")
 
 end # module

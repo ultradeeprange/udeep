@@ -10,7 +10,7 @@ UDEEP_BUILD_CORE chooses what happens:
     0                   never build it
 
 An editable install (pip install -e .) does not build the core here: the package then finds the library in
-core/target/release, where `cargo build --release --features jpeg` puts it.
+core/target/release, where `cargo build --release --features jpeg,png` puts it.
 """
 import os
 import shutil
@@ -37,7 +37,7 @@ WITH_CORE = CHOICE != "0" and CARGO is not None and (CORE / "Cargo.toml").is_fil
 
 def build_core() -> Path:
     """Build the core for release and return the library's path."""
-    command = [CARGO, "build", "--release", "--locked", "--features", "jpeg", "--manifest-path", str(CORE / "Cargo.toml")]
+    command = [CARGO, "build", "--release", "--locked", "--features", "jpeg,png", "--manifest-path", str(CORE / "Cargo.toml")]
     subprocess.run(command, check=True)
     target = os.environ.get("CARGO_BUILD_TARGET")                 # a cross build puts its output one level down
     built = CORE / "target" / (target or "") / "release" / LIBRARY

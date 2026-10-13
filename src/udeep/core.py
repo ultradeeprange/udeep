@@ -94,6 +94,25 @@ def _load():
                         ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t)]
                     dll.udeep_gainmap_from_renders.restype = ctypes.c_int32
                     _state["files"] = True
+                if all(hasattr(dll, f) for f in ("udeep_png_pq", "udeep_png_pq_size", "udeep_png_pq_read",
+                                                 "udeep_levels_pq16")):                             # the png feature
+                    bytes_ = ctypes.POINTER(ctypes.c_uint8)
+                    size = ctypes.POINTER(ctypes.c_size_t)
+                    dll.udeep_bytes_free.argtypes = [bytes_, ctypes.c_size_t]
+                    dll.udeep_bytes_free.restype = None
+                    dll.udeep_png_pq.argtypes = [_DOUBLES, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
+                                                   ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(bytes_), size]
+                    dll.udeep_png_pq.restype = ctypes.c_int32
+                    dll.udeep_png_pq_size.argtypes = [ctypes.c_char_p, ctypes.c_size_t, size, size]
+                    dll.udeep_png_pq_size.restype = ctypes.c_int32
+                    dll.udeep_png_pq_read.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_double, _DOUBLES,
+                                                        ctypes.c_size_t]
+                    dll.udeep_png_pq_read.restype = ctypes.c_int32
+                    dll.udeep_levels_pq16.argtypes = [
+                        ctypes.POINTER(_Record), ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
+                        ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, _DOUBLES, _DOUBLES, size]
+                    dll.udeep_levels_pq16.restype = ctypes.c_int32
+                    _state["png"] = True
             except (OSError, AttributeError):        # not loadable here, or a build older than these functions
                 _state["library"] = None
     return _state["library"]
@@ -107,6 +126,11 @@ def available() -> bool:
 def files() -> bool:
     """Whether the core in use can write and read gain-map JPEGs (it was built with its `jpeg` feature)."""
     return enabled() and bool(_state.get("files"))
+
+
+def png() -> bool:
+    """Whether the core in use can write and read 16-bit PQ PNGs (it was built with its `png` feature)."""
+    return enabled() and bool(_state.get("png"))
 
 
 def enable(on: bool = True) -> None:
@@ -202,6 +226,50 @@ def write_gainmap(sdr: np.ndarray, hdr: np.ndarray, headroom: float, quality: in
         return ctypes.string_at(data, length.value)
     finally:
         dll.udeep_bytes_free(data, length.value)
+
+
+def write_png(rgb: np.ndarray, white_nits: float, xmp: bytes = b"") -> bytes:
+    """The bytes of a 16-bit PQ PNG, as udeep.export.write_png_pq writes one: `rgb` is height x width x 3, linear,
+    in multiples of SDR white. The codes are the reference's; the compressed bytes are the core's own."""
+    dll = _load()
+    rgb = np.ascontiguousarray(rgb, dtype=np.float64)
+    data, length = ctypes.POINTER(ctypes.c_uint8)(), ctypes.c_size_t()
+    _check(dll.udeep_png_pq(_pointer(rgb), rgb.shape[1], rgb.shape[0], white_nits, xmp, len(xmp), ctypes.byref(data),
+                              ctypes.byref(length)))
+    try:
+        return ctypes.string_at(data, length.value)
+    finally:
+        dll.udeep_bytes_free(data, length.value)
+
+
+def read_png(data: bytes, white_nits: float) -> np.ndarray | None:
+    """A 16-bit PQ PNG as light: float64, height x width x 3, linear RGB in multiples of the white written at
+    `white_nits`. None when the bytes are a PNG of another kind, for the caller to say so."""
+    dll = _load()
+    width, height = ctypes.c_size_t(), ctypes.c_size_t()
+    status = dll.udeep_png_pq_size(data, len(data), ctypes.byref(width), ctypes.byref(height))
+    if status == 8:
+        return None
+    _check(status)
+    out = np.empty((height.value, width.value, 3), dtype=np.float64)
+    _check(dll.udeep_png_pq_read(data, len(data), white_nits, _pointer(out), out.size))
+    return out
+
+
+def levels_pq16(mapping, noise: tuple = ("unknown", None), white_nits: float = 203.0, samples: int = 1 << 20) -> dict:
+    """The levels of a 16-bit PQ file of this mapping, as the core works them out: how many there are, the widest
+    in data units, and the data criterion's worst ratio for `noise` (None when the noise is unknown). The
+    reference is udeep.metadata.data_steps_pq16 with rounding_to_noise."""
+    dll = _load()
+    table = mapping.table
+    values = None if table is None else np.ascontiguousarray(np.concatenate([table.below, table.above]), dtype=np.float32)
+    pointer = None if values is None else values.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+    model = {"unknown": 0, "constant": 1, "poisson": 2, "relative": 3, "tolerance": 4}[noise[0]]
+    widest, ratio, count = ctypes.c_double(), ctypes.c_double(), ctypes.c_size_t()
+    _check(dll.udeep_levels_pq16(ctypes.byref(_record(mapping)), pointer, 0 if table is None else table.nodes,
+                                   white_nits, samples, model, 0.0 if noise[1] is None else float(noise[1]),
+                                   ctypes.byref(widest), ctypes.byref(ratio), ctypes.byref(count)))
+    return {"levels": count.value, "max_data_step": widest.value, "worst": None if model == 0 else ratio.value}
 
 
 def read_gainmap(data: bytes, display_boost: float, threads: int = 0) -> np.ndarray | None:

@@ -31,9 +31,9 @@ checked against it through the golden vectors in `src/udeep/golden.json`.
 
 ```sh
 python -m pip install -e ".[test]"
-cargo build --release --features jpeg --manifest-path core/Cargo.toml    # the Rust core; optional, but most tests use it
+cargo build --release --features jpeg,png --manifest-path core/Cargo.toml    # the Rust core; optional, but most tests use it
 python -m pytest
-cargo test --release --features jpeg --manifest-path core/Cargo.toml
+cargo test --release --features jpeg,png --manifest-path core/Cargo.toml
 julia --project=julia/UDeepCore -e 'using Pkg; Pkg.test()'
 ```
 

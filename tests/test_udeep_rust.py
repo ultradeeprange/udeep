@@ -52,7 +52,7 @@ class CDeclaration(ctypes.Structure):
 
 @pytest.fixture(scope="session")
 def lib():
-    built = subprocess.run([CARGO, "build", "--release", "--features", "jpeg"], cwd=CORE, capture_output=True, text=True,
+    built = subprocess.run([CARGO, "build", "--release", "--features", "jpeg,png"], cwd=CORE, capture_output=True, text=True,
                            check=False)
     assert built.returncode == 0, built.stderr[-2000:]
     name = {"win32": "udeep_core.dll", "darwin": "libudeep_core.dylib"}.get(sys.platform, "libudeep_core.so")

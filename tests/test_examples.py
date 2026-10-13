@@ -65,5 +65,6 @@ def test_the_detector_frame_is_a_rendering_as_a_jpeg_and_a_data_record_as_a_16_b
     assert jpeg["record"] == "rendering" and jpeg["ratio"] > 1.0 and jpeg["max_step"] > 10.0
     assert png["record"] == "data-record" and png["ratio"] <= 0.1 and png["max_step"] < 1.0 and png["levels"] > 30_000
     assert png["recovered_exactly"] and png["recovered_error"] <= png["max_step"] / 2 + 1e-9   # the counts come back
+    assert png["report"].ok and png["report"].status("precision") == "pass" and png["report"].status("data read back") == "pass"
     declared = read_metadata(png["path"])
     assert (declared.noise_model, declared.noise_parameter, declared.data_unit) == ("constant", 3.0, "counts")

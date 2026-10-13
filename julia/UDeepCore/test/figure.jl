@@ -128,6 +128,29 @@ end
         bare = gainmap_jpeg(view.sdr, view.hdr, 4.0)
         @test !occursin("udeep:", String(copy(bare))) && length(bare) < length(file)
         @test_throws DimensionMismatch gainmap_jpeg(view.sdr, view.hdr[1:10, :, :], 4.0)
+    end
+
+    @testset "the 16-bit PQ PNG" begin
+        m = Mapping(:linear, 0.0, 4095.0, 1000.0, 4.0)
+        data = [mod(37.0 * i + 101.0 * j, 4096.0) for i in 1:40, j in 1:56]
+        view = hdr_view(data, m; mode = :extend, cmap = "grey")
+        file = png_pq(view.hdr)
+        back = read_png_pq(file)
+        @test size(back) == size(view.hdr) && maximum(abs.(back .- view.hdr)) < 3e-3
+        @test round.(value(m, back[:, :, 2])) == data                              # the counts come back
+        @test !occursin("udeep:", String(copy(file)))                              # nothing declared, nothing claimed
+        step, ratio, count = levels_pq16(m, nothing; noise = (:constant, 3.0))
+        coarse_step, coarse_ratio = levels(m, nothing, 4.0; noise = (:constant, 3.0))
+        @test step < 1.0 < coarse_step && ratio <= 0.1 < coarse_ratio && count > 30_000
+        @test levels_pq16(m, nothing)[2] === nothing
+        fire = colour_table("fire", 4.0)
+        @test levels_pq16(m, fire; noise = (:tolerance, 5.0))[3] > 10_000
+        colour = png_pq(hdr_view(data, m; mode = :extend, cmap = "fire").hdr; white_nits = 100.0)
+        lit = hdr_view(data, m; mode = :extend, cmap = "fire").hdr
+        @test maximum(abs.(read_png_pq(colour; white_nits = 100.0) .- lit)) < 3e-3    # measured 6e-4: a 16-bit step, through the matrix
+        @test_throws DimensionMismatch png_pq(zeros(4, 5, 2))
+        @test_throws ArgumentError read_png_pq(UInt8[1, 2, 3, 4, 5, 6, 7, 8, 9])
+        @test_throws ArgumentError levels_pq16(m, nothing; noise = (:constant, nothing))
         @test_throws ArgumentError gainmap_jpeg(view.sdr .+ 1.0, view.hdr, 4.0)           # SDR above white
         @test_throws ArgumentError gainmap_jpeg(view.sdr, view.hdr, 1.0)                  # no headroom
     end

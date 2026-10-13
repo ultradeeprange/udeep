@@ -9,6 +9,22 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ## Unreleased
 
+### 2026-10-14
+
+- **The 16-bit PQ PNG is in the Rust core** (feature `png`): a writer, a reader that takes any of PNG's row
+  filters, and the stored levels of such a file (`levels_pq16`), with their C functions. The core is now built
+  with `--features jpeg,png`. The two writers store the same codes; the compressed bytes are each writer's own.
+- **Python:** `udeep.read_png_pq`, `udeep.metadata.data_steps_pq16`, and `write_png_pq` through the core when it
+  is in use. The package no longer leaves the 16-bit levels to the caller.
+- **The validator checks a 16-bit PQ PNG**, and above all its claim to be a data record: the levels are worked
+  out again from the declaration and set against the stated uncertainty, and with the data supplied the values
+  are read back out of the file and compared. A PNG used to be reported as failing because it was not a JPEG.
+- **Julia:** `png_pq`, `read_png_pq`, `levels_pq16` and `xmp_packet`, and a fourth worked example,
+  `detector_record.jl`, which gives the same numbers as the Python one. The Python reference reads the
+  Julia-written file's declaration and confirms it.
+- One thing this showed and did not settle: a PQ file does not say what luminance its white is written at. The
+  tools write and read at 203 cd/m2 (BT.2408), and the validator says that it assumes so.
+
 ### 2026-10-13
 
 - **Worked examples** (`examples/`): a statistical knee on a spectral line scan, a preset knee with saturated pixels

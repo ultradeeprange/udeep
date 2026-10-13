@@ -37,7 +37,7 @@ coarser steps matter depends on the data's noise, which is the comparison the fi
 - **Profile (draft standard):** [`profile/udeep-figure-profile-v0.3.md`](profile/udeep-figure-profile-v0.3.md)
 - **Python reference:** <https://ultradeeprange.github.io/udeep/reference/>, every public function and class
 - **Worked examples:** [`examples/`](examples/): three on where to put white, and one on depth, in which a 16-bit
-  file gives a detector frame back to the whole count
+  file gives a detector frame back to the whole count; the same four in Julia
 
 > Status: research preview. The profile is a working draft, not endorsed by any standards body. Its
 > device evidence so far comes from one iPhone 16 Pro and one desktop HDR monitor.
@@ -88,6 +88,10 @@ files of one figure (profile 8.7). The project's site shows whichever suits the 
 That command builds the Rust core as it installs, if Rust (`cargo`) is on the machine, and installs without it if
 not. `python -c "import udeep.core as c; print(c.enabled())"` says which you have. Wheels that carry the core, for
 Linux, Windows and macOS, are built by the repository's `wheels` workflow; there is no release of them yet.
+
+A 16-bit PQ PNG is written by `udeep.write_png_pq` and read back by `udeep.read_png_pq`; the levels such a file
+holds are worked out by `udeep.metadata.data_steps_pq16`, and `python -m udeep.validate FILE.png` checks a file
+that declares itself a data record against that.
 
 Wherever the core is present (in an installed wheel, or built in a checkout with `cargo build --release --features
 jpeg` in `core/`), the package uses it: the mapping and colours run on every processor core (a 64-megapixel view in under 4 s where NumPy takes about 30),

@@ -11,14 +11,16 @@ publish = false
 name = "udeep_core"
 crate-type = ["rlib", "cdylib"]
 
-# The mapping, the metadata and the checks depend on nothing. Only the image writer needs other crates, and it
-# is behind a feature: build with `--features jpeg` to get it.
+# The mapping, the metadata and the checks depend on nothing. Only the image writers need other crates, and each
+# is behind a feature: build with `--features jpeg,png` to get both.
 [features]
 jpeg = ["dep:jpeg-encoder", "dep:jpeg-decoder"]
+png = ["dep:miniz_oxide"]
 
 [dependencies]
 jpeg-encoder = { version = "0.6", optional = true }
 jpeg-decoder = { version = "0.3", optional = true, default-features = false }
+miniz_oxide = { version = "0.8", optional = true }
 
 # The golden-vector test reads JSON.
 [dev-dependencies]

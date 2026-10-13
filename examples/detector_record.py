@@ -8,22 +8,18 @@ rounding error, a step over the square root of 12, may be at most a tenth of the
 too coarse, so it is a rendering. The PNG's are fine enough, so it may be declared a data record: a reader can
 take the counts back out of it to within the noise.
 
-The package works out the levels of its 8-bit path (udeep.metadata.data_steps). The 16-bit PQ levels are worked
-out here, in the same way, from the same functions the PNG writer uses.
+The levels are worked out by the package (udeep.metadata.data_steps for the 8-bit path, data_steps_pq16 for the
+16-bit one), and the PNG is read back by it (udeep.read_png_pq).
 """
 import dataclasses
-import struct
-import zlib
 from pathlib import Path
 
 import numpy as np
 from _common import OUTPUT
 
-from udeep import Declaration, Mapping, hdr_view, read_metadata, to_xmp, write_gainmap_jpeg, write_png_pq
-from udeep.color import REF_WHITE_NITS, srgb_to_bt2020
-from udeep.export import pq_encode
-from udeep.jnd import pq_decode
-from udeep.metadata import data_steps, description, digest_data, rounding_to_noise
+from udeep import Declaration, hdr_view, read_metadata, read_png_pq, to_xmp, write_gainmap_jpeg, write_png_pq
+from udeep.metadata import data_steps, data_steps_pq16, description, digest_data, rounding_to_noise
+from udeep.validate import validate
 
 FULL_SCALE, READ_NOISE, KNEE, HEADROOM = 4095.0, 3.0, 1000.0, 4.0
 STRETCH = {"kind": "linear", "lo": 0.0, "hi": FULL_SCALE}
@@ -38,39 +34,6 @@ def frame(size: int = 256) -> np.ndarray:
     return np.clip(np.round(image + rng.normal(0.0, READ_NOISE, image.shape)), 0.0, FULL_SCALE)
 
 
-def pq16_steps(mapping: Mapping, samples: int = 1 << 20) -> tuple[np.ndarray, np.ndarray]:
-    """The levels of a 16-bit PQ PNG across the declared range: where each run of data values that share one code
-    starts and how wide it is, in data units. The code is the writer's own: the colour, to BT.2020, to PQ at the
-    reference white, to 16 bits."""
-    t = np.linspace(0.0, 1.0, samples)
-    colour = mapping.colours(mapping.light_at(t))
-    code = np.round(pq_encode(np.maximum(srgb_to_bt2020(colour), 0.0) * REF_WHITE_NITS) * 65535.0)
-    edges = np.flatnonzero(np.any(code[1:] != code[:-1], axis=1)) + 1
-    x = mapping.value_at(np.concatenate([[0.0], t[edges], [1.0]]))
-    return x[:-1], np.diff(x)
-
-
-def counts_from_png(path: Path, mapping: Mapping) -> np.ndarray:
-    """The data, taken back out of the 16-bit PQ PNG: its codes, to light, to the value the mapping gives that light.
-    The file is read here directly (16 bits a channel, rows unfiltered, as udeep.export writes them)."""
-    raw = path.read_bytes()
-    at, parts, size = 8, [], None
-    while at < len(raw):
-        length, tag = struct.unpack(">I4s", raw[at:at + 8])
-        body = raw[at + 8:at + 8 + length]
-        if tag == b"IHDR":
-            size = struct.unpack(">II", body[:8])
-        elif tag == b"IDAT":
-            parts.append(body)
-        at += 12 + length
-    width, height = size
-    rows = np.frombuffer(zlib.decompress(b"".join(parts)), dtype=np.uint8).reshape(height, 1 + width * 6)
-    assert not rows[:, 0].any(), "this reader takes unfiltered rows only"
-    codes = rows[:, 1:].copy().view(">u2").reshape(height, width, 3)
-    light = pq_decode(codes[..., 1] / 65535.0) / REF_WHITE_NITS        # a grey figure: any channel is the light
-    return mapping.value(light)
-
-
 def main(folder: Path = OUTPUT) -> dict:
     folder.mkdir(parents=True, exist_ok=True)
     data = frame()
@@ -79,7 +42,7 @@ def main(folder: Path = OUTPUT) -> dict:
     common = {**dataclasses.asdict(mapping), "data_unit": "counts", "knee_rule": "preset; white at 1,000 counts",
               "noise_model": NOISE[0], "noise_parameter": NOISE[1], "preset": "extend", "data_digest": digest_data(data)}
     out = {}
-    for name, steps in (("jpeg", data_steps(mapping, scaled_by=HEADROOM)), ("png", pq16_steps(mapping))):
+    for name, steps in (("jpeg", data_steps(mapping, scaled_by=HEADROOM)), ("png", data_steps_pq16(mapping))):
         against = rounding_to_noise(mapping, NOISE, steps=steps)
         declared = Declaration(**common, max_data_step=float(steps[1].max()), rounding_to_noise=against["worst"],
                                record="data-record" if against["meets"] else "rendering")
@@ -94,11 +57,14 @@ def main(folder: Path = OUTPUT) -> dict:
                      "ratio": read.rounding_to_noise, "record": read.record, "meets": against["meets"]}
         print(f"{path.name}: {out[name]['levels']:,} levels across the range; widest step {read.max_data_step:.3g} counts; "
               f"rounding is {read.rounding_to_noise:.3g} of the noise (limit 0.1); the file declares itself a {read.record}")
-    back = counts_from_png(out["png"]["path"], mapping)
+    back = mapping.value(read_png_pq(out["png"]["path"])[..., 1])       # a grey figure: any channel is the light
     out["png"]["recovered_error"] = float(np.abs(back - data).max())
     out["png"]["recovered_exactly"] = bool(np.array_equal(np.round(back), data))
     print(f"read back from the PNG: every count within {out['png']['recovered_error']:.3g} of the frame; "
           f"rounded to whole counts, {'the frame itself' if out['png']['recovered_exactly'] else 'NOT the frame'}")
+    report = validate(out["png"]["path"], data=data)           # the claim, checked from the file and the data
+    out["png"]["report"] = report
+    print(report)
     return out
 
 

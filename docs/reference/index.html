@@ -100,12 +100,12 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      86 public functions and classes in 17 Python modules, and the 28 names the Julia
+      94 public functions and classes in 17 Python modules, and the 32 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
 <p>What <code>import udeep</code> gives. The matplotlib interface is its own module, <a href="#mpl"><code>udeep.mpl</code></a>, imported as <code>import udeep.mpl as hp</code>.</p>
-<p><a href="#metadata.caption"><code>caption</code></a>, <a href="#cmap.cmap"><code>cmap</code></a>, <a href="#metadata.Declaration"><code>Declaration</code></a>, <a href="#view.hdr_view"><code>hdr_view</code></a>, <a href="#view.HdrView"><code>HdrView</code></a>, <a href="#tone.knee_at_percentile"><code>knee_at_percentile</code></a>, <a href="#mapping.Mapping"><code>Mapping</code></a>, <code>MAPS</code>, <a href="#metadata.max_data_step"><code>max_data_step</code></a>, <a href="#export.pq_encode"><code>pq_encode</code></a>, <a href="#gainmap.read_gainmap_jpeg"><code>read_gainmap_jpeg</code></a>, <a href="#metadata.read_metadata"><code>read_metadata</code></a>, <a href="#scale.scale"><code>scale</code></a>, <a href="#metadata.to_xmp"><code>to_xmp</code></a>, <a href="#tone.tone"><code>tone</code></a>, <a href="#gainmap.write_gainmap_jpeg"><code>write_gainmap_jpeg</code></a>, <a href="#export.write_png_pq"><code>write_png_pq</code></a>, <a href="#export.write_png_sdr"><code>write_png_sdr</code></a></p>
+<p><a href="#metadata.caption"><code>caption</code></a>, <a href="#cmap.cmap"><code>cmap</code></a>, <a href="#metadata.Declaration"><code>Declaration</code></a>, <a href="#view.hdr_view"><code>hdr_view</code></a>, <a href="#view.HdrView"><code>HdrView</code></a>, <a href="#tone.knee_at_percentile"><code>knee_at_percentile</code></a>, <a href="#mapping.Mapping"><code>Mapping</code></a>, <code>MAPS</code>, <a href="#metadata.max_data_step"><code>max_data_step</code></a>, <a href="#export.pq_encode"><code>pq_encode</code></a>, <a href="#gainmap.read_gainmap_jpeg"><code>read_gainmap_jpeg</code></a>, <a href="#metadata.read_metadata"><code>read_metadata</code></a>, <a href="#export.read_png_pq"><code>read_png_pq</code></a>, <a href="#scale.scale"><code>scale</code></a>, <a href="#metadata.to_xmp"><code>to_xmp</code></a>, <a href="#tone.tone"><code>tone</code></a>, <a href="#gainmap.write_gainmap_jpeg"><code>write_gainmap_jpeg</code></a>, <a href="#export.write_png_pq"><code>write_png_pq</code></a>, <a href="#export.write_png_sdr"><code>write_png_sdr</code></a></p>
 <h2 id="mpl">udeep.mpl</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/mpl.py">src/udeep/mpl.py</a></p>
 <p>matplotlib entry point: udeep.mpl.imshow / colorbar / savefig_hdr.</p>
@@ -446,12 +446,29 @@ The HDR file is BT.2020 primaries, PQ transfer (BT.2100), signalled by a PNG <co
 <h3 id="export.pq_encode"><span class="kind">function</span>pq_encode</h3>
 <pre class="sig">pq_encode(nits) -&gt; np.ndarray</pre>
 <p class="none">No description in the source.</p>
+<h3 id="export.pq_decode"><span class="kind">function</span>pq_decode</h3>
+<pre class="sig">pq_decode(signal) -&gt; np.ndarray</pre>
+<p>PQ signal in [0, 1] -&gt; luminance in cd/m^2 (SMPTE ST 2084): the inverse of pq_encode.</p>
+<h3 id="export.pq16_codes"><span class="kind">function</span>pq16_codes</h3>
+<pre class="sig">pq16_codes(rgb, sdr_white_nits: float=REF_WHITE_NITS) -&gt; np.ndarray</pre>
+<p>The 16-bit codes a PQ PNG stores for linear RGB in multiples of SDR white: to BT.2020, to PQ with white at
+<code>sdr_white_nits</code>, rounded to 16 bits. A NaN is stored as 0.</p>
 <h3 id="export.write_png_pq"><span class="kind">function</span>write_png_pq</h3>
 <pre class="sig">write_png_pq(rgb, path, sdr_white_nits: float=REF_WHITE_NITS, xmp: bytes | None=None) -&gt; None</pre>
-<p>PQ is absolute, so 1.0 is written at <code>sdr_white_nits</code>. Use the display&#x27;s SDR white
-level (Windows: Settings &gt; Display &gt; HDR &gt; SDR content brightness) so non-highlight
-content matches the desktop; the BT.2408 default (203) suits an unknown display.
-<code>xmp</code> is an XMP packet (udeep.metadata.to_xmp), stored in an iTXt chunk.</p>
+<p>A 16-bit PQ PNG of <code>rgb</code> (height x width x 3, linear, multiples of SDR white). PQ is absolute, so 1.0 is
+written at <code>sdr_white_nits</code>. Use the display&#x27;s SDR white level (Windows: Settings &gt; Display &gt; HDR &gt; SDR
+content brightness) so non-highlight content matches the desktop; the BT.2408 default (203) suits an unknown
+display, and is the one to use for a file that is to be read back as data. <code>xmp</code> is an XMP packet
+(udeep.metadata.to_xmp), stored in an iTXt chunk.</p>
+<p>Written by the Rust core when it is in use (udeep.core): the codes are the same as this function&#x27;s own, and
+the compressed bytes differ. read_png_pq reads either.</p>
+<h3 id="export.read_png_pq"><span class="kind">function</span>read_png_pq</h3>
+<pre class="sig">read_png_pq(path, sdr_white_nits: float=REF_WHITE_NITS) -&gt; np.ndarray</pre>
+<p>A 16-bit PQ PNG as light: float64, height x width x 3, linear RGB (BT.709 primaries) in multiples of the
+white written at <code>sdr_white_nits</code>. It is what write_png_pq was given, to within the file&#x27;s 16-bit steps: for a
+grey figure, any channel is the light, and Mapping.value turns it back into data.</p>
+<p>ValueError for a PNG of another kind: it must be 16 bits a channel, RGB, not interlaced, and declared BT.2020
+PQ in a cICP chunk. Read by the Rust core when it is in use, otherwise by the code here.</p>
 <h3 id="export.srgb_oetf"><span class="kind">function</span>srgb_oetf</h3>
 <pre class="sig">srgb_oetf(v) -&gt; np.ndarray</pre>
 <p class="none">No description in the source.</p>
@@ -545,6 +562,17 @@ how wide it is, both in data units.</p>
 the SDR figure; above it, the 8-bit sRGB colour of the HDR figure scaled by <code>scaled_by</code> (default: the
 headroom). JPEG compression adds error on top of this and is not included. The range is sampled at
 <code>samples</code> points, so the result is good to about two parts in <code>samples</code> of the declared range.</p>
+<h3 id="metadata.data_steps_pq16"><span class="kind">function</span>data_steps_pq16</h3>
+<pre class="sig">data_steps_pq16(
+    mapping: Mapping,
+    sdr_white_nits: float = REF_WHITE_NITS,
+    samples: int = 1 &lt;&lt; 20,
+) -&gt; tuple[np.ndarray, np.ndarray]</pre>
+<p>The stored levels of a 16-bit PQ PNG (udeep.export.write_png_pq) across the declared range: where each run
+of data values sharing one code starts, and how wide it is, both in data units.</p>
+<p>Unlike the 8-bit path of data_steps there is one code for each colour and no split at the knee. Such a file
+has tens of thousands of levels, so the range is sampled at about a million points by default. Give the
+result to rounding_to_noise as <code>steps</code> to see whether the file may be a data record (profile 7.3.1).</p>
 <h3 id="metadata.max_data_step"><span class="kind">function</span>max_data_step</h3>
 <pre class="sig">max_data_step(mapping: Mapping, scaled_by: float | None=None, samples: int=1 &lt;&lt; 16) -&gt; float</pre>
 <p>The widest run of data values that share one stored code, in data units (profile 7.2.3: MaxDataStep).</p>
@@ -575,6 +603,9 @@ print(report); report.ok</pre>
 <pre class="block">import udeep.mpl as hp
 report = hp.validate(fig, &quot;figure.jpg&quot;)      # also compares the pixels with the figure that made it</pre>
 <pre class="block">python -m udeep.validate figure.jpg ...    # exit status 1 if any file fails</pre>
+<p>Two kinds of file are checked: the gain-map JPEG, which is always a rendering, and the 16-bit PQ PNG
+(udeep.export.write_png_pq), which may declare itself a data record. For the PNG the check that matters is that
+claim: the file&#x27;s levels are worked out again and set against the stated uncertainty (profile 7.3.1).</p>
 <p>A file carries its declared mapping but not its data, so on its own it can show that the declaration is
 complete and consistent, that the mapping can be inverted, that nothing exceeds the headroom and that the stated
 precision is right. Whether the pixels are that mapping of the data (points 3 to 5) needs the figure as well.</p>
@@ -604,7 +635,7 @@ checked becomes a failed check that says what it was.</p>
     data_digest: str | None = None,
     sdr_digest: str | None = None,
 ) -&gt; Report</pre>
-<p>Check the gain-map JPEG at <code>path</code>. <code>expected</code> is (sdr, hdr): the fair SDR figure and the HDR figure as
+<p>Check the gain-map JPEG, or the 16-bit PQ PNG, at <code>path</code>. <code>expected</code> is (sdr, hdr): the fair SDR figure and the HDR figure as
 linear RGB arrays in multiples of SDR white, for the checks that need the pixels (udeep.mpl.validate
 supplies them from a figure). <code>data</code> is the array the figure was made from and <code>sdr</code> the path of its SDR figure
 of record: each is compared with the digest the file declares (or pass the digests themselves).</p>
@@ -773,6 +804,9 @@ build would put it), then in core/target/release of a source checkout (cargo bui
 <h3 id="core.files"><span class="kind">function</span>files</h3>
 <pre class="sig">files() -&gt; bool</pre>
 <p>Whether the core in use can write and read gain-map JPEGs (it was built with its <code>jpeg</code> feature).</p>
+<h3 id="core.png"><span class="kind">function</span>png</h3>
+<pre class="sig">png() -&gt; bool</pre>
+<p>Whether the core in use can write and read 16-bit PQ PNGs (it was built with its <code>png</code> feature).</p>
 <h3 id="core.enable"><span class="kind">function</span>enable</h3>
 <pre class="sig">enable(on: bool=True) -&gt; None</pre>
 <p>Map with the core from now on (or, with on=False, with NumPy again). Raises RuntimeError if the core is
@@ -801,6 +835,24 @@ With dtype=np.float32 the colours are worked out in float64 a slab at a time and
 <p>The bytes of a gain-map JPEG, as udeep.gainmap.write_gainmap_jpeg writes one: <code>sdr</code> and <code>hdr</code> are float64,
 height x width x 3, already checked for shape and range by the caller. The core holds the file within the
 brightest value of <code>hdr</code> on its own decoder, which is also the one read_gainmap uses.</p>
+<h3 id="core.write_png"><span class="kind">function</span>write_png</h3>
+<pre class="sig">write_png(rgb: np.ndarray, white_nits: float, xmp: bytes=b&#x27;&#x27;) -&gt; bytes</pre>
+<p>The bytes of a 16-bit PQ PNG, as udeep.export.write_png_pq writes one: <code>rgb</code> is height x width x 3, linear,
+in multiples of SDR white. The codes are the reference&#x27;s; the compressed bytes are the core&#x27;s own.</p>
+<h3 id="core.read_png"><span class="kind">function</span>read_png</h3>
+<pre class="sig">read_png(data: bytes, white_nits: float) -&gt; np.ndarray | None</pre>
+<p>A 16-bit PQ PNG as light: float64, height x width x 3, linear RGB in multiples of the white written at
+<code>white_nits</code>. None when the bytes are a PNG of another kind, for the caller to say so.</p>
+<h3 id="core.levels_pq16"><span class="kind">function</span>levels_pq16</h3>
+<pre class="sig">levels_pq16(
+    mapping,
+    noise: tuple = (&#x27;unknown&#x27;, None),
+    white_nits: float = 203.0,
+    samples: int = 1 &lt;&lt; 20,
+) -&gt; dict</pre>
+<p>The levels of a 16-bit PQ file of this mapping, as the core works them out: how many there are, the widest
+in data units, and the data criterion&#x27;s worst ratio for <code>noise</code> (None when the noise is unknown). The
+reference is udeep.metadata.data_steps_pq16 with rounding_to_noise.</p>
 <h3 id="core.read_gainmap"><span class="kind">function</span>read_gainmap</h3>
 <pre class="sig">read_gainmap(data: bytes, display_boost: float, threads: int=0) -&gt; np.ndarray | None</pre>
 <p>A gain-map JPEG as a display with <code>display_boost</code> of headroom shows it: float32, height x width x 3. None
@@ -1035,7 +1087,7 @@ viewer shows <code>sdr</code>; an HDR one shows <code>hdr</code>, up to <code>he
 of <code>hdr</code> on the core&#x27;s own decoder: the writer decodes its gain map and lowers it until nothing is over, and throws
 if it cannot. Keep <code>gain_quality</code> at 100 unless the figure is grey: below it a gain map is unreliable with a
 colour map (<code>&quot;fire&quot;</code>, <code>&quot;ice&quot;</code>), with this writer or any other, and the call may be refused.</p>
-<p>Needs a core library built with <code>--features jpeg</code>.</p>
+<p>Needs a core library built with <code>--features jpeg,png</code>.</p>
 <h3 id="julia.gainmap_from_renders"><span class="kind">function</span>gainmap_from_renders</h3>
 <pre class="block">gainmap_from_renders(base, scaled, black, white, headroom; quality = 95, gain_quality = 100, description = &quot;&quot;)</pre>
 <p>A figure&#x27;s gain-map JPEG straight from four 8-bit renders of it, each <code>height x width x 3</code> (<code>UInt8</code>, sRGB codes):
@@ -1086,6 +1138,30 @@ end</pre>
 them are the same in every theme, and so is the data&#x27;s digest. Only the SDR figure differs, so each theme is its
 own file with its own SDR digest (profile 8.7). The colours are those of the Python reference&#x27;s
 <code>udeep.mpl.theme</code>. A colour given to a plot by hand, such as <code>text!(...; color = :black)</code>, is not changed.</p>
+<h3 id="julia.xmp_packet"><span class="kind">function</span>xmp_packet</h3>
+<pre class="block">xmp_packet(d)</pre>
+<p>The declaration as a complete XMP packet, as the reference&#x27;s <code>udeep.metadata.to_xmp</code> writes it: the element of
+<code>description</code> inside the packet&#x27;s wrapper. It is what a PNG carries in its <code>iTXt</code> chunk.</p>
+<h3 id="julia.levels_pq16"><span class="kind">function</span>levels_pq16</h3>
+<pre class="block">levels_pq16(m, table; white_nits = 203, noise = (:unknown, nothing), samples = 1048576)</pre>
+<p>The stored levels of a 16-bit PQ PNG of <code>m</code> through <code>table</code> (<code>nothing</code> for grey), with SDR white written at
+<code>white_nits</code>. Returns <code>(max_data_step, rounding_to_noise, count)</code>: the widest run of data values that share one
+code, the data criterion&#x27;s worst ratio of rounding error to the stated uncertainty (<code>nothing</code> when the noise is
+unknown), and how many levels there are. A file whose ratio is 0.1 or less (1 or less for a tolerance) may be
+declared a data record (profile 7.3.1). <code>noise</code> is as for <code>levels</code>, which does the same for the 8-bit
+gain-map JPEG.</p>
+<h3 id="julia.png_pq"><span class="kind">function</span>png_pq</h3>
+<pre class="block">png_pq(rgb; white_nits = 203, declaration = nothing)</pre>
+<p>A 16-bit PQ PNG as bytes: <code>rgb</code> is <code>height x width x 3</code>, linear RGB in multiples of SDR white (the <code>hdr</code> of an
+<code>HdrView</code>), and <code>1.0</code> is written at <code>white_nits</code>. The file declares BT.2020 primaries and the PQ transfer
+function in a <code>cICP</code> chunk. With a <code>Declaration</code> it carries that as XMP; without one it declares nothing
+and does not conform to the profile. A NaN is written as 0.</p>
+<p>This is the form in which a file may be a data record: see <code>levels_pq16</code> and <code>read_png_pq</code>.</p>
+<h3 id="julia.read_png_pq"><span class="kind">function</span>read_png_pq</h3>
+<pre class="block">read_png_pq(file; white_nits = 203)</pre>
+<p>A 16-bit PQ PNG, given as its bytes, as light: <code>height x width x 3</code>, linear RGB in multiples of the white written
+at <code>white_nits</code>. It is what <code>png_pq</code> was given, to within the file&#x27;s 16-bit steps. For a grey figure any
+channel is the light, and <code>value</code> turns it back into data. Throws for a PNG of another kind.</p>
   </article>
 </div></main>
 <footer><div class="wrap"><p>UDeep · code under BSD-3-Clause.</p></div></footer>

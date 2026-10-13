@@ -56,8 +56,10 @@ and says so. The PNG's levels are finer than the noise allows for, so it may be 
 script shows what that means: it reads the PNG back, turns its codes into light and the light into counts, and
 gets the frame itself, every pixel, to the whole count.
 
-The first three have Makie counterparts in [`julia/UDeepCore/examples/`](../julia/UDeepCore/examples/). The
-depth example does not yet: the Julia package writes gain-map JPEGs only.
+It then asks the validator, which works the levels out again from the file's own declaration and confirms the
+claim: `python -m udeep.validate examples/output/detector_record_pq16.png`.
 
-The numbers in the table are what the script prints. The package works out the levels of its 8-bit path itself;
-the 16-bit levels are worked out in the script, from the same functions the PNG writer uses.
+All four have counterparts in Julia, in [`julia/UDeepCore/examples/`](../julia/UDeepCore/examples/); the depth one
+there gives the same numbers, since both languages take them from the Rust core.
+
+The numbers in the table are what the script prints.

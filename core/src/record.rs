@@ -82,6 +82,32 @@ pub fn levels(mapping: &Mapping, table: Option<&Table>, scaled_by: f64, samples:
     Levels { start: x[..x.len() - 1].to_vec(), width: x.windows(2).map(|w| w[1] - w[0]).collect() }
 }
 
+/// The levels of a 16-bit PQ file ([`crate::pq16_codes`]) with white at `white_nits`: one colour for each value,
+/// the whole range through the one curve, with no split at the knee. There are tens of thousands of them, so the
+/// range wants about a million samples (the reference uses 2^20).
+pub fn levels_pq16(mapping: &Mapping, table: Option<&Table>, white_nits: f64, samples: usize) -> Levels {
+    let samples = samples.max(2);
+    let knee = mapping.knee_position();
+    let step = 1.0 / (samples - 1) as f64;
+    let position = |i: usize| if i == samples - 1 { 1.0 } else { i as f64 * step };
+    let stored = |i: usize| {
+        let light = crate::tone(position(i), knee, mapping.reference_headroom, mapping.exit_slope);
+        crate::pq16_codes(colours(light, table), white_nits)
+    };
+    let mut edges = vec![0.0];
+    let mut previous = stored(0);
+    for i in 1..samples {
+        let now = stored(i);
+        if now != previous {
+            edges.push(position(i));
+            previous = now;
+        }
+    }
+    edges.push(1.0);
+    let x: Vec<f64> = edges.into_iter().map(|t| mapping.value_at(t)).collect();
+    Levels { start: x[..x.len() - 1].to_vec(), width: x.windows(2).map(|w| w[1] - w[0]).collect() }
+}
+
 /// The data's stated uncertainty (profile 5.2).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Noise {

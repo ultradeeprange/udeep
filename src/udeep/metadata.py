@@ -26,7 +26,8 @@ from xml.sax.saxutils import quoteattr
 
 import numpy as np
 
-from udeep.export import srgb_oetf
+from udeep.color import REF_WHITE_NITS
+from udeep.export import pq16_codes, srgb_oetf
 from udeep.mapping import ABOVE_KNEE, Mapping
 
 VERSION = "0.3"
@@ -335,6 +336,21 @@ def data_steps(mapping: Mapping, scaled_by: float | None = None,
     above = y > 1.0
     code = np.concatenate([np.where(above[:, None], lifted, base), above[:, None]], axis=1)
     edges = np.flatnonzero(np.any(code[1:] != code[:-1], axis=1)) + 1          # first sample of each new code
+    x = mapping.value_at(np.concatenate([[0.0], t[edges], [1.0]]))
+    return x[:-1], np.diff(x)
+
+
+def data_steps_pq16(mapping: Mapping, sdr_white_nits: float = REF_WHITE_NITS,
+                    samples: int = 1 << 20) -> tuple[np.ndarray, np.ndarray]:
+    """The stored levels of a 16-bit PQ PNG (udeep.export.write_png_pq) across the declared range: where each run
+    of data values sharing one code starts, and how wide it is, both in data units.
+
+    Unlike the 8-bit path of data_steps there is one code for each colour and no split at the knee. Such a file
+    has tens of thousands of levels, so the range is sampled at about a million points by default. Give the
+    result to rounding_to_noise as `steps` to see whether the file may be a data record (profile 7.3.1)."""
+    t = np.linspace(0.0, 1.0, max(int(samples), 2))
+    code = pq16_codes(mapping.colours(mapping.light_at(t)), sdr_white_nits)
+    edges = np.flatnonzero(np.any(code[1:] != code[:-1], axis=1)) + 1
     x = mapping.value_at(np.concatenate([[0.0], t[edges], [1.0]]))
     return x[:-1], np.diff(x)
 

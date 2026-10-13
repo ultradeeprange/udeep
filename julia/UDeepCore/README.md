@@ -30,10 +30,27 @@ white, up to the headroom. `examples/figure.jl` is a complete script.
 Every exported name is listed, with its description, in the project's
 [reference](https://ultradeeprange.github.io/udeep/reference/#julia).
 
+## Depth: a 16-bit file that holds the data
+
+A gain-map JPEG shows a figure and is always a rendering. A 16-bit PQ PNG can be a data record: a file from which
+the data comes back to within its own uncertainty (profile 7.3).
+
+```julia
+m = Mapping(:linear, 0.0, 4095.0, 1000.0, 4.0)
+view = hdr_view(counts, m; mode = :extend, cmap = "grey")
+step, ratio, n = levels_pq16(m, nothing; noise = (:constant, 3.0))    # the widest step, and it against the noise
+write("frame.png", png_pq(view.hdr; declaration = d))                  # d: a Declaration, record = "data-record" if ratio <= 0.1
+counts_again = value(m, read_png_pq(read("frame.png"))[:, :, 2])       # grey: any channel is the light
+```
+
+`levels(m, table, headroom; noise)` does the same for the 8-bit JPEG. The reference's validator checks either
+file: `python -m udeep.validate frame.png`.
+
 ## Worked examples
 
-Three scripts in `examples/`, the Makie counterparts of the Python ones in the repository's `examples/` folder.
-Each makes its own SYNTHETIC data and writes the ordinary figure and the UDeep file, for a light and a dark page:
+Four scripts in `examples/`, the counterparts of the Python ones in the repository's `examples/` folder. Each
+makes its own SYNTHETIC data. The first three write the ordinary figure and the UDeep file, for a light and a
+dark page; the fourth needs no plotting package:
 
 ```sh
 cd julia/UDeepCore/examples
@@ -41,10 +58,11 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. spectral_map.jl        # a statistical knee: the count that Poisson noise rarely reaches
 julia --project=. microscope_frame.jl    # a preset knee, with the saturated pixels held by a mask
 julia --project=. simulation_field.jl    # a logarithmic stretch, white at ten times the mean
+julia --project=. detector_record.jl     # depth: a 12-bit frame as a rendering (JPEG) and as a data record (PNG)
 ```
 
-They share `common.jl`, which has a small generator of random numbers of its own, so that the data is the same
-on every machine and Julia version. The package's tests run all three.
+They share `random.jl`, a small generator of random numbers of their own, so that the data is the same on every
+machine and Julia version. The package's tests run all four.
 
 - `mode = :highlight` holds single bright pixels at white, so noise cannot sparkle (the file declares how many);
   `:extend` lifts everything above the knee.
@@ -89,7 +107,7 @@ writing a file without Makie.
 
 ## Build and test
 
-    cd ../../core && cargo build --release --features jpeg
+    cd ../../core && cargo build --release --features jpeg,png
     julia --project=. -e 'using Pkg; Pkg.test()'        # 365 tests
 
 The tests cover the golden cases the binding reaches (mappings, the mask rule, stored levels and the data

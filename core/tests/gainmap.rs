@@ -15,8 +15,7 @@ const OFFSET: f64 = 1.0 / 64.0;
 
 fn table(name: &str, headroom: f64) -> Vec<f32> {
     let file = format!("{name}-1-h{headroom}.f32");
-    let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("src").join("udeep").join("tables").join(file);
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("src").join("udeep").join("tables").join(file);
     fs::read(path).expect("a shipped table").as_chunks::<4>().0.iter().map(|b| f32::from_le_bytes(*b)).collect()
 }
 

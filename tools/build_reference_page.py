@@ -23,7 +23,7 @@ PACKAGE = ROOT / "src" / "udeep"
 OUT = ROOT / "docs" / "reference" / "index.html"
 REPO = "https://github.com/ultradeeprange/udeep/blob/main/src/udeep"
 JULIA = ROOT / "julia" / "UDeepCore" / "src"
-JULIA_FILES = ["UDeepCore.jl", "figure.jl"]
+JULIA_FILES = ["UDeepCore.jl", "figure.jl", "png.jl"]
 JULIA_REPO = "https://github.com/ultradeeprange/udeep/blob/main/julia/UDeepCore"
 
 # in the order a reader meets them: making a figure, then the parts it is made of, then checking and support
@@ -173,7 +173,7 @@ def julia_name(definition: str) -> tuple[str, str] | None:
     m = re.match(r"(?:Base\.@kwdef )?(?:mutable )?struct (\w+)", definition)
     if m:
         return "type", m.group(1)
-    m = re.match(r"function (\w+!?)", definition) or re.match(r"(\w+!?)\(.*\) = ", definition)
+    m = re.match(r"function (\w+!?)", definition) or re.match(r"(\w+!?)\(.*\) =( |$)", definition)
     return ("function", m.group(1)) if m else None
 
 

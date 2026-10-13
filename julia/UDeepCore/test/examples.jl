@@ -38,6 +38,19 @@ end
             @test d.mapping.stretch == UDeepCore.STRETCHES.log && d.noise_model == "unknown" && d.mapping.range_low < d.mapping.knee < d.mapping.range_high
         end
     end
+    @testset "detector_record: a rendering in 8 bits, a data record in 16" begin
+        space = example("detector_record")
+        result = redirect_stdout(devnull) do
+            Base.invokelatest(space.record, mktempdir())
+        end
+        @test result.jpeg.record == "rendering" && result.jpeg.rounding_to_noise > 1.0 && result.jpeg.max_data_step > 10.0
+        @test result.png.record == "data-record" && result.png.rounding_to_noise <= 0.1 && result.png.max_data_step < 1.0
+        @test result.levels > 30_000 && result.recovered && result.worst <= result.png.max_data_step / 2 + 1e-9
+        file = read(result.path)
+        @test file[1:8] == UInt8[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+        text = String(copy(file))
+        @test occursin("cICP", text) && occursin(xmp_packet(result.png), text) && occursin("udeep:Record=\"data-record\"", text)
+    end
     @testset "the stream of random numbers is the same everywhere" begin
         space = example("spectral_map")
         s = Base.invokelatest(space.Stream, UInt64(1))
