@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           ls -l wheelhouse
-          test "$(ls wheelhouse/*.whl | wc -l)" = 1
+          test "$(ls wheelhouse/*.whl | wc -l | tr -d " ")" = 1
           ls wheelhouse/udeep-*-py3-none-*.whl
           python -m zipfile -l wheelhouse/*.whl | grep -E "udeep/_lib/(libudeep_core\.(so|dylib)|udeep_core\.dll)"
       - uses: actions/upload-artifact@v4
