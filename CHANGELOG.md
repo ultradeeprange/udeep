@@ -22,6 +22,11 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 - **Julia:** `png_pq`, `read_png_pq`, `levels_pq16` and `xmp_packet`, and a fourth worked example,
   `detector_record.jl`, which gives the same numbers as the Python one. The Python reference reads the
   Julia-written file's declaration and confirms it.
+- **The Julia package can find the core as an installed artifact**, which is what will make it installable without
+  a checkout or Rust. The wheels workflow packs the core alone for each platform (`tools/core_tarball.py`), and
+  `tools/julia_artifacts.jl` writes the `Artifacts.toml` from such archives. Tried with the archives the workflow
+  built: the package's tests pass on them. No `Artifacts.toml` is in the repository yet, since it must point at a
+  release and there is none.
 - One thing this showed and did not settle: a PQ file does not say what luminance its white is written at. The
   tools write and read at 203 cd/m2 (BT.2408), and the validator says that it assumes so.
 

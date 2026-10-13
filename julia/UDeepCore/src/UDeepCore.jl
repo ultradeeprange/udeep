@@ -7,14 +7,16 @@ The mapping from scientific data to light and colour of the UDeep Figure Profile
 
 This is a thin binding to the project's Rust core (`core/`, through its C interface), not a second
 implementation: the arithmetic lives in one place and is held to one set of golden vectors. The library is found
-at `ENV["UDEEP_CORE_LIB"]`, or else in `core/target/release` of the repository this package sits in (build it
-with `cargo build --release`).
+at `ENV["UDEEP_CORE_LIB"]`; or else as the artifact the package was installed with (`Artifacts.toml`, written for
+a release); or else in `core/target/release` of the repository this package sits in (build it with
+`cargo build --release --features jpeg,png`).
 
 Arrays are mapped element by element, so any array shape works and its shape is kept. Digests are defined on
 values in row order (the last index fastest), so a Julia array is walked that way when it is digested.
 """
 module UDeepCore
 
+using Artifacts
 using Libdl
 using SHA: sha256
 
@@ -72,9 +74,25 @@ function Mapping(stretch::Symbol, range_low::Real, range_high::Real, knee::Real,
     return m
 end
 
+"""
+The core library that came with the package: the artifact `udeep_core` of `Artifacts.toml`, for this machine.
+`nothing` when the package has no such file (a checkout between releases), names no archive for this platform,
+or the archive is not installed.
+"""
+function artifact_library(name::AbstractString)
+    toml = find_artifacts_toml(@__DIR__)
+    toml === nothing && return nothing
+    meta = artifact_meta("udeep_core", toml)
+    meta === nothing && return nothing
+    path = joinpath(artifact_path(Base.SHA1(meta["git-tree-sha1"])), "lib", name)
+    return isfile(path) ? path : nothing
+end
+
 function library_path()
     haskey(ENV, "UDEEP_CORE_LIB") && return ENV["UDEEP_CORE_LIB"]
     name = Sys.iswindows() ? "udeep_core.dll" : Sys.isapple() ? "libudeep_core.dylib" : "libudeep_core.so"
+    installed = artifact_library(name)
+    installed === nothing || return installed
     return normpath(joinpath(@__DIR__, "..", "..", "..", "core", "target", "release", name))
 end
 

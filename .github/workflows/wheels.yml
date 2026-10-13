@@ -4,6 +4,9 @@ name: wheels
 # is loaded with ctypes, so the wheel serves every Python 3), and the source distribution. Each wheel is installed
 # into a clean environment and checked there, without the source tree (pyproject.toml, [tool.cibuildwheel]).
 #
+# The core library is also taken out of each wheel and packed alone (tools/core_tarball.py), for the Julia package:
+# with those archives at a public address, tools/julia_artifacts.jl writes the package's Artifacts.toml.
+#
 # On a version tag the packages are attached to a DRAFT release on GitHub, for a person to look at and publish.
 # Nothing is uploaded to PyPI from here.
 
@@ -12,7 +15,7 @@ on:
   push:
     tags: ["v*"]
   pull_request:
-    paths: ["setup.py", "pyproject.toml", "MANIFEST.in", "core/**", "tools/check_wheel.py", ".github/workflows/wheels.yml"]
+    paths: ["setup.py", "pyproject.toml", "MANIFEST.in", "core/**", "tools/check_wheel.py", "tools/core_tarball.py", ".github/workflows/wheels.yml"]
 
 permissions:
   contents: read
@@ -38,10 +41,20 @@ jobs:
           test "$(ls wheelhouse/*.whl | wc -l | tr -d " ")" = 1
           ls wheelhouse/udeep-*-py3-none-*.whl
           python -m zipfile -l wheelhouse/*.whl | grep -E "udeep/_lib/(libudeep_core\.(so|dylib)|udeep_core\.dll)"
+      - name: The core alone, packed for the Julia package
+        shell: bash
+        run: |
+          python tools/core_tarball.py wheelhouse/*.whl --out corehouse
+          ls -l corehouse
       - uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os }}
           path: wheelhouse/*.whl
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-${{ matrix.os }}
+          path: corehouse/*.tar.gz
           if-no-files-found: error
 
   sdist:

@@ -5,8 +5,17 @@ The UDeep Figure Profile for Julia: the mapping from data to light and colour, a
 It is a thin binding to the project's Rust core (`../../core`, through its C interface), not another
 implementation: the arithmetic lives in one place and is held to one set of golden vectors.
 
-**Status: a draft, not installable on its own.** It needs the core library built from this repository. Figures
-work with CairoMakie; GLMakie and WGLMakie are not covered.
+**Status: a draft, and not yet installable on its own.** Until the project has a release, it needs the core
+library built from a checkout of this repository (see *Build and test*). Figures work with CairoMakie; GLMakie and
+WGLMakie are not covered.
+
+What a release will change: the package looks for the core, in this order, at `ENV["UDEEP_CORE_LIB"]`, as an
+artifact installed with the package, and in the checkout it sits in. The artifact is the core library alone, one
+archive for each of Linux, Windows and macOS (Intel and Apple silicon), taken from the wheels the repository's
+`wheels` workflow builds and tests. `tools/julia_artifacts.jl` writes the `Artifacts.toml` that names them once
+they are at a public address, and from then on `Pkg.add` brings the right one and no Rust is needed. This has
+been tried with the archives the workflow built, and the package's tests pass on them; there is no
+`Artifacts.toml` in the repository yet because there is no release for it to point at.
 
 ## A figure
 

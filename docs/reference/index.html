@@ -998,8 +998,9 @@ worst ratio to within rounding, so which of them is found is not part of the con
 <pre class="block">value x  -&gt;  position t in [0, 1]  -&gt;  light y, in multiples of SDR white  -&gt;  linear RGB, same unit</pre>
 <p>This is a thin binding to the project&#x27;s Rust core (<code>core/</code>, through its C interface), not a second
 implementation: the arithmetic lives in one place and is held to one set of golden vectors. The library is found
-at <code>ENV[&quot;UDEEP_CORE_LIB&quot;]</code>, or else in <code>core/target/release</code> of the repository this package sits in (build it
-with <code>cargo build --release</code>).</p>
+at <code>ENV[&quot;UDEEP_CORE_LIB&quot;]</code>; or else as the artifact the package was installed with (<code>Artifacts.toml</code>, written for
+a release); or else in <code>core/target/release</code> of the repository this package sits in (build it with
+<code>cargo build --release --features jpeg,png</code>).</p>
 <p>Arrays are mapped element by element, so any array shape works and its shape is kept. Digests are defined on
 values in row order (the last index fastest), so a Julia array is walked that way when it is digested.</p>
 <h3 id="julia.Mapping"><span class="kind">type</span>Mapping</h3>
