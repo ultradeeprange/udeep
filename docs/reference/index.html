@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reference · UDeep</title>
+<meta name="description" content="The udeep Python package: every public function and class, with its signature and the description written in the source.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root { color-scheme: dark; --ground: #111316; --panel: #191d22; --line: #2b3138; --ink: #e4e8ec; --muted: #939da7;
+          --tag: #8cc2e6; --warm: #e8b04a;
+          --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+          --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+          --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.62 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover, nav a[aria-current] { color: var(--ink); }
+  .layout { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 40px; padding-block: 36px 64px; align-items: start; }
+  .toc { position: sticky; top: 16px; font-size: 13.5px; display: grid; gap: 6px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .toc a { color: var(--muted); text-decoration: none; } .toc a:hover { color: var(--ink); }
+  .toc .label { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  article { max-width: 78ch; min-width: 0; }
+  article h1, article h2, article h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; line-height: 1.2; }
+  article h1 { font-size: clamp(30px, 4.2vw, 42px); margin: 0 0 14px; }
+  article h2 { font-size: 25px; margin: 44px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+  article h3 { font-size: 19px; margin: 28px 0 8px; }
+  article p, article li { color: var(--soft); }
+  article ul, article ol { padding-left: 1.3em; display: grid; gap: 6px; }
+  article code { font-family: var(--mono); font-size: 13.5px; background: var(--panel); padding: 1px 4px; border-radius: 3px; }
+  article blockquote { margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--warm); background: var(--panel); }
+  article strong { color: var(--ink); }
+  .scroll { overflow-x: auto; margin: 14px 0; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 520px; width: 100%; }
+  th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .source { font-size: 14px; color: var(--muted); margin-bottom: 26px; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; gap: 20px; } .toc { position: static; max-height: none; } }
+
+  .sig { font: 13.5px/1.5 var(--mono); background: var(--panel); border-left: 3px solid var(--tag); padding: 10px 12px;
+         margin: 0 0 10px; overflow-x: auto; white-space: pre; border-radius: 0 3px 3px 0; }
+  article pre.block { font: 13px/1.5 var(--mono); background: var(--panel); padding: 10px 12px; overflow-x: auto;
+                      border-radius: 3px; margin: 0 0 12px; }
+  article h3 { font-family: var(--mono); font-size: 16px; margin: 30px 0 8px; }
+  article h3 .kind { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+                     margin-right: 8px; }
+  article h4 { font: 600 14px var(--mono); margin: 18px 0 6px; }
+  .member { margin-left: 18px; padding-left: 14px; border-left: 1px solid var(--line); }
+  .none { color: var(--muted); font-style: italic; }
+  .where { font-size: 13px; }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/reference/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Reference · UDeep">
+<meta property="og:description" content="The udeep Python package: every public function and class, with its signature and the description written in the source.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/reference/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">U<b>Deep</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+<main><div class="wrap layout">
+  <nav class="toc" aria-label="Modules"><span class="label">Modules</span><a href="#udeep">udeep</a><a href="#mpl">udeep.mpl</a><a href="#view">udeep.view</a><a href="#mapping">udeep.mapping</a><a href="#cmap">udeep.cmap</a><a href="#gainmap">udeep.gainmap</a><a href="#export">udeep.export</a><a href="#metadata">udeep.metadata</a><a href="#validate">udeep.validate</a><a href="#scale">udeep.scale</a><a href="#tone">udeep.tone</a><a href="#masks">udeep.masks</a><a href="#jnd">udeep.jnd</a><a href="#vision">udeep.vision</a><a href="#color">udeep.color</a><a href="#core">udeep.core</a><a href="#gpu">udeep.gpu</a><a href="#golden">udeep.golden</a></nav>
+  <article>
+    <h1>Python reference</h1>
+    <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
+      86 public functions and classes in 17 modules. The profile says what a figure file means;
+      this page says what the code offers.</p>
+    <h2 id="udeep">udeep</h2>
+<p>What <code>import udeep</code> gives. The matplotlib interface is its own module, <a href="#mpl"><code>udeep.mpl</code></a>, imported as <code>import udeep.mpl as hp</code>.</p>
+<p><a href="#metadata.caption"><code>caption</code></a>, <a href="#cmap.cmap"><code>cmap</code></a>, <a href="#metadata.Declaration"><code>Declaration</code></a>, <a href="#view.hdr_view"><code>hdr_view</code></a>, <a href="#view.HdrView"><code>HdrView</code></a>, <a href="#tone.knee_at_percentile"><code>knee_at_percentile</code></a>, <a href="#mapping.Mapping"><code>Mapping</code></a>, <code>MAPS</code>, <a href="#metadata.max_data_step"><code>max_data_step</code></a>, <a href="#export.pq_encode"><code>pq_encode</code></a>, <a href="#gainmap.read_gainmap_jpeg"><code>read_gainmap_jpeg</code></a>, <a href="#metadata.read_metadata"><code>read_metadata</code></a>, <a href="#scale.scale"><code>scale</code></a>, <a href="#metadata.to_xmp"><code>to_xmp</code></a>, <a href="#tone.tone"><code>tone</code></a>, <a href="#gainmap.write_gainmap_jpeg"><code>write_gainmap_jpeg</code></a>, <a href="#export.write_png_pq"><code>write_png_pq</code></a>, <a href="#export.write_png_sdr"><code>write_png_sdr</code></a></p>
+<h2 id="mpl">udeep.mpl</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/mpl.py">src/udeep/mpl.py</a></p>
+<p>matplotlib entry point: udeep.mpl.imshow / colorbar / savefig_hdr.</p>
+<pre class="block">import udeep.mpl as hp
+img = hp.imshow(ax, data, mode=&quot;extend&quot;, knee=240, stretch={&quot;kind&quot;: &quot;linear&quot;, &quot;lo&quot;: -160, &quot;hi&quot;: 1200},
+                unit=&quot;HU&quot;, knee_rule=&quot;preset; top of the soft-tissue window&quot;, noise=(&quot;constant&quot;, 10.0))
+hp.colorbar(img, ax=ax, label=&quot;HU&quot;)
+hp.savefig_hdr(fig, &quot;figure.jpg&quot;)                 # one file: the ordinary figure + a gain map
+print(hp.caption(fig))                            # a caption generated from the declared mapping</pre>
+<p>matplotlib only ever draws the fair SDR plot, so the figure, <code>savefig</code> PNG/PDF and the gain-map base are
+all the ordinary figure. <code>savefig_hdr</code> renders the figure four times: as it is; with each HDR layer scaled
+into range; and with the layers all black and then all white, which shows the pixels that an HDR layer
+alone makes. Only those pixels are lifted, and only where the scaled render is brighter. Axes, text and
+background stay at SDR white, and so does anything drawn over an image, such as a legend, with the image
+under it. The HDR render goes through 8-bit Agg, so gain above white is quantised to about headroom/255 of
+SDR white.</p>
+<p>The headroom is fixed when the image is made (<code>imshow(headroom=...)</code>): the mapping, the colours and the
+declaration all follow from it, so a file cannot be saved at another.</p>
+<h3 id="mpl.PrecisionWarning"><span class="kind">class</span>PrecisionWarning</h3>
+<p>The file&#x27;s levels are too coarse for the data&#x27;s stated uncertainty (profile 7.2.1).</p>
+<h3 id="mpl.theme"><span class="kind">function</span>theme</h3>
+<pre class="sig">theme(name: str=&#x27;dark&#x27;, ground: str | None=None, ink: str | None=None) -&gt; dict</pre>
+<p>matplotlib settings for a figure&#x27;s furniture on a light or a dark page: the background, and the text, axes
+and ticks drawn on it. Use it around the code that builds the figure:</p>
+<pre class="block">with plt.rc_context(hp.theme(&quot;dark&quot;)):
+    fig, ax = plt.subplots()
+    ...
+    hp.savefig_hdr(fig, &quot;figure_dark.jpg&quot;)</pre>
+<p><code>ground</code> and <code>ink</code> replace the theme&#x27;s background and text colours, to match a particular page.</p>
+<p>A theme changes nothing about the data: the image, its colours, the mapping and everything the file declares
+about them are the same in every theme, and so is the data&#x27;s digest. Only the SDR figure differs, so each
+theme is its own file with its own SDR digest (profile 8.7). Text and lines are never lifted above white in
+either theme.</p>
+<h3 id="mpl.layers"><span class="kind">function</span>layers</h3>
+<pre class="sig">layers(fig) -&gt; list</pre>
+<p>The figure&#x27;s HDR layers whose images it still holds. A layer whose image was removed, or whose axes or
+figure was cleared, is dropped from the figure&#x27;s list: its data is no longer part of what the file shows.</p>
+<h3 id="mpl.imshow"><span class="kind">function</span>imshow</h3>
+<pre class="sig">imshow(
+    ax,
+    data,
+    mode: str,
+    knee,
+    stretch: dict,
+    headroom: float = 2.0,
+    cmap: str = &#x27;fire&#x27;,
+    mask=None,
+    unit: str | None = None,
+    knee_rule: str | None = None,
+    noise: tuple = (&#x27;unknown&#x27;, None),
+    proportional: bool = False,
+    source: str | None = None,
+    unit_code: str | None = None,
+    float32: bool = False,
+    **imshow_kw,
+)</pre>
+<p>Like ax.imshow, but for UDeep&#x27;s two modes; returns the AxesImage.</p>
+<p>unit, knee_rule and noise are what the file will declare (profile section 8): the data&#x27;s unit (&quot;1&quot; if it has
+none); why the knee is where it is, as &quot;physical; ...&quot;, &quot;statistical; ...&quot; or &quot;preset; ...&quot;; and the noise
+model with its parameter, such as (&quot;constant&quot;, 10.0). proportional=True declares a linear stretch from zero
+as proportional (data that is itself light, profile 6.6); its top must then be knee x headroom. source says
+where the data is kept (a DOI, URL or file name); the file also records a digest of <code>data</code>, so a reader holding
+the data can check it is the same. unit_code is the unit in machine-readable form (a UCUM code such as &quot;K&quot;),
+beside the text in <code>unit</code>. headroom is fixed here: savefig_hdr writes the file at this headroom and no other.
+float32=True keeps the image&#x27;s two renderings in half the memory (udeep.view): for very large images. The
+colours then differ from the default&#x27;s by about one part in 10 million, so the default is float64.</p>
+<h3 id="mpl.colorbar"><span class="kind">function</span>colorbar</h3>
+<pre class="sig">colorbar(img, ax, label: str=&#x27;&#x27;, size: str=&#x27;4%&#x27;, pad: float=0.08, n: int=256)</pre>
+<p>An HDR colour bar for an udeep image: data-unit ticks and the value rendered at SDR white.</p>
+<h3 id="mpl.declaration"><span class="kind">function</span>declaration</h3>
+<pre class="sig">declaration(fig, headroom: float | None=None) -&gt; Declaration</pre>
+<p>What the figure declares about its data and mapping (profile section 8), for a gain-map JPEG.</p>
+<p>A file carries one declaration, so every udeep image in the figure must share one mapping. <code>headroom</code> need
+not be given; if it is, it must be the headroom the images were made at.</p>
+<h3 id="mpl.caption"><span class="kind">function</span>caption</h3>
+<pre class="sig">caption(fig, headroom: float | None=None) -&gt; str</pre>
+<p>A caption paragraph generated from the figure&#x27;s declaration (profile 8.2). <code>headroom</code> is as for
+<code>declaration</code>: it need not be given, and must be the images&#x27; own if it is.</p>
+<h3 id="mpl.savefig_hdr"><span class="kind">function</span>savefig_hdr</h3>
+<pre class="sig">savefig_hdr(
+    fig,
+    path,
+    headroom: float | None = None,
+    quality: int = 95,
+    tight: bool = True,
+    pad_inches: float = 0.1,
+    gain_quality: int = 100,
+    metadata: bool = True,
+) -&gt; None</pre>
+<p>Write the figure as a gain-map JPEG: the ordinary figure, plus gain on the HDR images only.</p>
+<p>The file carries the profile&#x27;s declared metadata (unit, mapping, knee and its rule, precision) unless
+metadata=False; without it the file does not conform to the profile.</p>
+<p>The file&#x27;s headroom is the one the images were made at (udeep.mpl.imshow&#x27;s headroom=). <code>headroom</code> need not
+be given; a value that differs from the images&#x27; is refused, because the file would not be what it declares.</p>
+<p>tight=True lays the figure out like savefig(bbox_inches=&quot;tight&quot;) -- expanding to take in labels
+outside the canvas -- and renders every pass that way, so the gain stays aligned with the base. The SDR
+figure this file&#x27;s digest refers to is then fig.savefig(..., bbox_inches=&quot;tight&quot;, pad_inches=pad_inches),
+not a plain fig.savefig(...).</p>
+<p>Before the file is written the gain map is decoded again and lowered wherever the figure would read above its
+brightest value (udeep.gainmap.write_gainmap_jpeg), which takes several coding passes on a coloured figure.
+<code>gain_quality</code> below 100 is unreliable with coloured maps (fire, ice), with this writer or any other: where
+one SDR channel is small each gain code is a large step. The passes may then not converge, and ValueError is
+raised and no file written rather than a file that reads over its headroom. Leave it at 100 unless the figure
+is grey.</p>
+<h3 id="mpl.validate"><span class="kind">function</span>validate</h3>
+<pre class="sig">validate(fig, path, tight: bool=True, pad_inches: float=0.1, sdr=None)</pre>
+<p>Check a file written by savefig_hdr against the figure: every conformance point of the profile,
+including the pixels (udeep.validate.validate checks what the file alone can show). Pass the same
+<code>tight</code> and <code>pad_inches</code> the file was saved with. <code>sdr</code> is the SDR figure file to check as the figure of
+record; without it the figure&#x27;s own SDR rendering is used.</p>
+<h2 id="view">udeep.view</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/view.py">src/udeep/view.py</a></p>
+<p>The two presets of the UDeep Figure Profile (v0.3, section 13).</p>
+<pre class="block">highlight -- a high, meaningful knee; sparse extremes go above SDR white. Isolated pixels above
+             the knee are held at white so noise cannot sparkle: a derived mask (udeep.masks).
+extend    -- the knee at the top of the main range; a second range of real structure goes above
+             white. No area filter: thin real structure (e.g. bone cortex) must lift too.</pre>
+<p>Both keep the plot below the knee identical to the SDR plot clipped at the same white (the fair
+baseline), never lift masked pixels (saturation, blooming, clipping), and take the knee in data
+units. A missing knee falls back to a percentile and is flagged as exploratory.</p>
+<p>The view holds three arrays the size of the image: the two renderings and the light. The ordinary full-range
+SDR plot is not kept (it was a third rendering, and nothing used it): it is `view.mapping.colours(
+view.mapping.position(data))` when wanted.</p>
+<p>The renderings are float64 unless float32=True is asked for, which keeps them in half the memory (32 bytes a
+pixel held for the view, against 56). The mapping is worked out in float64 either way and each colour is rounded
+once as it is stored, so a float32 rendering is within one part in 10 million of the float64 one, far inside an
+8-bit file&#x27;s step; but it is not the same number, so the default stays float64.</p>
+<p>The mapping is done in NumPy, the reference, unless the Rust core has been turned on (udeep.core.enable()): then
+the core does it, on every processor core, to within about one part in 10^12 of the reference.</p>
+<p>The mapping itself is a <code>Mapping</code> record (udeep.mapping) and is pointwise. This module applies it to an
+image in three steps: derive any mask the preset calls for, map every pixel, hold the masked ones.</p>
+<h3 id="view.HdrView"><span class="kind">class</span>HdrView</h3>
+<p class="none">No description in the source.</p>
+<h3 id="view.hdr_view"><span class="kind">function</span>hdr_view</h3>
+<pre class="sig">hdr_view(
+    data,
+    mode: str,
+    knee: float | None,
+    stretch: dict,
+    headroom: float = 2.0,
+    cmap: str = &#x27;fire&#x27;,
+    mask=None,
+    proportional: bool = False,
+    float32: bool = False,
+) -&gt; HdrView</pre>
+<p class="none">No description in the source.</p>
+<h2 id="mapping">udeep.mapping</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/mapping.py">src/udeep/mapping.py</a></p>
+<p>The mapping from data to light and colour, as one record of parameters (design decision D3).</p>
+<pre class="block">value x  -&gt;  position t in [0, 1]  -&gt;  light y, in multiples of SDR white  -&gt;  linear RGB, same unit</pre>
+<p>A Mapping holds exactly what a file declares about that chain, under the same names as the <code>udeep:</code> metadata
+properties. Everything that computes with the mapping takes this record, so a figure can be rebuilt from its own
+metadata, and nothing can depend on a parameter the file does not record. The same record is meant to become the
+C struct of the native library and the uniform block of the shader.</p>
+<p>Each method is a pure function of single values: no pixel looks at a neighbour (D1, D2). All are float64 and
+written against the Array API standard, so they run on any array library that follows it (D8, D22).</p>
+<h3 id="mapping.Mapping"><span class="kind">class</span>Mapping</h3>
+<p class="none">No description in the source.</p>
+<div class="member">
+<h4 id="mapping.Mapping.from_stretch">from_stretch <span class="kind">class method</span></h4>
+<pre class="sig">from_stretch(
+    cls,
+    stretch: dict,
+    knee: float,
+    headroom: float,
+    cmap: str = &#x27;grey&#x27;,
+    proportional: bool = False,
+) -&gt; Mapping</pre>
+<p>From the authoring form: stretch = {&quot;kind&quot;, &quot;lo&quot;, &quot;hi&quot;, optional &quot;width&quot;, &quot;offset&quot;} and a map&#x27;s name.
+The name alone (&quot;fire&quot;) is the map&#x27;s current version; with a version (&quot;fire/1&quot;) it is that one, for
+reproducing an older figure. A map at a headroom it is not registered for gets its table attached, so the
+record stays complete.</p>
+<h4 id="mapping.Mapping.kind">kind <span class="kind">property</span></h4>
+<pre class="sig">kind</pre>
+<p class="none">No description in the source.</p>
+<h4 id="mapping.Mapping.exit_slope">exit_slope <span class="kind">property</span></h4>
+<pre class="sig">exit_slope</pre>
+<p class="none">No description in the source.</p>
+<h4 id="mapping.Mapping.knee_position">knee_position <span class="kind">property</span></h4>
+<pre class="sig">knee_position</pre>
+<p>Where the knee is drawn. A record is refused unless the curve can draw it there, so nothing is moved.</p>
+<h4 id="mapping.Mapping.position">position <span class="kind">method</span></h4>
+<pre class="sig">position(self, x)</pre>
+<p>Data values -&gt; position t in [0, 1]; values outside the declared range are clipped; NaN stays NaN.</p>
+<h4 id="mapping.Mapping.light_at">light_at <span class="kind">method</span></h4>
+<pre class="sig">light_at(self, t, headroom: float | None=None)</pre>
+<p>Position -&gt; light. headroom=1 gives the fair SDR rendering: the same below the knee, white above it.</p>
+<h4 id="mapping.Mapping.light">light <span class="kind">method</span></h4>
+<pre class="sig">light(self, x, headroom: float | None=None)</pre>
+<p>Data values -&gt; light, in multiples of SDR white: the declared mapping (profile section 6).</p>
+<h4 id="mapping.Mapping.colours">colours <span class="kind">method</span></h4>
+<pre class="sig">colours(self, y, dtype=np.float64)</pre>
+<p>Light -&gt; linear RGB (BT.709 primaries, multiples of SDR white), shape (..., 3). The colours are worked
+out in float64; dtype=np.float32 keeps them in half the memory, each rounded once (NumPy arrays only).</p>
+<h4 id="mapping.Mapping.table">table <span class="kind">property</span></h4>
+<pre class="sig">table</pre>
+<p>The colour map&#x27;s table: None for grey, the carried table if there is one, else the registered one.
+Raises ValueError when the map cannot be known from this record.</p>
+<h4 id="mapping.Mapping.value_at">value_at <span class="kind">method</span></h4>
+<pre class="sig">value_at(self, t)</pre>
+<p>Position -&gt; data value: the inverse of <code>position</code> inside the declared range.</p>
+<h4 id="mapping.Mapping.value">value <span class="kind">method</span></h4>
+<pre class="sig">value(self, y)</pre>
+<p>Light -&gt; data value: the inverse of <code>light</code>. Light outside 0..headroom is clipped to it.</p>
+</div>
+<h2 id="cmap">udeep.cmap</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/cmap.py">src/udeep/cmap.py</a></p>
+<p>y (multiples of SDR white) -&gt; linear sRGB colour.</p>
+<p>A colour map is a TABLE, and the table is its definition (design decision D9): two segments, light 0 to 1 and
+1 to the reference headroom, each of NODES evenly spaced nodes holding linear RGB (BT.709 primaries, multiples of
+white, float32), with linear interpolation between nodes. <code>cmap</code> looks colours up in it.</p>
+<pre class="block">cmap(y, name, headroom)    colours, from the table
+table(name, headroom)      the Table: shipped for the registered headrooms (2, 4, 8, 16), built otherwise
+search(y, name, headroom)  the generator that tables are made from (tools/make_tables.py); not for runtime use</pre>
+<p>A map&#x27;s definition has a version, and a file names both (&quot;fire/3&quot;). Every version stays registered, so that a file
+made with an older one can always be read; new figures use the current one (VERSION). Each function takes
+<code>version=</code> for an older one.</p>
+<p>How the generator builds a map, in Jzazbz: for y &lt;= 1 the colour&#x27;s lightness (Jz) is that of a grey of luminance
+y * top, where <code>top</code> is below 1, so SDR data never passes through white. (Its luminance is close to y * top but
+not equal to it: at y = 1, 0.85 for fire against a top of 0.8, and 0.78 for ice against 0.7.) For y &gt; 1 luminance rises from <code>top</code> to
+<code>headroom</code> while chroma tapers to 0: extremes become white-hot, brighter than SDR white. Chroma is then reduced
+(fixed-step bisection) until the colour fits [0, 1] (y &lt;= 1) or [0, headroom] (y &gt; 1). Below white the map does
+not depend on the headroom; above white it does, which is why a table belongs to a (map, headroom) pair.</p>
+<p>Version 1 measured chroma from az = bz = 0, which in Jzazbz is close to grey and not grey: with the chroma tapered
+to nothing, the top of a map was a faint tint that had then to be clipped to the headroom, so the last step of a
+map could fall in lightness. Its ice map also ran along the edge of the gamut near 15 % of white, where lightness
+dipped for red-green colour-vision deficiencies. Version 2 measures chroma from the (az, bz) of the grey of the same
+lightness, so that no chroma is exactly grey and the top is exactly white; and its ice map asks for less chroma at
+its second node (0.13 against 0.16), which keeps it off that edge. In version 2 lightness rises at every node of
+every shipped table, for normal vision and for each simulated deficiency (udeep.vision; tested).</p>
+<p>Version 3 is version 2 with every value below FLOOR (1e-7 of white) set to zero. Where version 2 holds a channel at
+the edge of the gamut it leaves the small remainder of the arithmetic, a few hundred-millionths of white, and that
+remainder depends on which processor-specific routines NumPy and OpenBLAS choose: the generator did not give the
+same table on every machine (project/performance-scope.md, 4g). With the remainders removed it does, so a version-3
+table can be checked by making it again. No colour moves by more than FLOOR.</p>
+<h3 id="cmap.search"><span class="kind">function</span>search</h3>
+<pre class="sig">search(y, name: str=&#x27;fire&#x27;, headroom: float=4.0, version: int=VERSION) -&gt; np.ndarray</pre>
+<p>The generator: the exact colour for each y, by a per-value search. Slow; tables are made from it.</p>
+<h3 id="cmap.Table"><span class="kind">class</span>Table</h3>
+<p>A colour map as data: <code>below</code> covers light 0..1, <code>above</code> covers 1..headroom; each is nodes x 3, float32.</p>
+<div class="member">
+<h4 id="cmap.Table.lookup">lookup <span class="kind">method</span></h4>
+<pre class="sig">lookup(self, y) -&gt; np.ndarray</pre>
+<p>Linear interpolation between nodes; y outside 0..headroom takes the end colour; NaN stays NaN.
+Float64, on any array library that follows the Array API standard.</p>
+<h4 id="cmap.Table.to_bytes">to_bytes <span class="kind">method</span></h4>
+<pre class="sig">to_bytes(self) -&gt; bytes</pre>
+<p>The table&#x27;s numbers: <code>below</code> then <code>above</code>, row by row, little-endian float32.</p>
+<h4 id="cmap.Table.digest">digest <span class="kind">property</span></h4>
+<pre class="sig">digest</pre>
+<p class="none">No description in the source.</p>
+<h4 id="cmap.Table.to_text">to_text <span class="kind">method</span></h4>
+<pre class="sig">to_text(self) -&gt; str</pre>
+<p>For carrying a table inside a file: &quot;&lt;nodes&gt;;&quot; and the bytes in base64.</p>
+<h4 id="cmap.Table.from_text">from_text <span class="kind">class method</span></h4>
+<pre class="sig">from_text(cls, name: str, headroom: float, text: str) -&gt; Table</pre>
+<p class="none">No description in the source.</p>
+</div>
+<h3 id="cmap.identifier"><span class="kind">function</span>identifier</h3>
+<pre class="sig">identifier(name: str, version: int=VERSION) -&gt; str</pre>
+<p>How a file names a map: the name and the version of its definition, such as &quot;fire/3&quot;.</p>
+<h3 id="cmap.parse"><span class="kind">function</span>parse</h3>
+<pre class="sig">parse(text: str) -&gt; tuple[str, int] | None</pre>
+<p>The (name, version) a file&#x27;s map name stands for, or None if it is not a registered map.</p>
+<h3 id="cmap.generate"><span class="kind">function</span>generate</h3>
+<pre class="sig">generate(name: str, headroom: float, nodes: int=NODES, version: int=VERSION) -&gt; Table</pre>
+<p>Build a table from the generator. For headroom 1 there is nothing above white: that segment is flat.</p>
+<h3 id="cmap.table"><span class="kind">function</span>table</h3>
+<pre class="sig">table(name: str, headroom: float, version: int=VERSION) -&gt; Table</pre>
+<p>The table for a map at a reference headroom: the shipped one for a registered headroom, otherwise one built
+now at EMBED_NODES nodes, which the file must then carry. Headroom 1 (an SDR figure) uses the lower segment
+of a shipped table.</p>
+<h3 id="cmap.is_registered"><span class="kind">function</span>is_registered</h3>
+<pre class="sig">is_registered(headroom: float) -&gt; bool</pre>
+<p class="none">No description in the source.</p>
+<h3 id="cmap.cmap"><span class="kind">function</span>cmap</h3>
+<pre class="sig">cmap(y, name: str=&#x27;fire&#x27;, headroom: float=4.0, version: int=VERSION) -&gt; np.ndarray</pre>
+<p>Colours for light y, from the map&#x27;s table: linear RGB in multiples of SDR white, float64.</p>
+<h2 id="gainmap">udeep.gainmap</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/gainmap.py">src/udeep/gainmap.py</a></p>
+<p>Gain-map JPEG (Ultra HDR v1 layout, the model ISO 21496-1 standardises) for scientific plots.</p>
+<p>The primary image is the ordinary SDR plot; a gain map records how much brighter each pixel is in the
+HDR plot. A display applies the gain in proportion to its own headroom (HDRCapacityMin..Max), so one
+file shows the SDR plot on SDR screens, part of the gain on a 2x panel, all of it at <code>headroom</code> and
+beyond -- a static, declared per-display fit.</p>
+<p>Spec: developer.android.com/media/platform/hdr-image-format. Deliberate choices for plots: the gain
+map is full resolution and 3-channel (the spec recommends 1/4 size, which blurs sharp data into
+halos, and a luminance-only map cannot carry the colour change above white); JPEGs are 4:4:4 so thin
+lines and text keep their colour. Layout: primary [SOI, APP1 XMP container, APP2 MPF, ...] followed
+by the gain-map JPEG [SOI, APP1 XMP hdrgm, ...].</p>
+<h3 id="gainmap.write_gainmap_jpeg"><span class="kind">function</span>write_gainmap_jpeg</h3>
+<pre class="sig">write_gainmap_jpeg(
+    sdr,
+    hdr,
+    path,
+    headroom: float,
+    quality: int = 95,
+    gain_quality: int = 100,
+    description: bytes = b&#x27;&#x27;,
+    iso: bool = True,
+) -&gt; None</pre>
+<p>sdr: linear RGB in [0, 1] (the SDR plot); hdr: linear RGB in multiples of SDR white.</p>
+<p>A pixel the figure does not lift (hdr no greater than sdr in all three channels) is stored with a gain of
+exactly 1, so GainMapMin is 0 and the gain map is flat wherever the figure is not lifted. No pixel is darkened:
+a channel that is lower in <code>hdr</code> than in the stored SDR plot keeps the SDR value.</p>
+<p>Before the file is written its gain map is decoded again and the figure a reader would show is rebuilt; where
+that is brighter than the largest value in <code>hdr</code> the gain is lowered and the map coded again, until nothing is
+over. The cost is time (several coding passes on a coloured figure) and a top of the range that reads a little
+low. If it cannot be done the file is not written and ValueError is raised: a file is never written that
+reads above the brightest value it was given, on this module&#x27;s reader.</p>
+<p>The gain map is stored at <code>gain_quality</code> (default 100): its errors are exponentiated, so JPEG ringing
+at sharp gain edges (a colour bar beside a white background) otherwise pushes values past the headroom.
+Below 100 it is unreliable on coloured maps (fire, ice: where one SDR channel is small the gain range is wide
+and each code a large step, with this writer or any other): the passes may not converge, or gain may spread
+onto unlifted pixels, and the call then raises ValueError; a file that is written may still fail the
+validator&#x27;s checks on its pixels. Leave it at 100 unless the figure is grey.</p>
+<p><code>description</code> is an extra rdf:Description for the primary image&#x27;s XMP packet: the profile&#x27;s declared
+metadata, from udeep.metadata.description. iso=True also writes the gain-map metadata in the binary form of
+ISO 21496-1, beside the Ultra HDR XMP, for decoders that read only that.</p>
+<h3 id="gainmap.read_iso_metadata"><span class="kind">function</span>read_iso_metadata</h3>
+<pre class="sig">read_iso_metadata(path) -&gt; dict | None</pre>
+<p>The gain map&#x27;s ISO 21496-1 binary metadata, as numbers (log2 for the headrooms, min and max), or None if
+the file has none. Reads the single-channel, separate-denominator layout that this module writes. Files
+written before 2026-10-10 have flags 0 (bit 6 not set); they are read the same.</p>
+<h3 id="gainmap.read_gainmap_jpeg"><span class="kind">function</span>read_gainmap_jpeg</h3>
+<pre class="sig">read_gainmap_jpeg(path, display_boost: float) -&gt; np.ndarray</pre>
+<p>Linear RGB (multiples of SDR white) as a display with <code>display_boost</code> headroom shows it.</p>
+<p>Read by the Rust core when it is in use (udeep.core), with the JPEG decoder its writer checks files against;
+otherwise, and for any file the core does not take, by the code below with Pillow&#x27;s decoder. The two decoders
+differ by a code or two at some pixels, which is a few per cent of a lifted pixel where one SDR channel is
+small: a file reads exactly as its writer left it only on the decoder its writer used.</p>
+<h2 id="export">udeep.export</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/export.py">src/udeep/export.py</a></p>
+<p>Write HDR (PQ-tagged 16-bit PNG) and SDR (8-bit sRGB PNG) images from linear sRGB.</p>
+<p>Input rgb is relative linear sRGB (1.0 = SDR white), shape (H, W, 3), row 0 at the top.
+The HDR file is BT.2020 primaries, PQ transfer (BT.2100), signalled by a PNG <code>cICP</code> chunk
+(PNG 3rd edition), which Chromium-based browsers display as HDR.</p>
+<h3 id="export.pq_encode"><span class="kind">function</span>pq_encode</h3>
+<pre class="sig">pq_encode(nits) -&gt; np.ndarray</pre>
+<p class="none">No description in the source.</p>
+<h3 id="export.write_png_pq"><span class="kind">function</span>write_png_pq</h3>
+<pre class="sig">write_png_pq(rgb, path, sdr_white_nits: float=REF_WHITE_NITS, xmp: bytes | None=None) -&gt; None</pre>
+<p>PQ is absolute, so 1.0 is written at <code>sdr_white_nits</code>. Use the display&#x27;s SDR white
+level (Windows: Settings &gt; Display &gt; HDR &gt; SDR content brightness) so non-highlight
+content matches the desktop; the BT.2408 default (203) suits an unknown display.
+<code>xmp</code> is an XMP packet (udeep.metadata.to_xmp), stored in an iTXt chunk.</p>
+<h3 id="export.srgb_oetf"><span class="kind">function</span>srgb_oetf</h3>
+<pre class="sig">srgb_oetf(v) -&gt; np.ndarray</pre>
+<p class="none">No description in the source.</p>
+<h3 id="export.write_png_sdr"><span class="kind">function</span>write_png_sdr</h3>
+<pre class="sig">write_png_sdr(rgb, path) -&gt; None</pre>
+<p class="none">No description in the source.</p>
+<h2 id="metadata">udeep.metadata</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/metadata.py">src/udeep/metadata.py</a></p>
+<p>The declared metadata of the UDeep Figure Profile (v0.3, section 8): what a file must say about
+how its data became light, so that the mapping can be inverted and checked.</p>
+<pre class="block">Declaration      the properties, validated
+to_xmp           an XMP packet (the `udeep` namespace) for a JPEG APP1 segment, a PNG iTXt chunk or SVG metadata
+read_metadata    the Declaration carried by a file, or None
+missing_properties   the properties section 8 requires that a packet does not carry
+float_text       how a number is written: the shortest text that reads back to the same float64
+declared_light   the declared mapping, data -&gt; light, computed from the declaration alone
+caption          a caption sentence generated from the declaration (section 8.2)
+max_data_step    the widest range of data values that one stored code stands for (section 7.2.3)
+rounding_to_noise  the data criterion (section 7.2.1): that rounding against the stated uncertainty
+digest_data, digest_pixels   the digests that tie a file to its data and to its SDR figure of record</pre>
+<p>The namespace URI is provisional (profile section 10, open issue 1).</p>
+<h3 id="metadata.Declaration"><span class="kind">class</span>Declaration</h3>
+<p class="none">No description in the source.</p>
+<div class="member">
+<h4 id="metadata.Declaration.mapping">mapping <span class="kind">property</span></h4>
+<pre class="sig">mapping</pre>
+<p>The part of the declaration that defines the colours: the record every computation takes.</p>
+</div>
+<h3 id="metadata.float_text"><span class="kind">function</span>float_text</h3>
+<pre class="sig">float_text(value: float) -&gt; str</pre>
+<p>A number as the metadata writes it: the shortest text that reads back to the same float64.</p>
+<p>It is Python&#x27;s repr of the float, without the &quot;.0&quot; that ends a whole number: 4.0 is &quot;4&quot;, 0.1 is &quot;0.1&quot;,
+1700000002.3456 is &quot;1700000002.3456&quot;, 1e16 is &quot;1e+16&quot; and 0.00001 is &quot;1e-05&quot;. Other languages reproduce it
+from the shortest digits that read back: with the decimal point after digit number p, the text is plain
+digits when -4 &lt; p &lt;= 16; otherwise it is the first digit, a point and the rest if there are more, then &quot;e&quot;,
+the sign of the exponent p - 1 and at least two digits of it.</p>
+<h3 id="metadata.to_xmp"><span class="kind">function</span>to_xmp</h3>
+<pre class="sig">to_xmp(d: Declaration) -&gt; bytes</pre>
+<p>A complete XMP packet holding the declaration as <code>udeep:</code> attributes.</p>
+<h3 id="metadata.digest_data"><span class="kind">function</span>digest_data</h3>
+<pre class="sig">digest_data(a) -&gt; str</pre>
+<p>A digest of an array&#x27;s values and shape, whatever type it is stored as: &quot;sha256:&quot; and 64 hex digits.</p>
+<p>The array is taken as float64, little-endian, in row order; every NaN counts as the same value and -0 as 0.
+The shape goes in first, so the same numbers in another shape give another digest.</p>
+<p>Only real numbers that float64 holds exactly are accepted: floats, and integers no larger than 2 ** 53.
+Anything else (complex numbers, text, booleans, dates, wider floats) raises ValueError, because the cast would
+give two different arrays one digest. A masked array is digested as its stored values, hidden ones included;
+the mask is not part of the digest.</p>
+<h3 id="metadata.digest_pixels"><span class="kind">function</span>digest_pixels</h3>
+<pre class="sig">digest_pixels(rgb8) -&gt; str</pre>
+<p>A digest of an 8-bit RGB image&#x27;s pixels (H x W x 3), independent of how the file stores them.</p>
+<p>It is taken over the text &quot;udeep-rgb8-1;&lt;height&gt;x&lt;width&gt;;&quot; and then the bytes, row by row. The array must
+already be unsigned 8-bit: any other type raises ValueError, since casting it would wrap or truncate.</p>
+<h3 id="metadata.description"><span class="kind">function</span>description</h3>
+<pre class="sig">description(d: Declaration) -&gt; bytes</pre>
+<p>The declaration as one rdf:Description element, to sit beside others in an existing packet.</p>
+<p>The element is read back before it is returned, and ValueError is raised if that gives another declaration:
+a file must not state a mapping other than the one that made its pixels (profile 6.4).</p>
+<h3 id="metadata.parse"><span class="kind">function</span>parse</h3>
+<pre class="sig">parse(xmp: bytes) -&gt; Declaration | None</pre>
+<p>The declaration in an XMP packet, or None if it holds none. An invalid declaration raises ValueError
+(a value out of range) or TypeError (a required property missing).</p>
+<p>A property the packet does not carry takes the record&#x27;s default, so the result does not show what the file
+itself states: <code>missing_properties</code> does.</p>
+<h3 id="metadata.missing_properties"><span class="kind">function</span>missing_properties</h3>
+<pre class="sig">missing_properties(xmp: bytes) -&gt; list[str] | None</pre>
+<p>The properties profile 8.1 requires of every file that this packet does not carry, by name and in the
+record&#x27;s order; None if the packet holds no declaration at all.</p>
+<h3 id="metadata.packet"><span class="kind">function</span>packet</h3>
+<pre class="sig">packet(data: bytes) -&gt; bytes | None</pre>
+<p>The XMP packet in a file&#x27;s bytes that uses the udeep namespace, or None.</p>
+<h3 id="metadata.read_metadata"><span class="kind">function</span>read_metadata</h3>
+<pre class="sig">read_metadata(path) -&gt; Declaration | None</pre>
+<p>The declaration a file carries (gain-map JPEG, PNG, SVG or a bare packet), or None if it has none.</p>
+<h3 id="metadata.declared_light"><span class="kind">function</span>declared_light</h3>
+<pre class="sig">declared_light(d: Declaration, x) -&gt; np.ndarray</pre>
+<p>The declared mapping itself: data values -&gt; light in multiples of SDR white, computed from the declaration
+alone (profile 6.4). Values outside the declared range are clipped to it.</p>
+<h3 id="metadata.caption"><span class="kind">function</span>caption</h3>
+<pre class="sig">caption(d: Declaration) -&gt; str</pre>
+<p>One caption paragraph generated from the declaration (profile 8.2 and 9.4.2).</p>
+<h3 id="metadata.data_steps"><span class="kind">function</span>data_steps</h3>
+<pre class="sig">data_steps(
+    mapping: Mapping,
+    scaled_by: float | None = None,
+    samples: int = 1 &lt;&lt; 16,
+) -&gt; tuple[np.ndarray, np.ndarray]</pre>
+<p>The stored levels across the declared range: where each run of data values sharing one code starts, and
+how wide it is, both in data units.</p>
+<p>It follows the 8-bit path of udeep.mpl.savefig_hdr: below the knee the code is the 8-bit sRGB colour of
+the SDR figure; above it, the 8-bit sRGB colour of the HDR figure scaled by <code>scaled_by</code> (default: the
+headroom). JPEG compression adds error on top of this and is not included. The range is sampled at
+<code>samples</code> points, so the result is good to about two parts in <code>samples</code> of the declared range.</p>
+<h3 id="metadata.max_data_step"><span class="kind">function</span>max_data_step</h3>
+<pre class="sig">max_data_step(mapping: Mapping, scaled_by: float | None=None, samples: int=1 &lt;&lt; 16) -&gt; float</pre>
+<p>The widest run of data values that share one stored code, in data units (profile 7.2.3: MaxDataStep).</p>
+<h3 id="metadata.rounding_to_noise"><span class="kind">function</span>rounding_to_noise</h3>
+<pre class="sig">rounding_to_noise(
+    mapping: Mapping,
+    noise: tuple,
+    scaled_by: float | None = None,
+    steps: tuple | None = None,
+) -&gt; dict | None</pre>
+<p>The data criterion (profile 7.2.1) for a file&#x27;s stored levels, or None when the noise is unknown.</p>
+<p>For a noise model, each level&#x27;s rounding error (its width / sqrt(12)) is divided by the data&#x27;s standard
+deviation at that level; the limit is K = 0.1. For a declared tolerance, the largest rounding error (half the
+width) is divided by the tolerance; the limit is 1.</p>
+<p>The noise is taken at the point of each level where it is smallest, so a level meets the criterion only if
+all of it does. Poisson and relative noise grow away from zero, so that point is the one nearest zero,
+min(max(0, start), start + width): the end of the level nearer zero, or zero itself when the level contains
+it. At zero the noise is zero and the ratio infinite, so a range that reaches zero cannot meet the criterion
+(7.2.1). Constant noise and a tolerance are the same everywhere, and are reported at the middle of the level.</p>
+<p>Returns the worst ratio (the first, if several levels share it), the data value where it was taken, the
+limit, whether the whole declared range meets it, and the fraction of the range that does not.</p>
+<h2 id="validate">udeep.validate</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/validate.py">src/udeep/validate.py</a></p>
+<p>Check a file against its own declaration: the conformance points of the profile (v0.3, section 10).</p>
+<pre class="block">from udeep.validate import validate
+report = validate(&quot;figure.jpg&quot;)              # what the file alone can show
+print(report); report.ok</pre>
+<pre class="block">import udeep.mpl as hp
+report = hp.validate(fig, &quot;figure.jpg&quot;)      # also compares the pixels with the figure that made it</pre>
+<pre class="block">python -m udeep.validate figure.jpg ...    # exit status 1 if any file fails</pre>
+<p>A file carries its declared mapping but not its data, so on its own it can show that the declaration is
+complete and consistent, that the mapping can be inverted, that nothing exceeds the headroom and that the stated
+precision is right. Whether the pixels are that mapping of the data (points 3 to 5) needs the figure as well.</p>
+<p>Files come from anyone (design decision D24), so <code>validate</code> never raises on one: whatever cannot be read or
+checked becomes a failed check that says what it was.</p>
+<h3 id="validate.Check"><span class="kind">class</span>Check</h3>
+<p class="none">No description in the source.</p>
+<h3 id="validate.Report"><span class="kind">class</span>Report</h3>
+<p class="none">No description in the source.</p>
+<div class="member">
+<h4 id="validate.Report.ok">ok <span class="kind">property</span></h4>
+<pre class="sig">ok</pre>
+<p class="none">No description in the source.</p>
+<h4 id="validate.Report.status">status <span class="kind">method</span></h4>
+<pre class="sig">status(self, name: str) -&gt; str</pre>
+<p class="none">No description in the source.</p>
+<h4 id="validate.Report.add">add <span class="kind">method</span></h4>
+<pre class="sig">add(self, point: str, name: str, status: str, detail: str) -&gt; None</pre>
+<p class="none">No description in the source.</p>
+</div>
+<h3 id="validate.validate"><span class="kind">function</span>validate</h3>
+<pre class="sig">validate(
+    path,
+    expected: tuple | None = None,
+    data=None,
+    sdr=None,
+    data_digest: str | None = None,
+    sdr_digest: str | None = None,
+) -&gt; Report</pre>
+<p>Check the gain-map JPEG at <code>path</code>. <code>expected</code> is (sdr, hdr): the fair SDR figure and the HDR figure as
+linear RGB arrays in multiples of SDR white, for the checks that need the pixels (udeep.mpl.validate
+supplies them from a figure). <code>data</code> is the array the figure was made from and <code>sdr</code> the path of its SDR figure
+of record: each is compared with the digest the file declares (or pass the digests themselves).</p>
+<p>It does not raise on a file, whatever the file holds: see the report&#x27;s checks.</p>
+<h3 id="validate.main"><span class="kind">function</span>main</h3>
+<pre class="sig">main(argv: list[str] | None=None) -&gt; int</pre>
+<p class="none">No description in the source.</p>
+<h2 id="scale">udeep.scale</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/scale.py">src/udeep/scale.py</a></p>
+<p>Data -&gt; normalised position t in [0, 1]. Element-wise; limits are passed in, never inferred.</p>
+<p>Float64 (design decision D8), and written against the Python Array API standard (D22): the same code runs on
+any array that follows it, on a CPU or a GPU.</p>
+<h3 id="scale.namespace"><span class="kind">function</span>namespace</h3>
+<pre class="sig">namespace(x)</pre>
+<p>The array library <code>x</code> belongs to, per the Array API standard; NumPy for anything else.</p>
+<h3 id="scale.as_float"><span class="kind">function</span>as_float</h3>
+<pre class="sig">as_float(x)</pre>
+<p>(library, <code>x</code> as a float64 array of that library). Lists and scalars become NumPy arrays.</p>
+<h3 id="scale.in_chunks"><span class="kind">function</span>in_chunks</h3>
+<pre class="sig">in_chunks(function, x, tail: tuple=(), dtype=np.float64)</pre>
+<p><code>function(x)</code> for a large NumPy array, worked through CHUNK values at a time into one output array of shape
+x.shape + tail. Each step of the mapping makes several arrays as large as its input on the way to its answer;
+done whole, those are many times the image. The result is the same, value for value: every step is a function
+of single values. Small arrays, and arrays of other libraries, go straight through.</p>
+<p><code>dtype</code> is what the output is kept as. The arithmetic is float64 either way; float32 rounds each result once,
+as it is stored.</p>
+<h3 id="scale.scale"><span class="kind">function</span>scale</h3>
+<pre class="sig">scale(x, kind: str, lo: float, hi: float, width: float=1.0)</pre>
+<p>Map x to t in [0, 1]: <code>lo</code> -&gt; 0, <code>hi</code> -&gt; 1, clipped; NaN stays NaN.</p>
+<p>kind: &quot;linear&quot;, &quot;log&quot; (needs lo &gt; 0; x &lt;= 0 -&gt; 0) or &quot;asinh&quot; (linear within ~<code>width</code>
+of zero, logarithmic beyond).</p>
+<h3 id="scale.unscale"><span class="kind">function</span>unscale</h3>
+<pre class="sig">unscale(t, kind: str, lo: float, hi: float, width: float=1.0)</pre>
+<p>The inverse of <code>scale</code> on [0, 1]: the value at position t.</p>
+<h2 id="tone">udeep.tone</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/tone.py">src/udeep/tone.py</a></p>
+<p>t -&gt; y in multiples of SDR white (t is already log/asinh scaled).</p>
+<pre class="block">y = t / knee                          for t &lt;= knee   (SDR: 0 .. 1)
+y = cubic Hermite from 1 to headroom  for t &gt;  knee   (HDR: 1 .. headroom)</pre>
+<p>The shoulder starts with the slope of the SDR part (C1: no kink, so no Mach band at the knee)
+and ends at <code>exit_slope</code> times its secant slope. The default, 1, is the **declared mapping** of the
+profile (v0.3, 6.3): strictly increasing, so every light level maps back to one data value. With
+entry slope a and exit slope 1 (in units of the secant) the slope is (3a-3)u^2 + (4-4a)u + a, never
+below min(a, (4-a)/3) of the secant. <code>exit_slope=0</code> ends flat at <code>headroom</code>, the roll-off of ITU-R
+BT.2390&#x27;s EETF: use it only for display rendering, because it squeezes the top of the data range
+into the last few percent of light, where it cannot be recovered.</p>
+<p>If 1/knee exceeds three times the secant slope, the entry slope is capped there (Fritsch-Carlson:
+entry and exit slopes both within [0, 3] secants keep a cubic Hermite monotone), at the cost of C1
+in that corner case.</p>
+<p>knee = 1 gives the full-range SDR plot (y = t); headroom = 1 with knee &lt; 1 gives SDR clipped at
+the same white -- the fair baseline an HDR rendering must match below white.</p>
+<h3 id="tone.tone"><span class="kind">function</span>tone</h3>
+<pre class="sig">tone(t, knee: float, headroom: float, exit_slope: float=1.0)</pre>
+<p>Float64, on any array library that follows the Array API standard (design decisions D8, D22).</p>
+<h3 id="tone.knee_at_percentile"><span class="kind">function</span>knee_at_percentile</h3>
+<pre class="sig">knee_at_percentile(t, pct: float) -&gt; float</pre>
+<p>The t below which <code>pct</code> % of the finite values lie; clamped to (0, 1].</p>
+<h2 id="masks">udeep.masks</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/masks.py">src/udeep/masks.py</a></p>
+<p>Masks: the only place where a pixel&#x27;s treatment may depend on its neighbours (design decision D2).</p>
+<p>The mapping from data to light is pointwise. Anything that needs a neighbourhood runs here, before the mapping,
+and returns a mask. Pixels in a mask are held at or below SDR white; the mapping never sees their neighbours.</p>
+<pre class="block">isolated(above)   pixels above the knee with no 3 x 3 block of such pixels around them: the Highlight preset
+                  holds these, so that noise cannot sparkle</pre>
+<p>Every derived mask has a rule name, which the file declares (<code>udeep:DerivedMask</code>), with the number of pixels it
+holds (<code>udeep:DerivedMasked</code>).</p>
+<h3 id="masks.open3"><span class="kind">function</span>open3</h3>
+<pre class="sig">open3(b: np.ndarray) -&gt; np.ndarray</pre>
+<p>3 x 3 morphological opening of a boolean image (erode, then dilate); outside the image counts as False.</p>
+<h3 id="masks.isolated"><span class="kind">function</span>isolated</h3>
+<pre class="sig">isolated(above) -&gt; np.ndarray</pre>
+<p>The pixels of <code>above</code> (a boolean image: light above SDR white) that belong to no full 3 x 3 block of it.</p>
+<h3 id="masks.hold"><span class="kind">function</span>hold</h3>
+<pre class="sig">hold(light, sdr_light, mask)</pre>
+<p>Apply a mask to mapped light, pointwise: masked pixels take the fair SDR light (at most SDR white).</p>
+<h2 id="jnd">udeep.jnd</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/jnd.py">src/udeep/jnd.py</a></p>
+<p>How visible one code-value step is: PQ steps at N bits in units of the DICOM PS3.14 GSDF JND.</p>
+<p>The GSDF (Barten model, standard target) gives luminance at JND index j = 1..1023, over 0.05-3993 cd/m2.
+A PQ step of 1 means one code value changes luminance by one just-noticeable difference for that
+target. The GSDF target is not the most sensitive pattern: Miller et al. (2013) designed PQ against
+the minimum of Barten&#x27;s threshold over all frequencies, which is lower, so these ratios are a lower
+bound on visibility, not an upper one.</p>
+<h3 id="jnd.gsdf"><span class="kind">function</span>gsdf</h3>
+<pre class="sig">gsdf(j)</pre>
+<p>Luminance (cd/m2) at JND index j (DICOM PS3.14, eq. for j = 1..1023).</p>
+<h3 id="jnd.jnd_relative"><span class="kind">function</span>jnd_relative</h3>
+<pre class="sig">jnd_relative(nits)</pre>
+<p>Relative luminance step (dL/L) of one GSDF JND at <code>nits</code>.</p>
+<h3 id="jnd.pq_decode"><span class="kind">function</span>pq_decode</h3>
+<pre class="sig">pq_decode(v)</pre>
+<p class="none">No description in the source.</p>
+<h3 id="jnd.pq_step_in_jnd"><span class="kind">function</span>pq_step_in_jnd</h3>
+<pre class="sig">pq_step_in_jnd(nits, bits: int)</pre>
+<p>Size of one PQ code-value step at <code>nits</code>, in GSDF JNDs, for a <code>bits</code>-bit signal.</p>
+<h2 id="vision">udeep.vision</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/vision.py">src/udeep/vision.py</a></p>
+<p>Colour-vision deficiency: does a colour map stay readable for people who lack one cone type?</p>
+<pre class="block">simulate(rgb, kind)     how linear RGB looks under protanopia, deuteranopia or tritanopia
+report(table)           per kind: is lightness still strictly increasing along the map, and how much of the
+                        map&#x27;s perceptual length survives</pre>
+<p>The simulation is that of Machado, Oliveira &amp; Fernandes (2009), &quot;A physiologically-based model for simulation of
+color vision deficiency&quot;, IEEE TVCG 15(6), at full severity: one 3 x 3 matrix per kind, applied to linear RGB
+with BT.709 primaries. The matrices were copied from the colorspacious package&#x27;s data (its cvd.py), which gives
+them as the paper&#x27;s supplementary data. Being linear, the same matrix serves above SDR white.</p>
+<p>What &quot;readable&quot; means here, following the usual advice for scientific maps (Crameri et al. 2020): lightness must
+keep rising along the map under every simulation, so that order can always be read from lightness alone. The
+perceptual length that survives is reported, not judged: it says how much finer discrimination is lost.</p>
+<h3 id="vision.simulate"><span class="kind">function</span>simulate</h3>
+<pre class="sig">simulate(rgb, kind: str) -&gt; np.ndarray</pre>
+<p>Linear RGB (BT.709 primaries) as seen with the named deficiency; values the display cannot show are
+clipped at zero.</p>
+<h3 id="vision.report"><span class="kind">function</span>report</h3>
+<pre class="sig">report(table) -&gt; dict</pre>
+<p>For normal vision and each deficiency: whether lightness (Jz) rises at every node of the table; if not, at
+how many nodes it falls, where the first is, and the deepest dip below an earlier level as a share of the
+map&#x27;s whole lightness range; the share of the map&#x27;s perceptual length that survives; and the same share over
+the map&#x27;s flattest stretch (one of PARTS equal runs of light, in either segment).</p>
+<h3 id="vision.main"><span class="kind">function</span>main</h3>
+<pre class="sig">main() -&gt; None</pre>
+<p class="none">No description in the source.</p>
+<h2 id="color">udeep.color</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/color.py">src/udeep/color.py</a></p>
+<p>Colour spaces for HDR plotting. Element-wise over a trailing axis of 3; float64.</p>
+<p>Linear sRGB is *relative*: 1.0 = SDR white = REF_WHITE_NITS (BT.2408 reference white).
+Jzazbz takes CIE XYZ in absolute cd/m^2: Safdar et al., Opt. Express 25(13), 15131 (2017).</p>
+<h3 id="color.srgb_to_xyz"><span class="kind">function</span>srgb_to_xyz</h3>
+<pre class="sig">srgb_to_xyz(rgb) -&gt; np.ndarray</pre>
+<p class="none">No description in the source.</p>
+<h3 id="color.xyz_to_srgb"><span class="kind">function</span>xyz_to_srgb</h3>
+<pre class="sig">xyz_to_srgb(xyz) -&gt; np.ndarray</pre>
+<p class="none">No description in the source.</p>
+<h3 id="color.srgb_to_bt2020"><span class="kind">function</span>srgb_to_bt2020</h3>
+<pre class="sig">srgb_to_bt2020(rgb) -&gt; np.ndarray</pre>
+<p class="none">No description in the source.</p>
+<h3 id="color.xyz_to_jzazbz"><span class="kind">function</span>xyz_to_jzazbz</h3>
+<pre class="sig">xyz_to_jzazbz(xyz) -&gt; np.ndarray</pre>
+<p class="none">No description in the source.</p>
+<h3 id="color.jzazbz_to_xyz"><span class="kind">function</span>jzazbz_to_xyz</h3>
+<pre class="sig">jzazbz_to_xyz(jab) -&gt; np.ndarray</pre>
+<p class="none">No description in the source.</p>
+<h2 id="core">udeep.core</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/core.py">src/udeep/core.py</a></p>
+<p>The Rust core, used from Python when it is asked for.</p>
+<pre class="block">import udeep.core
+udeep.core.enabled()           # True when the core was found and has not been turned off
+udeep.core.enable(False)       # use the NumPy and Pillow code instead, from here on</pre>
+<p>The core (core/, a Rust library with a C interface) is used wherever it is found: it maps and colours an image on
+every processor core at once (60 to 250 megapixels a second on the development machine against NumPy&#x27;s 8 to 12,
+project/performance-scope.md 4d), and it writes and reads gain-map JPEGs. Where it is not found, the NumPy and
+Pillow code of this package does the same work; udeep.core.enable(False), or ENV[&quot;UDEEP_USE_CORE&quot;] = &quot;0&quot;,
+chooses that code even when the core is there.</p>
+<p>The two are held to the same golden vectors, and that is the sense in which they are the same: they agree to about
+one part in 10^12 in the mapping (their logarithms and hyperbolic sines come from different libraries), which is
+far inside any file&#x27;s precision but can turn an 8-bit code the other way at a few pixels, and so give a figure
+another SDR digest. The two JPEG decoders also differ by a code or two at some pixels: a file is held within its
+headroom exactly on the decoder its writer used, so write and read with the same one.</p>
+<p>The library is looked for at ENV[&quot;UDEEP_CORE_LIB&quot;], then beside this module (udeep/_lib, where a packaged
+build would put it), then in core/target/release of a source checkout (cargo build --release in core/).</p>
+<h3 id="core.library_path"><span class="kind">function</span>library_path</h3>
+<pre class="sig">library_path() -&gt; Path | None</pre>
+<p>Where the core library is, or None if it is in none of the places looked in.</p>
+<h3 id="core.available"><span class="kind">function</span>available</h3>
+<pre class="sig">available() -&gt; bool</pre>
+<p>Whether a core library with the functions this module needs was found and loaded.</p>
+<h3 id="core.files"><span class="kind">function</span>files</h3>
+<pre class="sig">files() -&gt; bool</pre>
+<p>Whether the core in use can write and read gain-map JPEGs (it was built with its <code>jpeg</code> feature).</p>
+<h3 id="core.enable"><span class="kind">function</span>enable</h3>
+<pre class="sig">enable(on: bool=True) -&gt; None</pre>
+<p>Map with the core from now on (or, with on=False, with NumPy again). Raises RuntimeError if the core is
+asked for and is not there.</p>
+<h3 id="core.enabled"><span class="kind">function</span>enabled</h3>
+<pre class="sig">enabled() -&gt; bool</pre>
+<p>Whether the core is in use: yes whenever it is there, unless it was turned off (enable(False), or
+ENV[&quot;UDEEP_USE_CORE&quot;] = &quot;0&quot;).</p>
+<h3 id="core.light"><span class="kind">function</span>light</h3>
+<pre class="sig">light(mapping, x, sdr: bool=False, threads: int=0) -&gt; np.ndarray</pre>
+<p>Data values -&gt; light, as Mapping.light(x); with sdr=True the fair SDR light, as Mapping.light(x, 1.0).
+<code>threads</code> = 0 uses every processor core; the result is the same on any number. Float64, the shape of <code>x</code>.</p>
+<h3 id="core.colours"><span class="kind">function</span>colours</h3>
+<pre class="sig">colours(mapping, y, dtype=np.float64, threads: int=0) -&gt; np.ndarray</pre>
+<p>Light -&gt; linear RGB through the mapping&#x27;s colour map, as Mapping.colours(y, dtype): shape y.shape + (3,).
+With dtype=np.float32 the colours are worked out in float64 a slab at a time and rounded once as they are kept.</p>
+<h3 id="core.write_gainmap"><span class="kind">function</span>write_gainmap</h3>
+<pre class="sig">write_gainmap(
+    sdr: np.ndarray,
+    hdr: np.ndarray,
+    headroom: float,
+    quality: int = 95,
+    gain_quality: int = 100,
+    description: bytes = b&#x27;&#x27;,
+) -&gt; bytes</pre>
+<p>The bytes of a gain-map JPEG, as udeep.gainmap.write_gainmap_jpeg writes one: <code>sdr</code> and <code>hdr</code> are float64,
+height x width x 3, already checked for shape and range by the caller. The core holds the file within the
+brightest value of <code>hdr</code> on its own decoder, which is also the one read_gainmap uses.</p>
+<h3 id="core.read_gainmap"><span class="kind">function</span>read_gainmap</h3>
+<pre class="sig">read_gainmap(data: bytes, display_boost: float, threads: int=0) -&gt; np.ndarray | None</pre>
+<p>A gain-map JPEG as a display with <code>display_boost</code> of headroom shows it: float32, height x width x 3. None
+when the core&#x27;s reader does not take the file (not one of this layout, or a gain map of another size than its
+base), for the caller to read it another way.</p>
+<h3 id="core.write_from_renders"><span class="kind">function</span>write_from_renders</h3>
+<pre class="sig">write_from_renders(
+    base: np.ndarray,
+    scaled: np.ndarray,
+    black: np.ndarray,
+    white: np.ndarray,
+    headroom: float,
+    quality: int = 95,
+    gain_quality: int = 100,
+    description: bytes = b&#x27;&#x27;,
+) -&gt; tuple[bytes, int]</pre>
+<p>A figure&#x27;s gain-map JPEG straight from four 8-bit renders of it (height x width x 3, uint8): the figure as
+it is; with each HDR image divided by the headroom; and with the HDR images black, and white. Returns the
+bytes and the number of pixels lifted above the ordinary figure. The rule is that of udeep.mpl._compose,
+without the two float images that takes.</p>
+<h2 id="gpu">udeep.gpu</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/gpu.py">src/udeep/gpu.py</a></p>
+<p>The mapping on a GPU: the reference shader (shaders/mapping.wgsl) and a way to run it and read it back.</p>
+<pre class="block">uniform_block(mapping)      the shader&#x27;s parameter block, worked out in float64 and packed as float32
+run(mapping, x)             position, light, fair SDR light and colours for an array of values, from the GPU
+expected_error(mapping)     how far float32 can be expected to fall from the reference, in units of the tolerances
+check(mapping)              ValueError if that is more than a tolerance, or a number does not fit float32</pre>
+<p><code>run</code> needs the optional <code>wgpu</code> package (WebGPU for Python, on Vulkan, Metal or DirectX). It exists to hold the
+shader to the golden vectors and to map large batches; a viewer uses the shader&#x27;s three functions in its own
+render pipeline instead. The GPU renders and the CPU reference defines (design decision D15): given the same
+float32 values, results agree with the float64 reference to 2e-6 x (1 + |value|) in position and light, and to
+1e-5 x (1 + |value|) in colour (D8), not exactly. Where float32 cannot do that, <code>uniform_block</code> and <code>run</code> raise
+ValueError: they do not return a worse answer.</p>
+<p>Colour has the wider tolerance because it is judged by what reaches a screen, and because a steep stretch of a
+colour-map table multiplies the light&#x27;s error: fire/1 at headroom 2 has one step, seventeen nodes below its top,
+where blue climbs 19 units per unit of light. 1e-5 is about a fiftieth of half a 10-bit code (0.5 / 1023 = 4.9e-4);
+the largest difference measured in any accepted mapping is 0.007 of an 8-bit code.</p>
+<p>What float32 can hold</p>
+<p>The ends of the range and the offset need not be float32 numbers: 273.15..303.15 or 20000.1..20001.1 are held
+as well as 0..1, because every constant that is subtracted is passed as a pair of float32 (<code>uniform_block</code>).
+Three things remain, and <code>check</code> refuses each. The positions below are of the knee in the range, for the profile&#x27;s
+reference form above the knee (exit slope 1), and are where the rule draws the line, not where the shader fails:
+run regardless, a mapping just past one of them measured about half its tolerance.</p>
+<p>1. A number that does not fit a float32 at all: a size above about 3.4e38, or below about 1.2e-38 and not zero.
+That covers the ends of the range, its width and the reciprocal of its width, and for a log stretch the ratio
+of the ends.
+2. log and asinh. The function&#x27;s result is itself a float32, so the position carries a rounding that does not
+shrink with the range: about 2.2e-7 for a log, and for an asinh between 2.6e-7 of the stretched value (where
+that is below 1) and 1e-7 of it (above about 4), each divided by the stretched span. A log range must
+therefore span a ratio of 1.12 at the very least, and more once the curve multiplies the error: with the knee
+in the middle, 1.25 at headroom 2, 1.4 at 4 and 7.4 at 16. An asinh range must span a ratio of 1.5 where its low
+end is no more than the width, 1.7 where it is ten widths and 2.1 where it is a hundred (knee in the middle,
+headroom 4). A knee low in a log or a narrow asinh range is steep enough to break the tolerance: below position
+0.012 of a log range of four decades. A linear stretch has no such limit: its error is a fraction of the
+position.
+3. Steepness. The light is out by the position&#x27;s error times the slope of the curve, and a colour by the light&#x27;s
+error times the slope of the colour-map table. So a knee near the top is refused, sooner with more headroom.
+With a grey map the knee may be as high as</p>
+<pre class="block">   headroom                              2       4       8       16
+   linear                                0.955   0.905   0.84    0.75
+   log, four decades                     0.93    0.845   0.745   0.62
+   asinh, 0 to 200 widths                0.935   0.85    0.755   0.63</pre>
+<p>The shipped colour maps, fire/1 and ice/1, are held at every shipped headroom (1, 2, 4, 8 and 16): none is
+refused outright. At headrooms 4, 8 and 16 their limits are those of the grey map, and at headroom 1 there is
+none. At headroom 2 the table is steep enough to bring the limit down:</p>
+<pre class="block">   headroom 2                            linear  log     asinh
+   ice/1                                 0.95    0.92    0.92
+   fire/1                                0.85    0.75    0.76
+   fire/1, exit slope 2                  0.71    0.51    0.53
+   fire/1, exit slope 3                  0.565   0.27    0.30</pre>
+<p>With any colour map, a headroom between 1 and about 1.03 squeezes the whole upper table into a sliver of light,
+and is refused. A headroom of exactly 1, and a grey map at any headroom, are not.</p>
+<p><code>expected_error</code> is the rule itself: it follows those errors through the chain and <code>check</code> refuses when any is
+above 1. Its nine constants are measured, on an NVIDIA RTX 5070 Ti through Vulkan, not derived, and other
+hardware may differ: the tests measure again on whatever GPU they find. On 1800 mappings drawn at random (linear,
+log and asinh; grey, fire and ice; headrooms 1 to 16) and sampled closely at both ends and just above the knee,
+1433 were let through and none of those was out: the largest error was 0.79 of its tolerance (light) and 0.54
+(colour), the median 0.17. Of the 367 refused, 203 were out when run regardless and 164 were not: the rule errs
+towards refusing, and most of all for colour, where it adds up the worst each step can do. Of 20 mappings refused
+for their colours alone, 3 were out. Two closer looks at the colour limit found nothing out either: 250 accepted
+mappings whose expected colour error was above 0.6 measured 0.65 at most, and 122 accepted with a colour map at a
+headroom between 1.005 and 1.1 measured 0.58 at most.</p>
+<h3 id="gpu.uniform_block"><span class="kind">function</span>uniform_block</h3>
+<pre class="sig">uniform_block(mapping: Mapping) -&gt; bytes</pre>
+<p>The shader&#x27;s <code>Mapping</code> uniform: 64 bytes, twelve float32 then four uint32, little-endian, in the order of
+FIELDS (the shader file documents each). Everything is worked out in float64 first.</p>
+<p>A number that is subtracted comes as a pair, <code>_hi</code> and <code>_lo</code>: the nearest float32, and what is left of the
+float64 number after it, already multiplied by the factor the shader applies between the two subtractions.
+Raises ValueError for a mapping the shader cannot hold to the tolerance (<code>check</code>).</p>
+<h3 id="gpu.expected_error"><span class="kind">function</span>expected_error</h3>
+<pre class="sig">expected_error(mapping: Mapping) -&gt; dict</pre>
+<p>How far the shader&#x27;s float32 answers can be expected to lie from the float64 reference, for position, light
+and colours, each as a multiple of its own tolerance: 2e-6 x (1 + |value|) for position and light (TOLERANCE),
+1e-5 x (1 + |value|) for colours (COLOUR_TOLERANCE). Each is the largest over the range.</p>
+<p>It follows the error through the chain at GRID positions. The position is out by a fraction of itself
+(POSITION_RELATIVE) and, for log and asinh, by the rounding of the function&#x27;s argument and of its own float32
+result, divided by the stretched span. The light is out by that times the slope of the curve, plus the rounding
+of the curve&#x27;s own arithmetic. A colour is out by the light&#x27;s error at the same place times the slope of the
+colour-map table there, plus the rounding of the interpolation. The constants are measured, not derived: see
+the module docstring.</p>
+<h3 id="gpu.check"><span class="kind">function</span>check</h3>
+<pre class="sig">check(mapping: Mapping) -&gt; None</pre>
+<p>Raise ValueError unless the shader can hold this mapping to its tolerances: every number it needs fits a
+float32, and no part of <code>expected_error</code> is above 1 (position and light in units of TOLERANCE, colours in units
+of COLOUR_TOLERANCE). The module docstring says what that rules out.</p>
+<h3 id="gpu.adapter_name"><span class="kind">function</span>adapter_name</h3>
+<pre class="sig">adapter_name() -&gt; str</pre>
+<p>The GPU that <code>run</code> uses, for reports.</p>
+<h3 id="gpu.run"><span class="kind">function</span>run</h3>
+<pre class="sig">run(mapping: Mapping, x) -&gt; dict</pre>
+<p>Map <code>x</code> (any shape, no NaN) on the GPU. Returns float32 arrays: position, light, sdr_light (the shape of
+<code>x</code>) and colours (that shape with 3 added).</p>
+<h2 id="golden">udeep.golden</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/golden.py">src/udeep/golden.py</a></p>
+<p>Golden vectors: the contract every implementation must reproduce (design decision D14).</p>
+<pre class="block">python -m udeep.golden        # rewrite golden.json after a deliberate change</pre>
+<p>golden.json is language-neutral. Each case has a <code>kind</code> (what to compute), <code>args</code>, the expected <code>out</code>, and how
+closely a result must agree: <code>tol</code> = {&quot;rel&quot;, &quot;abs&quot;} for numbers (|got - want| &lt;= abs + rel * |want|), or
+<code>exact</code> for text, digests and bytes. NaN is written as null. The tolerances are the written ones of decision D8:
+tight where an implementation in float64 must agree with the reference, looser where float32 tables or GPU
+arithmetic are involved.</p>
+<p>Kinds: scale, tone, pq_encode, srgb_oetf, cmap (a table lookup), table (a shipped table&#x27;s digest), mapping (a
+parameter record: position, light, fair SDR light, the inverse, colours), levels (stored levels and the data
+criterion), mask_isolated, digest_data, digest_pixels, xmp (a declaration&#x27;s serialised form), caption, iso21496
+(the gain-map metadata block&#x27;s bytes).</p>
+<p>A levels case gives the noise as [model, parameter]. Its <code>rounding_to_noise</code> is the worst ratio as a file states
+it, no larger than 1e9: the ratio is unbounded where the noise reaches zero, and JSON has no infinity. <code>at</code>, the
+data value where the worst ratio was taken, is given for poisson and relative noise, and only where one level is
+clearly the worst. Elsewhere (constant noise, a tolerance, relative noise on a log stretch) many levels share the
+worst ratio to within rounding, so which of them is found is not part of the contract and <code>at</code> is left out.</p>
+<h3 id="golden.make"><span class="kind">function</span>make</h3>
+<pre class="sig">make() -&gt; dict</pre>
+<p class="none">No description in the source.</p>
+<h3 id="golden.agree"><span class="kind">function</span>agree</h3>
+<pre class="sig">agree(got, want, case: dict, where: str=&#x27;&#x27;) -&gt; list[str]</pre>
+<p>Differences between a result and the expected output, under the case&#x27;s own tolerance; empty if none.</p>
+<h3 id="golden.main"><span class="kind">function</span>main</h3>
+<pre class="sig">main() -&gt; None</pre>
+<p class="none">No description in the source.</p>
+  </article>
+</div></main>
+<footer><div class="wrap"><p>UDeep · code under BSD-3-Clause.</p></div></footer>
+</body>
+</html>

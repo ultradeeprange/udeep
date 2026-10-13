@@ -35,6 +35,7 @@ coarser steps matter depends on the data's noise, which is the comparison the fi
 - **Site and demos:** <https://ultradeeprange.github.io/udeep/>, including device checks you can run on your
   own screen
 - **Profile (draft standard):** [`profile/udeep-figure-profile-v0.3.md`](profile/udeep-figure-profile-v0.3.md)
+- **Python reference:** <https://ultradeeprange.github.io/udeep/reference/>, every public function and class
 
 > Status: research preview. The profile is a working draft, not endorsed by any standards body. Its
 > device evidence so far comes from one iPhone 16 Pro and one desktop HDR monitor.

@@ -101,11 +101,13 @@
   <p class="eyebrow">Real data · built 6 October 2026</p>
   <h1>Six real datasets, and what each one teaches</h1>
   <p>Each figure below is made from openly licensed measurements, with the data downloaded and checked against a
-    recorded checksum by <code>tools/make_showcase.py</code>. On an HDR screen, the values above the marked
-    "SDR white" appear brighter than the figure's white. On any other screen you see the ordinary figure. Use the
-    buttons to compare; the switch never happens on its own.</p>
-  <p class="muted">Every file here is a <i>rendering</i>, in the profile's terms: an 8-bit gain-map JPEG shows the data, but it is not
-    precise enough to stand in for it. Each HDR file declares its own mapping in its metadata: the unit, the range,
+    recorded checksum by <code>tools/make_showcase.py</code>. They show the two halves of the name.
+    <b>Range:</b> on an HDR screen, the values above the marked "SDR white" appear brighter than the figure's white;
+    on any other screen one sees the ordinary figure. Use the buttons to compare; the switch never happens on its
+    own.</p>
+  <p class="muted"><b>Depth:</b> every file here is a <i>rendering</i>, in the profile's terms. An 8-bit gain-map JPEG
+    shows the data, but its levels are too coarse to stand in for it &mdash; and each file says so, stating how much
+    data one stored level spans. Each HDR file declares its own mapping in its metadata: the unit, the range,
     the knee and its rule, how much data one stored level spans, where the data came from, and digests that tie it
     to that data and to the SDR figure beside it. <code>udeep.read_metadata</code> reads it back.
     None of these figures is for diagnosis or for measurement.</p>
