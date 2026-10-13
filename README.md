@@ -36,6 +36,8 @@ coarser steps matter depends on the data's noise, which is the comparison the fi
   own screen
 - **Profile (draft standard):** [`profile/udeep-figure-profile-v0.3.md`](profile/udeep-figure-profile-v0.3.md)
 - **Python reference:** <https://ultradeeprange.github.io/udeep/reference/>, every public function and class
+- **Worked examples:** [`examples/`](examples/): three on where to put white, and one on depth, in which a 16-bit
+  file gives a detector frame back to the whole count
 
 > Status: research preview. The profile is a working draft, not endorsed by any standards body. Its
 > device evidence so far comes from one iPhone 16 Pro and one desktop HDR monitor.
@@ -121,6 +123,7 @@ Two modes use the same tone curve:
 | `src/udeep/shaders/mapping.wgsl` | the mapping as a WebGPU shader; `udeep.gpu` runs it (needs `pip install wgpu`) |
 | `src/udeep/golden.json` | the contract: 90 reference cases of 14 kinds, each with its stated tolerance. Python reproduces all of them; the JavaScript port the 55 it implements; for the Rust core, all 14 kinds are implemented; it reproduces all 74 cases |
 | `tests/` | pytest suite (`pip install -e ".[test]" && pytest`) |
+| `examples/` | four worked examples on synthetic data, with their figures (`examples/README.md`) |
 | `profile/` | the UDeep Figure Profile |
 | `evidence/` | device reports: one record each in `devices/`, and the table made from them by `tools/evidence.py` |
 | `docs/` | the GitHub Pages site: demos and device checks |

@@ -11,6 +11,13 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-13
 
+- **Worked examples** (`examples/`): a statistical knee on a spectral line scan, a preset knee with saturated pixels
+  held by a mask, a logarithmic stretch on a simulated field, and one on depth: a 12-bit detector frame stored as
+  an 8-bit gain-map JPEG (a rendering) and as a 16-bit PQ PNG (a data record), with the counts read back out of the
+  PNG exactly. All the data is synthetic. A test runs each one.
+- **A Python reference page** (`docs/reference/`), written from the docstrings by `tools/build_reference_page.py`.
+- **The site says what the name means** on the gallery, apps, standardisation and evidence pages, not only on the
+  home page.
 - **The package builds and carries the Rust core.** Installing builds the core where `cargo` is present and puts it
   inside the package; without `cargo` the package installs as before and uses NumPy and Pillow
   (`UDEEP_BUILD_CORE` = `auto`, `1` or `0`). A wheel that carries the core is tagged `py3-none-<platform>`: one
