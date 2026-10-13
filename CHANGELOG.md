@@ -16,6 +16,9 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
   an 8-bit gain-map JPEG (a rendering) and as a 16-bit PQ PNG (a data record), with the counts read back out of the
   PNG exactly. All the data is synthetic. A test runs each one.
 - **A Python reference page** (`docs/reference/`), written from the docstrings by `tools/build_reference_page.py`.
+- **Julia brought level in two places:** the reference page lists the 28 names `UDeepCore` exports, with their
+  docstrings, and `julia/UDeepCore/examples/` has Makie counterparts of the three range examples, run by the
+  package's tests.
 - **The site says what the name means** on the gallery, apps, standardisation and evidence pages, not only on the
   home page.
 - **The package builds and carries the Rust core.** Installing builds the core where `cargo` is present and puts it

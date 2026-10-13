@@ -56,5 +56,8 @@ and says so. The PNG's levels are finer than the noise allows for, so it may be 
 script shows what that means: it reads the PNG back, turns its codes into light and the light into counts, and
 gets the frame itself, every pixel, to the whole count.
 
+The first three have Makie counterparts in [`julia/UDeepCore/examples/`](../julia/UDeepCore/examples/). The
+depth example does not yet: the Julia package writes gain-map JPEGs only.
+
 The numbers in the table are what the script prints. The package works out the levels of its 8-bit path itself;
 the 16-bit levels are worked out in the script, from the same functions the PNG writer uses.

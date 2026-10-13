@@ -27,6 +27,25 @@ The figure on screen and in `save("figure.png", fig)` is the ordinary SDR one. `
 viewer shows as that same figure, and that an HDR display shows with the values above the knee brighter than
 white, up to the headroom. `examples/figure.jl` is a complete script.
 
+Every exported name is listed, with its description, in the project's
+[reference](https://ultradeeprange.github.io/udeep/reference/#julia).
+
+## Worked examples
+
+Three scripts in `examples/`, the Makie counterparts of the Python ones in the repository's `examples/` folder.
+Each makes its own SYNTHETIC data and writes the ordinary figure and the UDeep file, for a light and a dark page:
+
+```sh
+cd julia/UDeepCore/examples
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=. spectral_map.jl        # a statistical knee: the count that Poisson noise rarely reaches
+julia --project=. microscope_frame.jl    # a preset knee, with the saturated pixels held by a mask
+julia --project=. simulation_field.jl    # a logarithmic stretch, white at ten times the mean
+```
+
+They share `common.jl`, which has a small generator of random numbers of its own, so that the data is the same
+on every machine and Julia version. The package's tests run all three.
+
 - `mode = :highlight` holds single bright pixels at white, so noise cannot sparkle (the file declares how many);
   `:extend` lifts everything above the knee.
 - `unit`, `knee_rule` and `noise` are what the file declares. Without the first two `save_hdr` refuses, unless

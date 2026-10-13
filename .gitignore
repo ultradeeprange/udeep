@@ -13,3 +13,4 @@ data/
 core/target/
 # Julia: resolved environments are per machine
 julia/**/Manifest.toml
+julia/UDeepCore/examples/output/

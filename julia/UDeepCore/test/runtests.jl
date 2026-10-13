@@ -141,3 +141,4 @@ end
 
 include("figure.jl")
 include("makie.jl")
+include("examples.jl")

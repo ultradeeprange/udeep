@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Reference · UDeep</title>
-<meta name="description" content="The udeep Python package: every public function and class, with its signature and the description written in the source.">
+<meta name="description" content="The udeep Python package and the UDeepCore Julia package: every public function and type, with the description written in the source.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
 <style>
@@ -64,7 +64,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="UDeep">
 <meta property="og:title" content="Reference · UDeep">
-<meta property="og:description" content="The udeep Python package: every public function and class, with its signature and the description written in the source.">
+<meta property="og:description" content="The udeep Python package and the UDeepCore Julia package: every public function and type, with the description written in the source.">
 <meta property="og:url" content="https://ultradeeprange.github.io/udeep/reference/">
 <meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -96,12 +96,13 @@
   <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
 </div></header>
 <main><div class="wrap layout">
-  <nav class="toc" aria-label="Modules"><span class="label">Modules</span><a href="#udeep">udeep</a><a href="#mpl">udeep.mpl</a><a href="#view">udeep.view</a><a href="#mapping">udeep.mapping</a><a href="#cmap">udeep.cmap</a><a href="#gainmap">udeep.gainmap</a><a href="#export">udeep.export</a><a href="#metadata">udeep.metadata</a><a href="#validate">udeep.validate</a><a href="#scale">udeep.scale</a><a href="#tone">udeep.tone</a><a href="#masks">udeep.masks</a><a href="#jnd">udeep.jnd</a><a href="#vision">udeep.vision</a><a href="#color">udeep.color</a><a href="#core">udeep.core</a><a href="#gpu">udeep.gpu</a><a href="#golden">udeep.golden</a></nav>
+  <nav class="toc" aria-label="Modules"><span class="label">Python</span><a href="#udeep">udeep</a><a href="#mpl">udeep.mpl</a><a href="#view">udeep.view</a><a href="#mapping">udeep.mapping</a><a href="#cmap">udeep.cmap</a><a href="#gainmap">udeep.gainmap</a><a href="#export">udeep.export</a><a href="#metadata">udeep.metadata</a><a href="#validate">udeep.validate</a><a href="#scale">udeep.scale</a><a href="#tone">udeep.tone</a><a href="#masks">udeep.masks</a><a href="#jnd">udeep.jnd</a><a href="#vision">udeep.vision</a><a href="#color">udeep.color</a><a href="#core">udeep.core</a><a href="#gpu">udeep.gpu</a><a href="#golden">udeep.golden</a><span class="label">Julia</span><a href="#julia">UDeepCore</a></nav>
   <article>
-    <h1>Python reference</h1>
+    <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      86 public functions and classes in 17 modules. The profile says what a figure file means;
-      this page says what the code offers.</p>
+      86 public functions and classes in 17 Python modules, and the 28 names the Julia
+      package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
+      says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
 <p>What <code>import udeep</code> gives. The matplotlib interface is its own module, <a href="#mpl"><code>udeep.mpl</code></a>, imported as <code>import udeep.mpl as hp</code>.</p>
 <p><a href="#metadata.caption"><code>caption</code></a>, <a href="#cmap.cmap"><code>cmap</code></a>, <a href="#metadata.Declaration"><code>Declaration</code></a>, <a href="#view.hdr_view"><code>hdr_view</code></a>, <a href="#view.HdrView"><code>HdrView</code></a>, <a href="#tone.knee_at_percentile"><code>knee_at_percentile</code></a>, <a href="#mapping.Mapping"><code>Mapping</code></a>, <code>MAPS</code>, <a href="#metadata.max_data_step"><code>max_data_step</code></a>, <a href="#export.pq_encode"><code>pq_encode</code></a>, <a href="#gainmap.read_gainmap_jpeg"><code>read_gainmap_jpeg</code></a>, <a href="#metadata.read_metadata"><code>read_metadata</code></a>, <a href="#scale.scale"><code>scale</code></a>, <a href="#metadata.to_xmp"><code>to_xmp</code></a>, <a href="#tone.tone"><code>tone</code></a>, <a href="#gainmap.write_gainmap_jpeg"><code>write_gainmap_jpeg</code></a>, <a href="#export.write_png_pq"><code>write_png_pq</code></a>, <a href="#export.write_png_sdr"><code>write_png_sdr</code></a></p>
@@ -939,6 +940,152 @@ worst ratio to within rounding, so which of them is found is not part of the con
 <h3 id="golden.main"><span class="kind">function</span>main</h3>
 <pre class="sig">main() -&gt; None</pre>
 <p class="none">No description in the source.</p>
+<h2 id="julia">UDeepCore (Julia)</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/julia/UDeepCore">julia/UDeepCore</a> &middot; its Makie extension is in <a href="https://github.com/ultradeeprange/udeep/blob/main/julia/UDeepCore/ext/UDeepCoreMakieExt.jl">ext/UDeepCoreMakieExt.jl</a></p>
+<p>The mapping from scientific data to light and colour of the UDeep Figure Profile, for Julia.</p>
+<pre class="block">value x  -&gt;  position t in [0, 1]  -&gt;  light y, in multiples of SDR white  -&gt;  linear RGB, same unit</pre>
+<p>This is a thin binding to the project&#x27;s Rust core (<code>core/</code>, through its C interface), not a second
+implementation: the arithmetic lives in one place and is held to one set of golden vectors. The library is found
+at <code>ENV[&quot;UDEEP_CORE_LIB&quot;]</code>, or else in <code>core/target/release</code> of the repository this package sits in (build it
+with <code>cargo build --release</code>).</p>
+<p>Arrays are mapped element by element, so any array shape works and its shape is kept. Digests are defined on
+values in row order (the last index fastest), so a Julia array is walked that way when it is digested.</p>
+<h3 id="julia.Mapping"><span class="kind">type</span>Mapping</h3>
+<pre class="block">Mapping(stretch, range_low, range_high, knee, reference_headroom; width = 1, offset = 0, exit_slope = 1)</pre>
+<p>The mapping a file declares, as one record. <code>stretch</code> is <code>:linear</code>, <code>:log</code>, <code>:asinh</code> or <code>:proportional</code>. The
+layout is that of the C interface&#x27;s <code>udeep_mapping</code>: seven <code>Float64</code>, then two <code>UInt32</code>, 64 bytes.</p>
+<h3 id="julia.core_version"><span class="kind">function</span>core_version</h3>
+<p>The core library&#x27;s version, as a <code>VersionNumber</code>.</p>
+<h3 id="julia.sdr_light"><span class="kind">function</span>sdr_light</h3>
+<p><code>sdr_light(m, x)</code>: data values -&gt; the fair SDR light: the same below the knee, SDR white above it.</p>
+<h3 id="julia.value"><span class="kind">function</span>value</h3>
+<p><code>value(m, y)</code>: light -&gt; data values, the inverse of <code>light</code>.</p>
+<h3 id="julia.light"><span class="kind">function</span>light</h3>
+<pre class="block">light(m, x; threads = 0)</pre>
+<p>Data values -&gt; light, in multiples of SDR white: the declared mapping. <code>threads = 0</code> uses every available core,
+<code>threads = 1</code> none but the caller&#x27;s; the result is the same, bit for bit. An array of fewer than 32768 values is
+mapped on the caller&#x27;s thread whatever <code>threads</code> is: starting another would cost more than it saved.</p>
+<p><code>x</code> is any array of real numbers, as for the other functions; the result is an <code>Array{Float64}</code> of its size.</p>
+<h3 id="julia.light!"><span class="kind">function</span>light!</h3>
+<p><code>light!(out, m, x; threads = 0)</code>: as <code>light</code>, into <code>out</code>.</p>
+<h3 id="julia.colours"><span class="kind">function</span>colours</h3>
+<pre class="block">colours(table, headroom, y)</pre>
+<p>Light -&gt; linear RGB (BT.709 primaries, multiples of SDR white). <code>table</code> is a colour-map table as the project ships
+them (<code>Vector{Float32}</code> of <code>2 * nodes * 3</code> numbers) or <code>nothing</code> for grey. Returns an array of the shape of <code>y</code>
+with a last dimension of 3.</p>
+<h3 id="julia.digest_data"><span class="kind">function</span>digest_data</h3>
+<pre class="block">digest_data(a)</pre>
+<p>The digest that ties a file to its data (<code>udeep:DataDigest</code>): of the values and shape of <code>a</code>, whatever type it is
+stored as. Every NaN counts as the same value. An array with no dimensions, such as <code>fill(1.5)</code>, has the digest of
+the one-element vector <code>[1.5]</code>: the Python reference digests a scalar so, and the core follows it.</p>
+<h3 id="julia.digest_pixels"><span class="kind">function</span>digest_pixels</h3>
+<p><code>digest_pixels(rgb)</code>: the digest of an 8-bit RGB image, <code>height x width x 3</code> (<code>udeep:SdrDigest</code>).</p>
+<h3 id="julia.srgb_encode"><span class="kind">function</span>srgb_encode</h3>
+<p><code>srgb_encode(linear)</code>: linear light -&gt; sRGB signal, both in [0, 1]; values outside are clipped, NaN stays NaN.</p>
+<h3 id="julia.srgb_decode"><span class="kind">function</span>srgb_decode</h3>
+<p><code>srgb_decode(signal)</code>: sRGB signal -&gt; linear light, the inverse of <code>srgb_encode</code>.</p>
+<h3 id="julia.value_at"><span class="kind">function</span>value_at</h3>
+<p><code>value_at(m, t)</code>: position in [0, 1] -&gt; data values, the inverse of <code>UDeepCore.position</code> inside the range.</p>
+<h3 id="julia.isolated"><span class="kind">function</span>isolated</h3>
+<pre class="block">isolated(above)</pre>
+<p>The <code>isolated-3x3</code> mask rule: the pixels of the boolean image <code>above</code> (light above SDR white) that lie in no full
+3 x 3 block of it. The Highlight preset holds these at white, so that noise cannot sparkle.</p>
+<h3 id="julia.colour_table"><span class="kind">function</span>colour_table</h3>
+<pre class="block">colour_table(name, headroom)</pre>
+<p>The registered colour-map table for <code>&quot;fire&quot;</code> or <code>&quot;ice&quot;</code> at a registered headroom (2, 4, 8 or 16), as the project
+ships it; <code>nothing</code> for <code>&quot;grey&quot;</code>, which needs none. The name alone is the map&#x27;s current version (2); <code>&quot;fire/1&quot;</code>
+names an older one, for reproducing a figure made with it. The tables are read from <code>ENV[&quot;UDEEP_TABLES&quot;]</code>, or else from
+<code>src/udeep/tables</code> of the repository this package sits in.</p>
+<p>A map at any other headroom needs a table made for that headroom. Only the Python reference makes tables, so this
+package refuses one rather than draw a map the file could not declare.</p>
+<h3 id="julia.HdrView"><span class="kind">type</span>HdrView</h3>
+<p>The two renderings of an image, as linear RGB in multiples of SDR white (<code>size(data)..., 3</code>): <code>sdr</code> is the fair SDR
+plot (the same below the knee, white above it) and <code>hdr</code> the HDR plot. <code>light</code> is the HDR light before colour.</p>
+<h3 id="julia.hdr_view"><span class="kind">function</span>hdr_view</h3>
+<pre class="block">hdr_view(data, m; mode = :highlight, cmap = &quot;fire&quot;, mask = nothing)</pre>
+<p>Map an image by the two presets of the profile (section 13), as the Python reference&#x27;s <code>hdr_view</code> does:</p>
+<p>- <code>:highlight</code>: sparse extremes go above SDR white; pixels above the knee that belong to no 3 x 3 block of such
+pixels are held at white (the derived mask <code>isolated-3x3</code>).
+- <code>:extend</code>: a second range of real structure goes above white; no area filter.</p>
+<p>Pixels where <code>mask</code> is true (saturated, clipped, invalid) are never lifted. The mapping itself is pointwise.</p>
+<h3 id="julia.levels"><span class="kind">function</span>levels</h3>
+<pre class="block">levels(m, table, scaled_by; noise = (:unknown, nothing), samples = 65536)</pre>
+<p>The stored levels of an 8-bit gain-map rendering of <code>m</code> through <code>table</code> (<code>nothing</code> for grey), written for the
+headroom <code>scaled_by</code>. Returns <code>(max_data_step, rounding_to_noise)</code>: the widest run of data values that share one
+stored code (<code>udeep:MaxDataStep</code>), and the data criterion&#x27;s worst ratio of rounding error to the stated
+uncertainty (<code>udeep:RoundingToNoise</code>, at most 1e9), or <code>nothing</code> when the noise is unknown.</p>
+<p><code>noise</code> is <code>(:constant, sigma)</code>, <code>(:poisson, scale)</code>, <code>(:relative, fraction)</code>, <code>(:tolerance, value)</code> or
+<code>(:unknown, nothing)</code>.</p>
+<h3 id="julia.Declaration"><span class="kind">type</span>Declaration</h3>
+<pre class="block">Declaration(; mapping, data_unit, knee_rule, max_data_step, ...)</pre>
+<p>What a file declares about its data and mapping (profile section 8), under the names of the <code>udeep:</code> properties.
+<code>mapping</code>, <code>data_unit</code>, <code>knee_rule</code> and <code>max_data_step</code> must be given. The profile&#x27;s version and image state are
+the core&#x27;s own.</p>
+<h3 id="julia.description"><span class="kind">function</span>description</h3>
+<p><code>description(d)</code>: the declaration as the <code>rdf:Description</code> element a file carries, exactly as the reference writes it.</p>
+<h3 id="julia.caption"><span class="kind">function</span>caption</h3>
+<p><code>caption(d)</code>: a caption paragraph generated from the declaration (profile 8.2).</p>
+<h3 id="julia.gainmap_jpeg"><span class="kind">function</span>gainmap_jpeg</h3>
+<pre class="block">gainmap_jpeg(sdr, hdr, headroom; quality = 95, gain_quality = 100, description = &quot;&quot;)</pre>
+<p>A gain-map JPEG (Ultra HDR layout, with the ISO 21496-1 block) as bytes. <code>sdr</code> and <code>hdr</code> are <code>height x width x 3</code>
+linear RGB in multiples of SDR white: the ordinary figure, and the same figure with light above white. An ordinary
+viewer shows <code>sdr</code>; an HDR one shows <code>hdr</code>, up to <code>headroom</code>. <code>description</code> is the declared metadata
+(<code>description</code>), or empty for a file that declares nothing and so does not conform to the profile.</p>
+<p>A pixel that is not lifted is stored with a gain of exactly 1, and the file never reads above the brightest value
+of <code>hdr</code> on the core&#x27;s own decoder: the writer decodes its gain map and lowers it until nothing is over, and throws
+if it cannot. Keep <code>gain_quality</code> at 100 unless the figure is grey: below it a gain map is unreliable with a
+colour map (<code>&quot;fire&quot;</code>, <code>&quot;ice&quot;</code>), with this writer or any other, and the call may be refused.</p>
+<p>Needs a core library built with <code>--features jpeg</code>.</p>
+<h3 id="julia.gainmap_from_renders"><span class="kind">function</span>gainmap_from_renders</h3>
+<pre class="block">gainmap_from_renders(base, scaled, black, white, headroom; quality = 95, gain_quality = 100, description = &quot;&quot;)</pre>
+<p>A figure&#x27;s gain-map JPEG straight from four 8-bit renders of it, each <code>height x width x 3</code> (<code>UInt8</code>, sRGB codes):
+the figure as it is, which becomes the file&#x27;s SDR image unchanged; the same with each HDR image divided by the
+headroom; and the same with the HDR images black, and white. A pixel that is black in the third and white in the
+fourth is made by an HDR image alone, and only such a pixel is lifted (profile 6.11). Returns the file&#x27;s bytes and
+the number of pixels lifted above the ordinary figure.</p>
+<p>It is what <code>save_hdr</code> uses: the same file as <code>gainmap_jpeg</code> would write from the two float figures, without
+making them.</p>
+<h3 id="julia.hdrimage!"><span class="kind">function</span>hdrimage!</h3>
+<pre class="block">hdrimage!(ax, data, m; mode = :highlight, cmap = &quot;fire&quot;, mask = nothing, unit = nothing, knee_rule = nothing,
+          noise = (:unknown, nothing), source = nothing, unit_code = nothing, kw...)
+hdrimage!(ax, x, y, data, m; ...)</pre>
+<p>Like Makie&#x27;s <code>image!</code>, for the profile&#x27;s two presets: draws the fair SDR plot of <code>data</code> under the mapping <code>m</code>, and
+remembers the HDR one for <code>save_hdr</code>. Returns the plot. <code>data[i, j]</code> is drawn at the i-th place along x
+and the j-th along y, as <code>image!</code> draws a matrix; <code>x</code> and <code>y</code> are the intervals it spans (default <code>0 .. size</code>).</p>
+<p><code>unit</code>, <code>knee_rule</code> and <code>noise</code> are what the file will declare (profile section 8): the data&#x27;s unit (<code>&quot;1&quot;</code> if it
+has none); why the knee is where it is, as <code>&quot;physical; ...&quot;</code>, <code>&quot;statistical; ...&quot;</code> or <code>&quot;preset; ...&quot;</code>; and the noise
+model with its parameter, such as <code>(:constant, 10.0)</code>. <code>source</code> says where the data is kept (a DOI, a URL); the file
+also records a digest of <code>data</code>. <code>unit_code</code> is the unit as a UCUM code. A NaN in <code>data</code> is drawn black.</p>
+<p>Further keywords go to <code>image!</code>. The image must stay opaque and uncovered where it is to go above white.</p>
+<h3 id="julia.hdrcolorbar!"><span class="kind">function</span>hdrcolorbar!</h3>
+<pre class="block">hdrcolorbar!(position, plot; label = &quot;&quot;, n = 256, width = 18)</pre>
+<p>An HDR colour bar for an <code>hdrimage!</code> plot at a figure position such as <code>fig[1, 2]</code>: ticks in data units,
+and the value shown at SDR white. Returns its axis.</p>
+<h3 id="julia.save_hdr"><span class="kind">function</span>save_hdr</h3>
+<pre class="block">save_hdr(path, fig; quality = 95, gain_quality = 100, px_per_unit = 2, metadata = true)</pre>
+<p>Write the figure as a gain-map JPEG: the ordinary figure, plus gain on the <code>hdrimage!</code> plots only. The file
+carries the profile&#x27;s declared metadata unless <code>metadata = false</code>; without it the file does not conform.</p>
+<p>A pixel is lifted only where an HDR image alone determines it, so text, lines and anything translucent drawn over
+an image stay as they are in the ordinary figure. The SDR figure the file&#x27;s digest refers to is the figure as the
+backend renders it at <code>px_per_unit</code>. Keep <code>gain_quality</code> at 100 with a colour map (see <code>gainmap_jpeg</code>).</p>
+<h3 id="julia.hdr_declaration"><span class="kind">function</span>hdr_declaration</h3>
+<p><code>hdr_declaration(fig)</code>: what the figure declares (<code>Declaration</code>), as <code>save_hdr</code> would write it, less the digest of the SDR figure.</p>
+<h3 id="julia.hdr_caption"><span class="kind">function</span>hdr_caption</h3>
+<p><code>hdr_caption(fig)</code>: a caption paragraph generated from the figure&#x27;s declaration (profile 8.2).</p>
+<h3 id="julia.hdr_theme"><span class="kind">function</span>hdr_theme</h3>
+<pre class="block">hdr_theme(name = :dark; ground = nothing, ink = nothing)</pre>
+<p>A Makie <code>Theme</code> for a figure&#x27;s furniture on a light or a dark page: the background, and the text, axes and ticks
+drawn on it. <code>name</code> is <code>:light</code> or <code>:dark</code>; <code>ground</code> and <code>ink</code> replace the background and text colours, to match a
+particular page. Use it around the code that builds the figure:</p>
+<pre class="block">with_theme(hdr_theme(:dark)) do
+    fig = Figure()
+    ...
+    save_hdr(&quot;figure_dark.jpg&quot;, fig)
+end</pre>
+<p>A theme changes nothing about the data: the image, its colours, the mapping and everything the file declares about
+them are the same in every theme, and so is the data&#x27;s digest. Only the SDR figure differs, so each theme is its
+own file with its own SDR digest (profile 8.7). The colours are those of the Python reference&#x27;s
+<code>udeep.mpl.theme</code>. A colour given to a plot by hand, such as <code>text!(...; color = :black)</code>, is not changed.</p>
   </article>
 </div></main>
 <footer><div class="wrap"><p>UDeep · code under BSD-3-Clause.</p></div></footer>

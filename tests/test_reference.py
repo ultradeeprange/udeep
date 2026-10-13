@@ -31,6 +31,17 @@ def test_every_module_is_listed_and_every_link_in_the_page_has_its_target():
     assert {"mpl.savefig_hdr", "view.hdr_view", "mapping.Mapping", "metadata.Declaration", "validate.validate"} <= ids
 
 
+def test_every_name_the_julia_package_exports_is_listed_with_its_docstring():
+    source = (reference.JULIA / "UDeepCore.jl").read_text(encoding="utf-8")
+    exported = set(re.findall(r"[\w!]+", " ".join(re.findall(r"^export (.+)$", source, re.MULTILINE))))
+    text, count = reference.julia_html()
+    assert count == len(exported) >= 28 and "Exported with no description" not in text
+    assert {f"julia.{name}" for name in exported} == set(re.findall(r'<h3 id="([^"]+)"', text))
+    assert "@ref" not in text and "save_hdr" in text and "Makie" in text
+    one = dict(reference.julia_docstrings('"a `b` \\"c\\""\nf(x) = 1\n\n"""\n    g(x)\n\nlong\n"""\nfunction g end\n'))
+    assert one == {"f(x) = 1": 'a `b` "c"', "function g end": "    g(x)\n\nlong"}
+
+
 def test_a_docstring_is_shown_as_it_is_written():
     text = reference.prose("One line.\n\n    code(here) < 2\n\nThen `this` & that.")
     want = '<p>One line.</p>\n<pre class="block">code(here) &lt; 2</pre>\n<p>Then <code>this</code> &amp; that.</p>'

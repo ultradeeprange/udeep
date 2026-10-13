@@ -5,6 +5,9 @@
 The source is read, not imported: the page is the same on every machine, whatever is installed there. It lists
 what a module makes public: the functions and classes whose names do not start with an underscore, with their
 signatures as written. Nothing is described here that the code does not describe itself.
+
+The Julia package (julia/UDeepCore) is listed the same way: the names it exports, each with the docstring that
+stands before its definition in the source. Julia is not run either.
 """
 from __future__ import annotations
 
@@ -19,6 +22,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "src" / "udeep"
 OUT = ROOT / "docs" / "reference" / "index.html"
 REPO = "https://github.com/ultradeeprange/udeep/blob/main/src/udeep"
+JULIA = ROOT / "julia" / "UDeepCore" / "src"
+JULIA_FILES = ["UDeepCore.jl", "figure.jl"]
+JULIA_REPO = "https://github.com/ultradeeprange/udeep/blob/main/julia/UDeepCore"
 
 # in the order a reader meets them: making a figure, then the parts it is made of, then checking and support
 MODULES = ["mpl", "view", "mapping", "cmap", "gainmap", "export", "metadata", "validate", "scale", "tone", "masks",
@@ -145,6 +151,63 @@ def top_level(described: str) -> str:
             f"<p>{links}</p>")
 
 
+def julia_docstrings(text: str) -> list[tuple[str, str]]:
+    """(the line that follows a docstring, the docstring) for each docstring that starts a line of a Julia source."""
+    lines, out, i = text.split("\n"), [], 0
+    while i < len(lines):
+        line = lines[i]
+        doc = None
+        if line.startswith('"""'):
+            end = next(j for j in range(i + 1, len(lines)) if lines[j].startswith('"""'))
+            doc, i = "\n".join(lines[i + 1:end]), end
+        elif line.startswith('"') and line.rstrip().endswith('"') and len(line.rstrip()) > 1:
+            doc = line.rstrip()[1:-1].replace('\\"', '"')
+        if doc is not None and i + 1 < len(lines) and lines[i + 1].strip():
+            out.append((lines[i + 1], doc))
+        i += 1
+    return out
+
+
+def julia_name(definition: str) -> tuple[str, str] | None:
+    """(kind, name) of the thing a line of Julia defines, or None if it is not a definition this page lists."""
+    m = re.match(r"(?:Base\.@kwdef )?(?:mutable )?struct (\w+)", definition)
+    if m:
+        return "type", m.group(1)
+    m = re.match(r"function (\w+!?)", definition) or re.match(r"(\w+!?)\(.*\) = ", definition)
+    return ("function", m.group(1)) if m else None
+
+
+def julia_prose(doc: str) -> str:
+    """A Julia docstring as HTML. A reference to another entry is written as its name alone."""
+    return prose(re.sub(r"\[(`[^`]+`)\]\(@ref\)", r"\1", doc))
+
+
+def julia_html() -> tuple[str, int]:
+    """The exported names of UDeepCore, in the order the source defines them."""
+    sources = {name: (JULIA / name).read_text(encoding="utf-8").replace("\r\n", "\n") for name in JULIA_FILES}
+    exported = set(re.findall(r"[\w!]+", " ".join(re.findall(r"^export (.+)$", sources["UDeepCore.jl"], re.MULTILINE))))
+    intro = julia_docstrings(sources["UDeepCore.jl"])[0]
+    assert intro[0].startswith("module UDeepCore"), "the module's docstring was expected first"
+    intro_text = "\n".join(intro[1].split("\n")[2:])                  # without the line that names the module
+    out = ['<h2 id="julia">UDeepCore (Julia)</h2>',
+           (f'<p class="where"><a href="{JULIA_REPO}">julia/UDeepCore</a> &middot; its Makie extension is in '
+           f'<a href="{JULIA_REPO}/ext/UDeepCoreMakieExt.jl">ext/UDeepCoreMakieExt.jl</a></p>'), julia_prose(intro_text)]
+    seen: list[str] = []
+    for file in JULIA_FILES:
+        for definition, doc in julia_docstrings(sources[file]):
+            found = julia_name(definition)
+            if found is None or found[1] not in exported or found[1] in seen:
+                continue
+            kind, name = found
+            seen.append(name)
+            out += [f'<h3 id="julia.{name}"><span class="kind">{kind}</span>{html.escape(name)}</h3>', julia_prose(doc)]
+    missing = sorted(exported - set(seen))
+    if missing:
+        out.append('<p class="none">Exported with no description in the source: '
+                   + ", ".join(f"<code>{html.escape(n)}</code>" for n in missing) + ".</p>")
+    return "\n".join(out), len(exported)
+
+
 def article() -> tuple[str, int]:
     parts, total = [], 0
     for name in MODULES:
@@ -152,19 +215,20 @@ def article() -> tuple[str, int]:
         parts.append(text)
         total += count
     modules = "\n".join(parts)
-    return top_level(modules) + "\n" + modules, total
+    return top_level(modules) + "\n" + modules + "\n" + julia_html()[0], total
 
 
 def page() -> str:
     body, total = article()
-    toc = '<a href="#udeep">udeep</a>' + "".join(f'<a href="#{m}">udeep.{m}</a>' for m in MODULES)
+    toc = ('<a href="#udeep">udeep</a>' + "".join(f'<a href="#{m}">udeep.{m}</a>' for m in MODULES)
+           + '<span class="label">Julia</span><a href="#julia">UDeepCore</a>')
     return f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Reference · UDeep</title>
-<meta name="description" content="The udeep Python package: every public function and class, with its signature and the description written in the source.">
+<meta name="description" content="The udeep Python package and the UDeepCore Julia package: every public function and type, with the description written in the source.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
 <style>{STYLE}{EXTRA}</style>
@@ -175,12 +239,13 @@ def page() -> str:
   <nav aria-label="Site"></nav>
 </div></header>
 <main><div class="wrap layout">
-  <nav class="toc" aria-label="Modules"><span class="label">Modules</span>{toc}</nav>
+  <nav class="toc" aria-label="Modules"><span class="label">Python</span>{toc}</nav>
   <article>
-    <h1>Python reference</h1>
+    <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      {total} public functions and classes in {len(MODULES)} modules. The profile says what a figure file means;
-      this page says what the code offers.</p>
+      {total} public functions and classes in {len(MODULES)} Python modules, and the {julia_html()[1]} names the Julia
+      package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
+      says what the code offers.</p>
     {body}
   </article>
 </div></main>
