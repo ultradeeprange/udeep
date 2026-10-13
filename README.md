@@ -82,8 +82,12 @@ For a dark page, build the figure inside `with plt.rc_context(hp.theme("dark")):
 change; the data, its colours, the mapping and what the file declares do not, so a light and a dark copy are two
 files of one figure (profile 8.7). The project's site shows whichever suits the viewer's theme.
 
-Wherever the Rust core is built (`cargo build --release --features jpeg` in `core/`), the package uses it: the
-mapping and colours run on every processor core (a 64-megapixel view in under 4 s where NumPy takes about 30),
+That command builds the Rust core as it installs, if Rust (`cargo`) is on the machine, and installs without it if
+not. `python -c "import udeep.core as c; print(c.enabled())"` says which you have. Wheels that carry the core, for
+Linux, Windows and macOS, are built by the repository's `wheels` workflow; there is no release of them yet.
+
+Wherever the core is present (in an installed wheel, or built in a checkout with `cargo build --release --features
+jpeg` in `core/`), the package uses it: the mapping and colours run on every processor core (a 64-megapixel view in under 4 s where NumPy takes about 30),
 and gain-map JPEGs are written and read by it. Without the library the NumPy and Pillow code does the same work,
 and `udeep.core.enable(False)` chooses that code. Both are held to the same test vectors; they agree to about one
 part in 10^12, which is not bit for bit.

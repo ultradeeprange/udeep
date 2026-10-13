@@ -1,0 +1,16 @@
+# The source distribution carries the Rust core's source, so that a machine with cargo builds the fast path and
+# one without it still installs (the NumPy and Pillow implementation).
+include LICENSE LICENSE-docs.txt LICENSE-THIRD-PARTY.txt README.md CHANGELOG.md CITATION.cff setup.py
+include core/Cargo.toml core/Cargo.lock core/README.md
+recursive-include core/src *.rs
+recursive-include core/include *.h
+prune core/target
+prune docs
+prune tests
+prune tools
+prune julia
+prune project
+prune evidence
+prune profile
+prune data
+global-exclude __pycache__ *.pyc

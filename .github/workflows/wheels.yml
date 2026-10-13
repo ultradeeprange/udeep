@@ -1,0 +1,93 @@
+name: wheels
+
+# Builds the installable packages: one wheel per platform that carries the Rust core (py3-none-<platform>: the core
+# is loaded with ctypes, so the wheel serves every Python 3), and the source distribution. Each wheel is installed
+# into a clean environment and checked there, without the source tree (pyproject.toml, [tool.cibuildwheel]).
+#
+# On a version tag the packages are attached to a DRAFT release on GitHub, for a person to look at and publish.
+# Nothing is uploaded to PyPI from here.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths: ["setup.py", "pyproject.toml", "MANIFEST.in", "core/**", "tools/check_wheel.py", ".github/workflows/wheels.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  wheel:
+    name: Wheel for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-14, macos-15-intel]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain (the Linux build installs its own, inside its container)
+        if: runner.os != 'Linux'
+        run: rustup update stable
+      - uses: pypa/cibuildwheel@v3.4.1
+      - name: The wheel is for any Python 3 and carries the core
+        shell: bash
+        run: |
+          ls -l wheelhouse
+          test "$(ls wheelhouse/*.whl | wc -l)" = 1
+          ls wheelhouse/udeep-*-py3-none-*.whl
+          python -m zipfile -l wheelhouse/*.whl | grep -E "udeep/_lib/(libudeep_core\.(so|dylib)|udeep_core\.dll)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  sdist:
+    name: Source distribution, installed without Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build
+        run: |
+          python -m pip install build
+          python -m build --sdist
+      - name: Install with no cargo, and check that the package falls back to NumPy and Pillow
+        run: |
+          python -m venv /tmp/pure
+          UDEEP_BUILD_CORE=0 /tmp/pure/bin/python -m pip install dist/*.tar.gz
+          cd /tmp && /tmp/pure/bin/python "$GITHUB_WORKSPACE/tools/check_wheel.py" --pure
+      - name: Install with cargo, and check that the source distribution builds the core
+        run: |
+          python -m venv /tmp/built
+          UDEEP_BUILD_CORE=1 /tmp/built/bin/python -m pip install dist/*.tar.gz
+          cd /tmp && /tmp/built/bin/python "$GITHUB_WORKSPACE/tools/check_wheel.py"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [wheel, sdist]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Attach the packages to a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l dist
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --title "$GITHUB_REF_NAME" \
+            --notes "Packages built by the wheels workflow. See CHANGELOG.md for what changed."

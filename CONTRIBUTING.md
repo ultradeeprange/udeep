@@ -37,7 +37,8 @@ cargo test --release --features jpeg --manifest-path core/Cargo.toml
 julia --project=julia/UDeepCore -e 'using Pkg; Pkg.test()'
 ```
 
-Rebuild the core before running the Python tests after any change to the Rust code.
+Rebuild the core before running the Python tests after any change to the Rust code. `pip install -e .` does not
+build it; an ordinary `pip install .` does, where `cargo` is present (see `setup.py`).
 
 A change is ready when:
 

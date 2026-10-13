@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools>=70.1"]          # 70.1 is the first that carries bdist_wheel itself
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,7 @@ version = "0.3.0.dev0"
 description = "Ultra Deep Range scientific figures: the ordinary plot everywhere, extra range on HDR displays"
 readme = "README.md"
 license = "BSD-3-Clause"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "LICENSE-THIRD-PARTY.txt"]
 authors = [{ name = "Mathew Newman" }]
 requires-python = ">=3.11"
 # numpy 2.1 is the first with numpy.astype and the other Array API functions the mapping is written against
@@ -36,3 +36,17 @@ line-length = 120
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# Release wheels (.github/workflows/wheels.yml). The wheel carries the Rust core and is the same for every Python 3
+# (setup.py), so one build per platform is enough; it is then installed and checked without the source tree.
+[tool.cibuildwheel]
+build = "cp312-*"
+skip = "*-musllinux_* *-win32 *_i686"
+archs = "auto64"
+environment = { UDEEP_BUILD_CORE = "1" }
+test-extras = ["test"]
+test-command = "python {project}/tools/check_wheel.py && python -m pytest -q {project}/tests/test_udeep_core.py {project}/tests/test_udeep_gainmap.py {project}/tests/test_udeep_mapping.py {project}/tests/test_udeep_mpl.py"
+
+[tool.cibuildwheel.linux]
+before-all = "curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal"
+environment = { UDEEP_BUILD_CORE = "1", PATH = "$HOME/.cargo/bin:$PATH" }

@@ -9,6 +9,16 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ## Unreleased
 
+### 2026-10-13
+
+- **The package builds and carries the Rust core.** Installing builds the core where `cargo` is present and puts it
+  inside the package; without `cargo` the package installs as before and uses NumPy and Pillow
+  (`UDEEP_BUILD_CORE` = `auto`, `1` or `0`). A wheel that carries the core is tagged `py3-none-<platform>`: one
+  wheel serves every Python 3. A `wheels` workflow builds them for Linux, Windows and macOS (Intel and Apple
+  silicon) with the source distribution, installs each into a clean environment and checks it there. On a version
+  tag it attaches them to a draft release; nothing goes to PyPI. `LICENSE-THIRD-PARTY.txt` lists what is compiled
+  into the core.
+
 ### 2026-10-12
 
 - **Version 3 of the `fire` and `ice` maps**, now the default. It is version 2 with every table value below 1e-7 of
