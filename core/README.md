@@ -145,7 +145,11 @@ unlike the reference, a parameter that is NaN or infinite.
 
 `../tests/test_udeep_rust.py` builds the library and calls every function through this interface from Python
 (ctypes), comparing with the golden vectors and, record by record, with what the reference accepts and refuses.
-No C compiler has been run against the header itself.
+It also compiles a C program against the header, with warnings as errors (MSVC `/W4 /WX` on Windows, `cc -std=c99
+-Wall -Wextra -pedantic -Werror` elsewhere), and links it to the library: `tests/header_check.c` sets out a mapping
+record and a declaration as a C host would, and what the library gives it is compared with the golden vectors
+and the reference. A record declared in another order than the library's fails it. The test is skipped where
+there is no C compiler; it has been run with MSVC 14.51 on Windows (2026-10-14).
 
 ## WebAssembly
 

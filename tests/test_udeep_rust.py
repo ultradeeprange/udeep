@@ -7,6 +7,7 @@ import ctypes
 import dataclasses
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -798,3 +799,84 @@ def test_rust_refuses_a_gain_map_it_cannot_hold_and_never_writes_one_over(lib, t
             path = tmp_path / "q.jpg"; path.write_bytes(data)
             assert read_gainmap_jpeg(path, 8.0).max() <= 8.0 * HEADROOM_TOLERANCE
     assert statuses[100] == 0 and 9 in statuses.values(), statuses
+
+
+# ---- a C host: the header read by a C compiler
+
+def c_build(source: Path, out: Path) -> list[str] | None:
+    """The command lines that compile `source` against the header, with warnings as errors, and link it to the built
+    library: MSVC (through vcvars64) on Windows, `cc` elsewhere. None when there is no C compiler here."""
+    include, release = CORE / "include", CORE / "target" / "release"
+    if sys.platform == "win32":
+        vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / \
+            "Installer" / "vswhere.exe"
+        if not vswhere.is_file():
+            return None
+        # every install, previews and ones the installer counts as incomplete too: some machines have only those
+        found = subprocess.run([str(vswhere), "-all", "-prerelease", "-products", "*", "-property", "installationPath"],
+                               capture_output=True, text=True, check=False)
+        scripts = [Path(line.strip()) / "VC" / "Auxiliary" / "Build" / "vcvars64.bat" for line in found.stdout.splitlines()
+                   if line.strip()]
+        vcvars = next((v for v in scripts if v.is_file()), None)
+        if vcvars is None:
+            return None
+        script = out.with_suffix(".bat")
+        script.write_text(f'@call "{vcvars}" >nul\r\n@cl /nologo /W4 /WX /I"{include}" "{source}" '
+                          f'"{release / "udeep_core.dll.lib"}" /Fe"{out}" /Fo"{out.parent}\\\\"\r\n', encoding="ascii")
+        return ["cmd", "/d", "/c", str(script)]
+    cc = shutil.which("cc")
+    if cc is None:
+        return None
+    return [cc, "-std=c99", "-Wall", "-Wextra", "-pedantic", "-Werror", f"-I{include}", str(source), f"-L{release}",
+            "-ludeep_core", "-lm", "-o", str(out)]
+
+
+def test_a_c_host_compiled_against_the_header_gets_the_golden_results(lib, tmp_path):
+    """The header has been checked by reading it (field order, error codes); here a C compiler builds a program
+    against it and the program calls the library, so a declaration that does not match the library fails."""
+    from udeep import metadata
+    trivial = tmp_path / "trivial.c"
+    trivial.write_text("int main(void) { return 0; }\n", encoding="ascii")
+    probe = c_build(trivial, tmp_path / "trivial.exe")
+    if probe is None:
+        pytest.skip("no C compiler here")
+    if subprocess.run(probe, capture_output=True, text=True, check=False).returncode != 0:
+        pytest.skip("a C compiler is here but cannot build a program")
+    host = tmp_path / "header_check.exe"
+    built = subprocess.run(c_build(CORE / "tests" / "header_check.c", host), capture_output=True, text=True, check=False)
+    assert built.returncode == 0, built.stdout + built.stderr
+    case = mapping_cases()["mapping_linear_grey"]
+    m = case["args"]["mapping"]
+    x = ["nan" if v is None else repr(v) for v in case["args"]["x"]]
+    stdin = " ".join([repr(m[k]) for k in ("range_low", "range_high", "knee", "reference_headroom", "stretch_width",
+                                           "stretch_offset")] + [m["above_knee"].partition("exit=")[2],
+                                                                 str(STRETCH[m["stretch"]]), str(len(x))] + x)
+    env = dict(os.environ)
+    release = str(CORE / "target" / "release")
+    for name in ("PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):          # where the program finds the library
+        env[name] = release + os.pathsep + env.get(name, "")
+    # the program prints the library's UTF-8 as it is (the caption has a multiplication sign)
+    ran = subprocess.run([str(host)], input=stdin, capture_output=True, encoding="utf-8", check=False, env=env)
+    assert ran.returncode == 0, ran.stdout + ran.stderr
+    lines = {line.split(" ", 1)[0]: line.split(" ", 1)[1] for line in ran.stdout.splitlines()}
+    assert lines["sizes"].split() == [str(v) for v in (ctypes.sizeof(CMapping), CMapping.stretch.offset,
+                                                       ctypes.sizeof(CDeclaration), ctypes.sizeof(CText))]
+    assert lines["version"] == "300" and lines["validate"] == "0"
+
+    def numbers(key):
+        status, *rest = lines[key].split()
+        return int(status), [None if v == "nan" else float(v) for v in rest]
+
+    for key in ("position", "light", "sdr_light"):
+        status, got = numbers(key)
+        assert status == 0 and not golden.agree(got, case["out"][key], case, key), key
+    tone = golden_cases("tone")["tone_0.8_4.0"]
+    status, got = numbers("tone")
+    assert status == 0 and not golden.agree(got, tone["out"], tone, "tone")
+    iso = golden_cases("iso21496")["iso21496_block"]
+    assert lines["iso"] == "0 " + iso["out"]
+    assert lines["digest"] == "0 sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    least = declarations()["least"]
+    assert lines["description"] == "0 " + metadata.description(least).decode("utf-8")
+    assert lines["caption"] == "0 " + metadata.caption(least)
+

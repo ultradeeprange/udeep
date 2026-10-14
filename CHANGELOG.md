@@ -11,6 +11,9 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-14
 
+- **The header is read by a C compiler.** A C program (`core/tests/header_check.c`) is compiled against
+  `udeep_core.h` with warnings as errors and linked to the library; what the library gives it matches the golden
+  vectors and the reference. Until now the header had only been read as text.
 - **Every golden case through the C interface.** Five functions give the stages of the mapping and the bytes a
   file is checked by: `udeep_scale`, `udeep_tone`, `udeep_pq_encode`, `udeep_digest_bytes` and
   `udeep_iso21496_block`. Each refuses what the reference's function refuses, and a parameter that is not finite.
