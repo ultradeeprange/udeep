@@ -60,10 +60,13 @@ def main() -> None:
     for name, command in [*steps, CHROME]:
         run(name, command)
     if args.check:
-        # docs/assets is left out: its pictures, the share image among them, are drawn with the machine's fonts
-        changed = subprocess.run(["git", "status", "--porcelain", "--", "docs", ":!docs/assets", "src/udeep/tables",
-                                  "evidence"],
-                                 cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+        # docs/assets is left out: its pictures, the share image among them, are drawn with the machine's fonts.
+        # Content is compared (git diff), not the files' state: where git turns line endings on checkout, a file
+        # rewritten with the same text would otherwise be reported as changed.
+        paths = ["--", "docs", ":!docs/assets", "src/udeep/tables", "evidence"]
+        git = lambda *a: subprocess.run(["git", *a], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+        changed = (git("diff", "--name-only", "HEAD", *paths)
+                   + git("ls-files", "--others", "--exclude-standard", *paths)).strip()
         if changed:
             sys.exit("these generated files are not what the tools make; run tools/build_all.py and commit them:\n"
                      + changed)
