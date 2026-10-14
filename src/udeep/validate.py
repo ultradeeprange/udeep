@@ -11,7 +11,9 @@
 
 Two kinds of file are checked: the gain-map JPEG, which is always a rendering, and the 16-bit PQ PNG
 (udeep.export.write_png_pq), which may declare itself a data record. For the PNG the check that matters is that
-claim: the file's levels are worked out again and set against the stated uncertainty (profile 7.3.1).
+claim: the file's levels are worked out again and set against the stated uncertainty (profile 7.3.1), and with
+the data supplied, the data is read back out of the file, whatever its colour map. A PNG holds no SDR base, so it
+must name the SDR figure that goes with it (`SdrDigest`, profile 9.1.2).
 
 A file carries its declared mapping but not its data, so on its own it can show that the declaration is
 complete and consistent, that the mapping can be inverted, that nothing exceeds the headroom and that the stated
@@ -45,7 +47,9 @@ from udeep.metadata import (
     missing_properties,
     packet,
     parse,
+    read_metadata,
     rounding_to_noise,
+    values_pq16,
 )
 
 cm = importlib.import_module("udeep.cmap")           # the package also exports a function called cmap
@@ -257,17 +261,17 @@ def _precision(report: Report, d: Declaration, file_headroom: float) -> None:
     add("pass", f"MaxDataStep {step:.4g} {d.data_unit} as stated; declared a rendering{note}")
 
 
-def _link(report: Report, name: str, what: str, stated: str | None, given: str | None) -> None:
+def _link(report: Report, name: str, what: str, stated: str | None, given: str | None, how: str = "") -> None:
     """7. one link, to the data or to the SDR figure of record: the digest supplied against the one declared."""
     if stated is None:
         report.add("7", name, "skipped", f"the file declares no digest of {what}")
     elif given is None:
         report.add("7", name, "skipped", f"{what} was not supplied to compare with the declared digest")
     elif given == stated:
-        report.add("7", name, "pass", f"{what} supplied is what the file was made from ({stated[:19]}…)")
+        report.add("7", name, "pass", f"{what} supplied is what the file was made from ({stated[:19]}…){how}")
     else:
         report.add("7", name, "fail", f"{what} supplied is not what the file was made from: its digest is "
-                                      f"{given[:19]}…, the file declares {stated[:19]}…")
+                                      f"{given[:19]}…, the file declares {stated[:19]}…{how}")
 
 
 def _data_link(report: Report, d: Declaration, data, digest: str | None) -> None:
@@ -275,9 +279,30 @@ def _data_link(report: Report, d: Declaration, data, digest: str | None) -> None
 
 
 def _sdr_link(report: Report, d: Declaration, sdr, digest: str | None) -> None:
+    """The SDR figure supplied, an 8-bit image, by its pixels. A gain-map JPEG's own base is JPEG-coded, so it is
+    not the record and does not match."""
     if sdr is not None:
         digest = digest_pixels(np.asarray(Image.open(sdr).convert("RGB")))
     _link(report, "sdr link", "the SDR figure", d.sdr_digest, digest)
+
+
+def _png_sdr_link(report: Report, d: Declaration, sdr, digest: str | None) -> None:
+    """7, for a PNG: the SDR figure it names (profile 9.1.2). Supplied as an 8-bit image, it is compared by its
+    pixels. Supplied as the gain-map JPEG of the same figure, whose base is JPEG-coded and so cannot be compared by
+    its pixels, it is compared by the SdrDigest it declares, once its data and its mapping are found to be this
+    file's: a JPEG of another figure fails, whatever digest it states."""
+    how = ""
+    if sdr is not None:
+        other = read_metadata(sdr) if Path(sdr).read_bytes()[:2] == b"\xff\xd8" else None
+        if other is not None and other.sdr_digest is not None:
+            if other.data_digest != d.data_digest or other.mapping != d.mapping:
+                return report.add("7", "sdr link", "fail", "the gain-map JPEG supplied declares another figure: its "
+                                                           "data or its mapping is not this file's (profile 9.1.2)")
+            digest, how = other.sdr_digest, ("; the gain-map JPEG of the same figure, compared by the SdrDigest it "
+                                             "declares")
+        else:
+            digest = digest_pixels(np.asarray(Image.open(sdr).convert("RGB")))
+    _link(report, "sdr link", "the SDR figure", d.sdr_digest, digest, how)
 
 
 def _pixels(report: Report, path, hdr, expected: tuple) -> None:
@@ -331,6 +356,9 @@ def _png_metadata(report: Report, raw: bytes) -> Declaration | None:
     if missing:
         problems.append("the file does not carry " + ", ".join(f"udeep:{name}" for name in missing)
                         + ", which every stored figure must (profile 8.1)")
+    if d.sdr_digest is None:
+        problems.append("the file holds no SDR base, so it must declare udeep:SdrDigest, the digest of the fair SDR "
+                        "rendering that goes with it (profile 9.1.2)")
     colours, why = _colour_map(d)
     if colours == "fail" and d.colour_map is not None:
         problems.append(why)
@@ -338,7 +366,7 @@ def _png_metadata(report: Report, raw: bytes) -> Declaration | None:
         add("fail", "; ".join(problems))
     else:
         stated = (f"{d.stretch} stretch, knee {d.knee:.4g} {d.data_unit} ({d.knee_rule.split(';')[0]}), headroom "
-                  f"{d.reference_headroom:.4g}; a 16-bit PQ PNG")
+                  f"{d.reference_headroom:.4g}; a 16-bit PQ PNG, with its SDR figure named")
         add("pass", f"complete and consistent; {stated}" if colours == "known" else
             f"consistent, but it cannot be told whether anything is absent: {why}; {stated}")
     return d
@@ -349,8 +377,8 @@ def _png_light(report: Report, path, d: Declaration):
     light = read_png_pq(path)                                  # ValueError if it is a PNG of another kind
     peak = float(light.max())
     report.add("4", "headroom", "pass" if peak <= d.reference_headroom * PNG_HEADROOM_TOLERANCE else "fail",
-               f"brightest value {peak:.4f} x white, against a headroom of {d.reference_headroom:.4g}; white is taken "
-               f"as {REF_WHITE_NITS:g} cd/m2, which the file does not state")
+               f"brightest value {peak:.4f} x white, against a headroom of {d.reference_headroom:.4g}; white is read "
+               f"at {REF_WHITE_NITS:g} cd/m2, where the profile places it in a PQ file (9.1.1)")
     return light
 
 
@@ -388,22 +416,27 @@ def _png_data(report: Report, d: Declaration, light, data) -> None:
     add = lambda status, detail: report.add("7", "data read back", status, detail)
     if data is None:
         return add("skipped", "the data was not supplied to compare with what the file holds")
-    if d.colour_map != "grey":
-        return add("skipped", f"the colour map is {d.colour_map}: turning a colour back into a value is not done here")
+    colours, why = _colour_map(d)
+    if colours != "known":
+        return add("skipped", f"the colours cannot be turned back into values: {why}")
     values = np.asarray(data, dtype=np.float64)
-    back = d.mapping.value(np.asarray(light)[..., 1])          # grey: any channel is the light
-    if back.shape != values.shape:
-        return add("fail", f"the file is {back.shape[1]} x {back.shape[0]} and the data {values.shape}")
+    if np.shape(light)[:-1] != values.shape:
+        return add("fail", f"the file is {np.shape(light)[1]} x {np.shape(light)[0]} and the data {values.shape}")
+    back = values_pq16(d.mapping, light)                       # through the file's own codes, for any colour map
     inside = np.isfinite(values) & (values >= d.range_low) & (values <= d.range_high)
-    worst = float(np.abs(back - values)[inside].max()) if inside.any() else 0.0
+    error = np.abs(back - values)[inside]
+    worst = float(np.max(error, initial=0.0)) if not np.isnan(error).any() else float("nan")
     limit = 0.5 * d.max_data_step * (1.0 + STEP_TOLERANCE)
+    lost = int(np.isnan(error).sum())
     add("pass" if worst <= limit else "fail",
-        f"every value inside the declared range is read back to within {worst:.3g} {d.data_unit} "
-        f"(half the widest step is {0.5 * d.max_data_step:.3g})"
+        (f"{lost:,} pixels inside the declared range hold a colour this mapping does not give" if lost else
+         f"every value inside the declared range is read back to within {worst:.3g} {d.data_unit}")
+        + f" (half the widest step is {0.5 * d.max_data_step:.3g}; colour map {d.colour_map})"
         + (f"; {int((~inside).sum()):,} values lie outside the range and are not held" if (~inside).any() else ""))
 
 
-def _validate_png(report: Report, path, raw: bytes, data, data_digest: str | None) -> Report:
+def _validate_png(report: Report, path, raw: bytes, data, data_digest: str | None, sdr,
+                  sdr_digest: str | None) -> Report:
     d = _guarded(report, (("1", "metadata"),), "the metadata", _png_metadata, raw)
     if d is None:
         return report
@@ -413,7 +446,8 @@ def _validate_png(report: Report, path, raw: bytes, data, data_digest: str | Non
     _guarded(report, (("7", "data link"),), "the data supplied", _data_link, d, data, data_digest)
     if light is not None:
         _guarded(report, (("7", "data read back"),), "the data supplied", _png_data, d, light, data)
-    for point, name in (("7", "sdr link"), *NEEDS_FIGURE):
+    _guarded(report, (("7", "sdr link"),), f"the SDR figure supplied ({sdr})", _png_sdr_link, d, sdr, sdr_digest)
+    for point, name in NEEDS_FIGURE:
         report.add(point, name, "skipped", "applies to a gain-map JPEG: this file holds one image and no SDR base")
     return report
 
@@ -423,7 +457,9 @@ def validate(path, expected: tuple | None = None, data=None, sdr=None, data_dige
     """Check the gain-map JPEG, or the 16-bit PQ PNG, at `path`. `expected` is (sdr, hdr): the fair SDR figure and the HDR figure as
     linear RGB arrays in multiples of SDR white, for the checks that need the pixels (udeep.mpl.validate
     supplies them from a figure). `data` is the array the figure was made from and `sdr` the path of its SDR figure
-    of record: each is compared with the digest the file declares (or pass the digests themselves).
+    of record: each is compared with the digest the file declares (or pass the digests themselves). For a 16-bit
+    PNG, `sdr` may also be the gain-map JPEG of the same figure, which is compared by the SdrDigest it declares,
+    and `data` is also read back out of the file.
 
     It does not raise on a file, whatever the file holds: see the report's checks."""
     report = Report(str(path))
@@ -433,7 +469,7 @@ def validate(path, expected: tuple | None = None, data=None, sdr=None, data_dige
         report.add("1", "metadata", "fail", f"the file cannot be read: {_why(err)}")
         return report
     if raw[:8] == PNG_SIGNATURE:
-        return _validate_png(report, path, raw, data, data_digest)
+        return _validate_png(report, path, raw, data, data_digest, sdr, sdr_digest)
     found = _guarded(report, (("1", "metadata"),), "the metadata", _metadata, path, raw)
     if found is None:
         return report
@@ -455,8 +491,9 @@ def validate(path, expected: tuple | None = None, data=None, sdr=None, data_dige
 
 def main(argv: list[str] | None = None) -> int:
     """The command line, `python -m udeep.validate FILE [FILE ...]`: prints each file's report. With one file,
-    `--sdr FIGURE.png` also checks the SDR figure of record. Returns the exit status: 0 if every file conforms,
-    1 if one does not, 2 for a command line it cannot use."""
+    `--sdr FIGURE` also checks the SDR figure of record (an 8-bit image; for a 16-bit PNG, also the gain-map JPEG of
+    the same figure). Returns the exit status: 0 if every file conforms, 1 if one does not, 2 for a command line it
+    cannot use."""
     paths = list(sys.argv[1:] if argv is None else argv)
     sdr = None
     if "--sdr" in paths:
@@ -465,7 +502,7 @@ def main(argv: list[str] | None = None) -> int:
         del paths[at:at + 2]
     if not paths or (sdr is not None and len(paths) != 1):
         print("usage: python -m udeep.validate FILE [FILE ...]            (gain-map JPEGs and 16-bit PQ PNGs)\n"
-              "       python -m udeep.validate FILE.jpg --sdr FIGURE.png    (also check the SDR figure of record)")
+              "       python -m udeep.validate FILE --sdr FIGURE            (also check the SDR figure of record)")
         return 2
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")

@@ -8,8 +8,9 @@
 # widest run of data values that share one stored level is set against the noise (profile 7.2.1: the rounding
 # error, a step over the square root of 12, may be at most a tenth of the noise). The JPEG's levels are far too
 # coarse, so it is a rendering. The PNG's are fine enough, so it may be declared a data record, and the script
-# shows what that means: it reads the PNG back and takes the counts out of it. It needs no plotting package. It is
-# the counterpart of examples/detector_record.py.
+# shows what that means: it reads the PNG back and takes the counts out of it. The two files are one figure: they
+# declare the same data and the same SDR figure of record, which the PNG, holding no SDR image of its own, must name
+# (profile 9.1.2). It needs no plotting package. It is the counterpart of examples/detector_record.py.
 using UDeepCore
 
 include(joinpath(@__DIR__, "random.jl"))
@@ -37,7 +38,8 @@ function record(directory)
     declared(step, ratio, kind) = Declaration(; mapping = m, data_unit = "counts", knee_rule = "preset; white at 1,000 counts",
                                               max_data_step = step, noise_model = "constant", noise_parameter = READ_NOISE,
                                               rounding_to_noise = ratio, record = kind, preset = "extend",
-                                              colour_map = "grey", data_digest = digest_data(data))
+                                              colour_map = "grey", data_digest = digest_data(data),
+                                              sdr_digest = digest_sdr(view.sdr))
     kind(ratio) = ratio <= 0.1 ? "data-record" : "rendering"
 
     step8, ratio8 = levels(m, nothing, HEADROOM; noise = NOISE)

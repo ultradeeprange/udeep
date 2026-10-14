@@ -4,6 +4,10 @@ UDeep reads files that come from anyone: gain-map JPEGs, 16-bit PNGs and the XMP
 makes one of its readers crash, hang, use far more memory than the image it holds, or read or write anything
 outside what it was given is a security fault, and is to be reported privately.
 
+What any reader of these files should guard against, whoever wrote it, is in section 16 of the profile
+(`profile/udeep-figure-profile-v0.3.md`). It also says what the digests do not do: they tie a file to its data and
+to its SDR figure, and do not show who made it.
+
 ## Reporting one
 
 Use GitHub's private reporting for this repository: **Security** tab, then **Report a vulnerability**. Please do

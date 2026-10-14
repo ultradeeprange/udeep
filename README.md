@@ -90,9 +90,11 @@ That command builds the Rust core as it installs, if Rust (`cargo`) is on the ma
 not. `python -c "import udeep.core as c; print(c.enabled())"` says which you have. Wheels that carry the core, for
 Linux, Windows and macOS, are built by the repository's `wheels` workflow; there is no release of them yet.
 
-A 16-bit PQ PNG is written by `udeep.write_png_pq` and read back by `udeep.read_png_pq`; the levels such a file
-holds are worked out by `udeep.metadata.data_steps_pq16`, and `python -m udeep.validate FILE.png` checks a file
-that declares itself a data record against that.
+A 16-bit PQ PNG is written by `udeep.write_png_pq`, with white at 203 cd/m² as the profile requires, and read
+back as light by `udeep.read_png_pq` or as data by `udeep.read_png_data`, whatever its colour map. The levels such
+a file holds are worked out by `udeep.metadata.data_steps_pq16`, and `python -m udeep.validate FILE.png` checks a
+file that declares itself a data record against that. Such a file holds no SDR image, so it names the one that
+goes with it (`udeep.metadata.digest_sdr`); `--sdr` checks that link.
 
 Wherever the core is present (in an installed wheel, or built in a checkout with `cargo build --release --features
 jpeg` in `core/`), the package uses it: the mapping and colours run on every processor core (a 64-megapixel view in under 4 s where NumPy takes about 30),

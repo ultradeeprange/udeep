@@ -55,6 +55,11 @@ A 16-bit PQ PNG as bytes: `rgb` is `height x width x 3`, linear RGB in multiples
 function in a `cICP` chunk. With a [`Declaration`](@ref) it carries that as XMP; without one it declares nothing
 and does not conform to the profile. A NaN is written as 0.
 
+A file with a declaration is written with white at 203 cd/m² (profile 9.1.1), since it has nowhere to say what
+its white was; the core refuses another `white_nits` with one (`ArgumentError`). The declaration must also name
+the SDR figure that goes with the file, as `sdr_digest` (profile 9.1.2). Matching a screen's own SDR white is for
+the viewer; a file without a declaration may be written at any white, for one's own screen.
+
 This is the form in which a file may be a data record: see [`levels_pq16`](@ref) and [`read_png_pq`](@ref).
 """
 function png_pq(rgb::AbstractArray{<:Real, 3}; white_nits::Real = REF_WHITE_NITS,

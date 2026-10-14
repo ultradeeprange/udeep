@@ -68,3 +68,7 @@ def test_the_detector_frame_is_a_rendering_as_a_jpeg_and_a_data_record_as_a_16_b
     assert png["report"].ok and png["report"].status("precision") == "pass" and png["report"].status("data read back") == "pass"
     declared = read_metadata(png["path"])
     assert (declared.noise_model, declared.noise_parameter, declared.data_unit) == ("constant", 3.0, "counts")
+    # one figure in two files: the PNG names the JPEG's base as its SDR figure, and the check confirms it
+    companion = read_metadata(jpeg["path"])
+    assert declared.sdr_digest == companion.sdr_digest and declared.data_digest == companion.data_digest
+    assert png["report"].status("sdr link") == "pass" and "compared by the SdrDigest it declares" in str(png["report"])

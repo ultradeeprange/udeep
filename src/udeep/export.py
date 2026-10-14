@@ -18,6 +18,7 @@ from udeep.color import _SRGB_TO_BT2020, REF_WHITE_NITS, srgb_to_bt2020
 _M1, _M2 = 2610 / 16384, 2523 / 4096 * 128
 _C1, _C2, _C3 = 3424 / 4096, 2413 / 4096 * 32, 2392 / 4096 * 32
 CICP_BT2020_PQ_FULL = bytes([9, 16, 0, 1])  # primaries, transfer, matrix (RGB), full range
+UDEEP_NAMESPACE_ROOT = b"https://ultradeeprange.github.io/udeep/ns/"   # every version's namespace starts so
 
 
 def pq_encode(nits) -> np.ndarray:
@@ -45,10 +46,13 @@ def pq16_codes(rgb, sdr_white_nits: float = REF_WHITE_NITS) -> np.ndarray:
 
 def write_png_pq(rgb, path, sdr_white_nits: float = REF_WHITE_NITS, xmp: bytes | None = None) -> None:
     """A 16-bit PQ PNG of `rgb` (height x width x 3, linear, multiples of SDR white). PQ is absolute, so 1.0 is
-    written at `sdr_white_nits`. Use the display's SDR white level (Windows: Settings > Display > HDR > SDR
-    content brightness) so non-highlight content matches the desktop; the BT.2408 default (203) suits an unknown
-    display, and is the one to use for a file that is to be read back as data. `xmp` is an XMP packet
-    (udeep.metadata.to_xmp), stored in an iTXt chunk.
+    written at a luminance: `sdr_white_nits`, by default BT.2408's reference white of 203 cd/m^2. `xmp` is an XMP
+    packet (udeep.metadata.to_xmp), stored in an iTXt chunk.
+
+    A file that carries a udeep declaration is written with white at 203 cd/m^2 (profile 9.1.1), since the file
+    has nowhere to say what its white was: another value with such a packet is refused (ValueError). Matching a
+    particular screen's SDR white is for the viewer, when it shows the file (profile section 12). A file without a
+    declaration may be written at any white, for one's own screen, and is then read back with the same value.
 
     Written by the Rust core when it is in use (udeep.core): the codes are the same as this function's own, and
     the compressed bytes differ. read_png_pq reads either."""
@@ -56,6 +60,9 @@ def write_png_pq(rgb, path, sdr_white_nits: float = REF_WHITE_NITS, xmp: bytes |
     rgb = np.asarray(rgb, dtype=np.float64)
     if rgb.ndim != 3 or rgb.shape[2] != 3:
         raise ValueError("rgb must be height x width x 3")
+    if xmp and UDEEP_NAMESPACE_ROOT in xmp and float(sdr_white_nits) != REF_WHITE_NITS:
+        raise ValueError(f"a file that carries a udeep declaration is written with white at {REF_WHITE_NITS:g} cd/m2 "
+                         f"(profile 9.1.1), not {float(sdr_white_nits):g}")
     if core.png():
         Path(path).write_bytes(core.write_png(rgb, float(sdr_white_nits), xmp or b""))
         return
@@ -111,8 +118,9 @@ def _unfilter(rows: np.ndarray, bpp: int = 6) -> np.ndarray:
 
 def read_png_pq(path, sdr_white_nits: float = REF_WHITE_NITS) -> np.ndarray:
     """A 16-bit PQ PNG as light: float64, height x width x 3, linear RGB (BT.709 primaries) in multiples of the
-    white written at `sdr_white_nits`. It is what write_png_pq was given, to within the file's 16-bit steps: for a
-    grey figure, any channel is the light, and Mapping.value turns it back into data.
+    white written at `sdr_white_nits`, which is 203 cd/m^2 in any file that carries a declaration (profile
+    9.1.1). It is what write_png_pq was given, to within the file's 16-bit steps. udeep.read_png_data turns it
+    back into data, whatever the colour map.
 
     ValueError for a PNG of another kind: it must be 16 bits a channel, RGB, not interlaced, and declared BT.2020
     PQ in a cICP chunk. Read by the Rust core when it is in use, otherwise by the code here."""

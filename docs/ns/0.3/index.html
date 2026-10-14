@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>udeep namespace 0.3 · UDeep</title>
+<meta name="description" content="The udeep XMP namespace, version 0.3: the properties in which a figure file declares how its data became light, as the UDeep Figure Profile defines them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root { color-scheme: dark; --ground: #111316; --panel: #191d22; --line: #2b3138; --ink: #e4e8ec; --muted: #939da7;
+          --tag: #8cc2e6; --warm: #e8b04a;
+          --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+          --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+          --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.62 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover, nav a[aria-current] { color: var(--ink); }
+  .layout { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 40px; padding-block: 36px 64px; align-items: start; }
+  .toc { position: sticky; top: 16px; font-size: 13.5px; display: grid; gap: 6px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .toc a { color: var(--muted); text-decoration: none; } .toc a:hover { color: var(--ink); }
+  .toc .label { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  article { max-width: 78ch; min-width: 0; }
+  article h1, article h2, article h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; line-height: 1.2; }
+  article h1 { font-size: clamp(30px, 4.2vw, 42px); margin: 0 0 14px; }
+  article h2 { font-size: 25px; margin: 44px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+  article h3 { font-size: 19px; margin: 28px 0 8px; }
+  article p, article li { color: var(--soft); }
+  article ul, article ol { padding-left: 1.3em; display: grid; gap: 6px; }
+  article code { font-family: var(--mono); font-size: 13.5px; background: var(--panel); padding: 1px 4px; border-radius: 3px; }
+  article blockquote { margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--warm); background: var(--panel); }
+  article strong { color: var(--ink); }
+  .scroll { overflow-x: auto; margin: 14px 0; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 520px; width: 100%; }
+  th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .source { font-size: 14px; color: var(--muted); margin-bottom: 26px; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; gap: 20px; } .toc { position: static; max-height: none; } }
+
+  .single { padding-block: 36px 64px; }
+  .uri { font-family: var(--mono); font-size: 15px; overflow-wrap: anywhere; color: var(--ink); }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; overflow-x: auto;
+         font: 13px/1.55 var(--mono); color: var(--ink); }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/ns/0.3/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="udeep namespace 0.3 · UDeep">
+<meta property="og:description" content="The udeep XMP namespace, version 0.3: the properties in which a figure file declares how its data became light, as the UDeep Figure Profile defines them.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/ns/0.3/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../../index.html">U<b>Deep</b></a>
+  <nav aria-label="Site"><a href="../../index.html">Home</a><a href="../../gallery/index.html">Real data</a><a href="../../profile/index.html">Profile</a><a href="../../apps/index.html">In your apps</a><a href="../../view/index.html">Live view</a><a href="../../standard/index.html">Standardisation</a><a href="../../evidence/index.html">Evidence</a><a href="../../check/index.html">Device checks</a><a href="../../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+<main><div class="wrap single">
+  <article>
+    <h1>The <code>udeep</code> namespace, version 0.3</h1>
+    <p class="uri">https://ultradeeprange.github.io/udeep/ns/0.3/</p>
+    <p>This address is the name of the XMP namespace in which a figure file declares how its data became light: the
+    metadata of the <a href="../../profile/index.html">UDeep Figure Profile</a>, draft v0.3, section 8. The
+    usual prefix is <code>udeep</code>. A reader never needs to fetch the address; this page is for people who look
+    it up. The address is provisional until version 1.0 of the profile.</p>
+    <h2>Properties</h2>
+    <p>Copied from section 8.1 of the profile, which defines them. Sections
+    <a href="../../profile/index.html#8-declared-metadata">8.3 to 8.6</a> say which numbers have the offset removed,
+    how numbers are written, which declarations a reader refuses, and how the two digests are taken.</p>
+    <div class="scroll"><table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>udeep:Version</code></td>
+<td>Text</td>
+<td>profile version, <code>"0.3"</code></td>
+</tr>
+<tr>
+<td><code>udeep:ImageState</code></td>
+<td>Text</td>
+<td><code>data-referred</code></td>
+</tr>
+<tr>
+<td><code>udeep:DataUnit</code></td>
+<td>Text</td>
+<td>unit of the data values</td>
+</tr>
+<tr>
+<td><code>udeep:NoiseModel</code></td>
+<td>Text</td>
+<td><code>constant</code>, <code>poisson</code>, <code>relative</code>, <code>tolerance</code> or <code>unknown</code> (§5.2)</td>
+</tr>
+<tr>
+<td><code>udeep:NoiseParameter</code></td>
+<td>Real</td>
+<td>the model's parameter (§5.2), greater than zero; required unless the model is <code>unknown</code>, and absent then</td>
+</tr>
+<tr>
+<td><code>udeep:Stretch</code></td>
+<td>Text</td>
+<td><code>linear</code>, <code>log</code>, <code>asinh</code> or <code>proportional</code></td>
+</tr>
+<tr>
+<td><code>udeep:RangeLow</code>, <code>udeep:RangeHigh</code></td>
+<td>Real</td>
+<td>the declared range, in data units <strong>after <code>StretchOffset</code> has been subtracted</strong> (8.3)</td>
+</tr>
+<tr>
+<td><code>udeep:StretchWidth</code>, <code>udeep:StretchOffset</code></td>
+<td>Real</td>
+<td>the asinh width; the value subtracted from the data before the stretch</td>
+</tr>
+<tr>
+<td><code>udeep:Knee</code></td>
+<td>Real</td>
+<td>data value mapped to diffuse white: <strong>the data value itself</strong>, before <code>StretchOffset</code> is subtracted (8.3)</td>
+</tr>
+<tr>
+<td><code>udeep:KneeRule</code></td>
+<td>Text</td>
+<td><code>physical</code>, <code>statistical</code>, <code>preset</code> or <code>percentile</code>, then a description</td>
+</tr>
+<tr>
+<td><code>udeep:AboveKnee</code></td>
+<td>Text</td>
+<td>form of the segment above the knee, with its parameters: <code>hermite; exit=</code><em>s</em> (§6.7)</td>
+</tr>
+<tr>
+<td><code>udeep:ReferenceHeadroom</code></td>
+<td>Real</td>
+<td>headroom the figure was authored for (linear ratio), greater than 1</td>
+</tr>
+<tr>
+<td><code>udeep:Masked</code></td>
+<td>Integer</td>
+<td>number of pixels in the validity mask</td>
+</tr>
+<tr>
+<td><code>udeep:DerivedMask</code></td>
+<td>Text</td>
+<td>required when a mask was derived from neighbourhoods (§6.2a): the rule's name, for example <code>isolated-3x3</code>. <em>Added 2026-10-08.</em></td>
+</tr>
+<tr>
+<td><code>udeep:DerivedMasked</code></td>
+<td>Integer</td>
+<td>the number of pixels that rule holds at white, beyond the validity mask. <em>Added 2026-10-08.</em></td>
+</tr>
+<tr>
+<td><code>udeep:MaxDataStep</code></td>
+<td>Real</td>
+<td>largest Δx_q over the declared range, in data units</td>
+</tr>
+<tr>
+<td><code>udeep:Record</code></td>
+<td>Text</td>
+<td><code>data-record</code> or <code>rendering</code> (§7.3)</td>
+</tr>
+<tr>
+<td><code>udeep:Preset</code></td>
+<td>Text</td>
+<td>optional: <code>highlight</code>, <code>extend</code> or another named preset (informative)</td>
+</tr>
+<tr>
+<td><code>udeep:RoundingToNoise</code></td>
+<td>Real</td>
+<td>optional: the worst value over the declared range of the rounding error divided by the stated uncertainty (§7.2.1); omitted when the noise model is <code>unknown</code>. Writers store 10⁹ where the ratio is larger than that or has no bound. <em>Added 2026-10-07.</em></td>
+</tr>
+<tr>
+<td><code>udeep:DataDigest</code></td>
+<td>Text</td>
+<td>optional: the digest of the array that was mapped, as defined in 8.6. It ties the file to its data: a reader holding the data can confirm it is the same. Where the figure shows processed data (whitened, binned, calibrated), the digest is of the processed array. <em>Added 2026-10-08.</em></td>
+</tr>
+<tr>
+<td><code>udeep:DataSource</code></td>
+<td>Text</td>
+<td>optional: where the data is kept: <code>doi:…</code> where the data has one, otherwise a URL, otherwise a description; several are separated by <code>;</code>. <em>Added 2026-10-08.</em></td>
+</tr>
+<tr>
+<td><code>udeep:DataUnitCode</code></td>
+<td>Text</td>
+<td>optional: the unit in machine-readable form, as a UCUM code (for example <code>K</code>, <code>s-1</code>). <code>DataUnit</code> remains the text for people. <em>Added 2026-10-08.</em></td>
+</tr>
+<tr>
+<td><code>udeep:SdrDigest</code></td>
+<td>Text</td>
+<td>optional, except in a file with no SDR base of its own, which MUST declare it (9.1.2): the digest of the fair SDR rendering's 8-bit RGB pixels, before any lossy coding, as defined in 8.6. It ties an HDR file to the figure of record (§6.8). <em>Added 2026-10-08; required of such a file 2026-10-14.</em></td>
+</tr>
+<tr>
+<td><code>udeep:ColourMap</code></td>
+<td>Text</td>
+<td>the map from light to colour (§6.10): <code>grey</code>, or a registered map as <code>name/version</code> (for example <code>fire/2</code>). <em>Added 2026-10-07; versioned 2026-10-08.</em></td>
+</tr>
+<tr>
+<td><code>udeep:ColourMapTable</code></td>
+<td>Text</td>
+<td>required unless the map is <code>grey</code> or a registered map at a registered headroom: the table itself, as the node count, <code>;</code>, then base64 of the two segments' numbers (little-endian float32, row by row). <em>Added 2026-10-08.</em></td>
+</tr>
+</tbody>
+</table></div>
+<p><code>NoiseParameter</code>, <code>DerivedMask</code>, <code>ColourMapTable</code> and <code>SdrDigest</code> are required in the cases their rows state.
+<code>Preset</code>, <code>RoundingToNoise</code>, <code>DataDigest</code>, <code>DataSource</code> and <code>DataUnitCode</code> are optional. Every other property
+MUST be present, including one whose value is zero or the usual one (<code>Masked</code>, <code>DerivedMasked</code>, <code>StretchOffset</code>,
+<code>StretchWidth</code>, <code>AboveKnee</code>).</p>
+    <h2>An example</h2>
+    <p>The declaration in the repository's worked example of a data record,
+    <a href="https://github.com/ultradeeprange/udeep/blob/main/examples/output/detector_record_pq16.png"><code>detector_record_pq16.png</code></a>:
+    a synthetic 12-bit detector frame stored as a 16-bit PQ PNG. It is shown one property to a line; in the file it
+    is one element.</p>
+    <pre><code>&lt;rdf:Description
+    rdf:about=&quot;&quot;
+    xmlns:udeep=&quot;https://ultradeeprange.github.io/udeep/ns/0.3/&quot;
+    udeep:DataUnit=&quot;counts&quot;
+    udeep:Stretch=&quot;linear&quot;
+    udeep:RangeLow=&quot;0&quot;
+    udeep:RangeHigh=&quot;4095&quot;
+    udeep:Knee=&quot;1000&quot;
+    udeep:KneeRule=&quot;preset; white at 1,000 counts&quot;
+    udeep:ReferenceHeadroom=&quot;4&quot;
+    udeep:MaxDataStep=&quot;0.58188970746005&quot;
+    udeep:NoiseModel=&quot;constant&quot;
+    udeep:NoiseParameter=&quot;3&quot;
+    udeep:StretchWidth=&quot;1&quot;
+    udeep:StretchOffset=&quot;0&quot;
+    udeep:AboveKnee=&quot;hermite; exit=1&quot;
+    udeep:Masked=&quot;0&quot;
+    udeep:DerivedMasked=&quot;0&quot;
+    udeep:Record=&quot;data-record&quot;
+    udeep:Preset=&quot;extend&quot;
+    udeep:ColourMap=&quot;grey&quot;
+    udeep:RoundingToNoise=&quot;0.05599236320678874&quot;
+    udeep:DataDigest=&quot;sha256:b7d7c57afe15eefe5de15105d12e87cccd659f37744da5fd11fa0a2c3df4c6d0&quot;
+    udeep:SdrDigest=&quot;sha256:a8bcfcaad5f47548b0d75998162c4ff2fbe0e7d4fd0c3b750fc62cdf95e58b6b&quot;
+    udeep:Version=&quot;0.3&quot;
+    udeep:ImageState=&quot;data-referred&quot;/&gt;</code></pre>
+  </article>
+</div></main>
+<footer><div class="wrap"><p>UDeep Figure Profile, draft v0.3 · text under CC BY 4.0.</p></div></footer>
+</body>
+</html>

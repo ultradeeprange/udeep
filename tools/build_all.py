@@ -10,6 +10,7 @@ Each step is a tool of its own and can be run alone; this is only their order, w
     golden vectors        python -m udeep.golden       from the NumPy reference (not in --check: see below)
     live view's copies    tools/make_view.py           the shader, the JavaScript port and the tables, copied
     profile page          tools/build_profile_page.py  from profile/*.md (needs `pip install markdown`)
+    namespace page        tools/build_namespace_page.py  docs/ns/<version>/, from the profile's 8.1 (markdown too)
     reference page        tools/build_reference_page.py
     evidence table        tools/evidence.py
     site chrome           tools/site_chrome.py         last: it rewrites the head and navigation of every page
@@ -31,6 +32,7 @@ STEPS = [
     ("golden vectors", [PY, "-m", "udeep.golden"], False),
     ("live view's copies", [PY, "tools/make_view.py"], True),
     ("profile page", [PY, "tools/build_profile_page.py"], True),
+    ("namespace page", [PY, "tools/build_namespace_page.py"], True),
     ("reference page", [PY, "tools/build_reference_page.py"], True),
     ("evidence table", [PY, "tools/evidence.py"], True),
 ]

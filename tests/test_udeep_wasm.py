@@ -295,6 +295,10 @@ console.log(JSON.stringify({
   noise: thrown(() => core.levels(m, null, 4, 4096, ['gaussian', 1])),
   noise_parameter: thrown(() => core.levels(m, null, 4, 4096, ['constant', 0])),
   rgb_count: thrown(() => core.pngPq(new Float64Array(11), 2, 2)),
+  // a declaration is written with white at 203 cd/m2 and no other (profile 9.1.1); a file without one, at any white
+  white: thrown(() => core.pngPq(new Float64Array(12), 2, 2, { whiteNits: 240, xmp: new TextEncoder().encode(
+    '<x:xmpmeta><rdf:Description xmlns:udeep="https://ultradeeprange.github.io/udeep/ns/0.3/"/></x:xmpmeta>') })),
+  own_screen: core.pngPq(new Float64Array(12), 2, 2, { whiteNits: 240 }).length > 0,
   not_a_png: thrown(() => core.readPngPq(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))),
   not_a_jpeg: thrown(() => core.readGainmap(new Uint8Array(64), 2)),
   infinite: thrown(() => core.gainmapJpeg([0.5, 0.5, 0.5], [Infinity, 1, 1], 1, 1, 4)),
@@ -313,7 +317,8 @@ console.log(JSON.stringify({
     assert out["a_null"] == out["text"] == out["null_as_data"] == out["floats_as_pixels"] == ["TypeError", None]
     assert out["unit_as_number"] == ["TypeError", None]
     assert out["wrong_count"] == out["wrong_size"] == out["rgb_count"] == ["RangeError", None]
-    assert out["no_unit"] == out["no_rule"] == out["model"] == out["noise_parameter"] == ["Error", 11]
+    assert out["no_unit"] == out["no_rule"] == out["model"] == out["noise_parameter"] == out["white"] == ["Error", 11]
+    assert out["own_screen"] is True
     assert out["none"] == [] and out["typed"] == [1.0]                         # the knee of that record is 240
     assert out["not_a_png"][0] == "Error" and out["not_a_png"][1] in (8, 9)
     assert out["not_a_jpeg"] == ["Error", 8] and out["infinite"] == ["Error", 8] and out["wraps"] == ["RangeError", None]

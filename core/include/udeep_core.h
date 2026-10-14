@@ -33,7 +33,8 @@ enum {
                                              map could not be kept within the headroom at this gain quality */
     UDEEP_ERROR_NOT_FINITE = 10,        /* a number in the mapping record, or a parameter, is NaN or infinite */
     UDEEP_ERROR_BAD_DECLARATION = 11    /* a required text missing or not UTF-8, an unknown noise model, a
-                                             number that means nothing */
+                                             number that means nothing; or a declaration for a PQ file whose
+                                             white is not at 203 cd/m^2 (profile 9.1.1) */
 };
 
 enum {
@@ -231,9 +232,10 @@ int32_t udeep_gainmap_from_renders(const uint8_t *base, const uint8_t *scaled, c
  *
  * A 16-bit PQ PNG (BT.2020 primaries, PQ, full range, declared in a cICP chunk) of rgb: height * width * 3 doubles,
  * row by row, linear RGB with BT.709 primaries in multiples of SDR white; 1.0 is written at white_nits. xmp: an
- * XMP packet to carry (the declaration), xmp_length bytes, or NULL and 0. The bytes come back in *data and *length
- * (release them with udeep_bytes_free). A NaN is written as 0. This is the form in which a file can be a data
- * record (profile 7.3): see udeep_levels_pq16. */
+ * XMP packet to carry (the declaration), xmp_length bytes, or NULL and 0. A packet in the udeep namespace is
+ * written only with white_nits at 203 (profile 9.1.1); at any other white, UDEEP_ERROR_BAD_DECLARATION. The bytes
+ * come back in *data and *length (release them with udeep_bytes_free). A NaN is written as 0. This is the form in
+ * which a file can be a data record (profile 7.3): see udeep_levels_pq16. */
 int32_t udeep_png_pq(const double *rgb, size_t width, size_t height, double white_nits, const uint8_t *xmp,
                        size_t xmp_length, uint8_t **data, size_t *length);
 

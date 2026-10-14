@@ -3,7 +3,8 @@
 //!
 //! The file is the one the Python reference writes (`udeep.export.write_png_pq`): 16 bits a channel, RGB, BT.2020
 //! primaries, the PQ transfer function, full range, declared in a `cICP` chunk; `1.0` of the figure's light is
-//! written at `white_nits`. The rows are stored unfiltered. The compressed bytes are this crate's and not zlib's,
+//! written at `white_nits`, which is [`REF_WHITE_NITS`] in any file that carries a declaration (profile 9.1.1). The
+//! rows are stored unfiltered. The compressed bytes are this crate's and not zlib's,
 //! so two writers' files differ as bytes and hold the same codes.
 //!
 //! Behind the `png` feature, for the one crate it needs (`miniz_oxide`, for the compression PNG requires).
@@ -15,6 +16,10 @@ use crate::{SRGB_TO_BT2020, matrix3, pq16_codes};
 
 /// The `cICP` chunk: BT.2020 primaries (9), PQ (16), RGB (0), full range (1).
 pub const CICP_BT2020_PQ_FULL: [u8; 4] = [9, 16, 0, 1];
+/// BT.2408's reference white, in cd/m^2: where a PQ file that carries a declaration has its white (profile 9.1.1).
+pub const REF_WHITE_NITS: f64 = 203.0;
+/// How every version of the `udeep` namespace begins: a packet that holds it carries a declaration.
+const NAMESPACE_ROOT: &[u8] = b"https://ultradeeprange.github.io/udeep/ns/";
 const SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n'];
 const XMP_KEY: &[u8] = b"XML:com.adobe.xmp\0\0\0\0\0";
 const COMPRESSION: u8 = 6;
@@ -30,6 +35,9 @@ pub enum PngError {
     Corrupt,
     /// A PNG, but not the kind this module reads: 16 bits a channel, RGB, not interlaced, declared BT.2020 PQ.
     NotPq16,
+    /// A declaration to be written with white at other than [`REF_WHITE_NITS`]: the file could not say so, and
+    /// would be read back as the wrong light (profile 9.1.1).
+    White,
 }
 
 fn inverse(m: &[[f64; 3]; 3]) -> [[f64; 3]; 3] {
@@ -79,7 +87,8 @@ fn chunk(out: &mut Vec<u8>, tag: &[u8; 4], data: &[u8]) {
 }
 
 /// Write `rgb` (`height * width * 3`, row by row; linear, BT.709 primaries, multiples of SDR white) as a 16-bit
-/// PQ PNG with `1.0` at `white_nits`. `xmp` is an XMP packet to carry (the declaration), or empty for none.
+/// PQ PNG with `1.0` at `white_nits`. `xmp` is an XMP packet to carry (the declaration), or empty for none. A
+/// packet in the `udeep` namespace is refused ([`PngError::White`]) unless `white_nits` is [`REF_WHITE_NITS`].
 pub fn write_png_pq(
     rgb: &[f64],
     width: usize,
@@ -90,6 +99,9 @@ pub fn write_png_pq(
     let count = width.checked_mul(height).and_then(|n| n.checked_mul(3)).ok_or(PngError::Shape)?;
     if width == 0 || height == 0 || rgb.len() != count || width > i32::MAX as usize || height > i32::MAX as usize {
         return Err(PngError::Shape);
+    }
+    if white_nits != REF_WHITE_NITS && xmp.windows(NAMESPACE_ROOT.len()).any(|w| w == NAMESPACE_ROOT) {
+        return Err(PngError::White);
     }
     let row = 1 + width * 6;
     let mut raw = vec![0u8; height * row];

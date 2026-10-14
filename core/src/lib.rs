@@ -74,7 +74,7 @@ pub enum Error {
     /// A number in the mapping record, or a parameter, is NaN or infinite.
     NotFinite = 10,
     /// A declaration the profile would refuse: a required text missing or not UTF-8, an unknown noise model, a
-    /// number that means nothing.
+    /// number that means nothing; or a declaration to be carried by a PQ file whose white is not at 203 cd/m^2.
     BadDeclaration = 11,
 }
 

@@ -24,6 +24,17 @@ srgb_encode(linear::AbstractArray{<:Real}) = buffers(:udeep_srgb_encode, linear)
 "`srgb_decode(signal)`: sRGB signal -> linear light, the inverse of [`srgb_encode`](@ref)."
 srgb_decode(signal::AbstractArray{<:Real}) = buffers(:udeep_srgb_decode, signal)
 
+"""
+    digest_sdr(sdr)
+
+The `udeep:SdrDigest` of a fair SDR rendering given as light (`height x width x 3`, linear, 0 to 1: the `sdr` of
+an [`HdrView`](@ref)), taken over the 8-bit sRGB codes the writers store for it, with NaN as 0. A file with no SDR
+base of its own, such as a 16-bit PQ PNG, must declare it (profile 9.1.2); the gain-map JPEG of the same figure
+then declares the same value.
+"""
+digest_sdr(sdr::AbstractArray{<:Real, 3}) =
+    digest_pixels(round.(UInt8, srgb_encode(replace(Float64.(sdr), NaN => 0.0)) .* 255))
+
 "`value_at(m, t)`: position in [0, 1] -> data values, the inverse of `UDeepCore.position` inside the range."
 value_at(m::Mapping, t::AbstractArray{<:Real}) = each(:udeep_value_at, m, t)
 

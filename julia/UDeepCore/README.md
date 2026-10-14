@@ -52,6 +52,11 @@ write("frame.png", png_pq(view.hdr; declaration = d))                  # d: a De
 counts_again = value(m, read_png_pq(read("frame.png"))[:, :, 2])       # grey: any channel is the light
 ```
 
+The declaration names the SDR figure that goes with the PNG, which holds none of its own (profile 9.1.2):
+`sdr_digest = digest_sdr(view.sdr)`. White is written at 203 cd/m², as the profile requires of a file with a
+declaration (9.1.1). Turning a colour map's colours back into values is done by the Python reference
+(`udeep.read_png_data`), not yet here.
+
 `levels(m, table, headroom; noise)` does the same for the 8-bit JPEG. The reference's validator checks either
 file: `python -m udeep.validate frame.png`.
 

@@ -295,3 +295,16 @@ def test_fewer_than_two_sample_positions_are_taken_as_two():
     for n in (0, 1):
         got = data_steps(m, samples=n)
         assert np.array_equal(got[0], two[0]) and np.array_equal(got[1], two[1])
+
+
+def test_the_worked_examples_of_profile_8_6_are_what_the_digests_give():
+    """The profile's own examples, read from its text: an implementer checks against them first."""
+    import re
+    from pathlib import Path
+
+    from udeep.metadata import digest_data, digest_pixels
+    text = (Path(__file__).resolve().parents[1] / "profile" / "udeep-figure-profile-v0.3.md").read_text(encoding="utf-8")
+    data_example = re.search(r"\*\*`DataDigest`, an example\.\*\*.*?`(sha256:[0-9a-f]{64})`", text, re.S).group(1)
+    sdr_example = re.search(r"\*\*`SdrDigest`\.\*\*.*?`(sha256:[0-9a-f]{64})`", text, re.S).group(1)
+    assert digest_data(np.array([[1.0, -0.0, np.nan]])) == data_example
+    assert digest_pixels(np.array([[[255, 255, 255], [0, 0, 0]]], np.uint8)) == sdr_example

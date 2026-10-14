@@ -53,11 +53,14 @@ One 12-bit detector frame, with a read noise of 3 counts, stored twice with the 
 
 The JPEG shows the frame; its levels are twelve times wider than the noise, so it cannot stand in for the data
 and says so. The PNG's levels are finer than the noise allows for, so it may be called a data record, and the
-script shows what that means: it reads the PNG back, turns its codes into light and the light into counts, and
+script shows what that means: it reads the PNG back (`udeep.read_png_data`), turns its codes into counts, and
 gets the frame itself, every pixel, to the whole count.
 
-It then asks the validator, which works the levels out again from the file's own declaration and confirms the
-claim: `python -m udeep.validate examples/output/detector_record_pq16.png`.
+The two files are one figure. They declare the same data and the same SDR figure of record; the PNG holds no SDR
+image of its own, so the profile requires it to name one (9.1.2), and here that is the JPEG's base. The script then
+asks the validator, which works the levels out again from the file's own declaration and confirms the claim, and
+confirms that the JPEG is the SDR figure the PNG names:
+`python -m udeep.validate examples/output/detector_record_pq16.png --sdr examples/output/detector_record_hdr.jpg`.
 
 All four have counterparts in Julia, in [`julia/UDeepCore/examples/`](../julia/UDeepCore/examples/); the depth one
 there gives the same numbers, since both languages take them from the Rust core.

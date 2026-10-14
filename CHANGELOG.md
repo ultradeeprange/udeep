@@ -11,6 +11,26 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-14
 
+- **Where white is in a PQ file, settled** (profile 9.1.1): a PQ or HLG file places white at BT.2408's reference
+  white, 203 cd/m² in PQ and 75 % of the signal in HLG, since the file has nowhere to say where it put it. The
+  writers refuse to write a declaration into a PQ file at any other white: the Python reference, and the Rust core
+  (`UDEEP_ERROR_BAD_DECLARATION`), so also Julia and the WebAssembly module. A file without a declaration may still
+  be written at any white, for one's own screen. The writer's advice to use the screen's own SDR white is
+  withdrawn: matching a screen is the viewer's work (profile section 12).
+- **A 16-bit PNG names its SDR figure** (profile 9.1.2): it must declare `SdrDigest`, and the validator fails one
+  that does not. `--sdr` takes the 8-bit SDR image, or the gain-map JPEG of the same figure, which is compared by
+  the `SdrDigest` it declares. `udeep.metadata.digest_sdr` (and `digest_sdr` in Julia) gives the digest from the
+  SDR rendering; both depth examples declare it, so their JPEG and PNG are one figure.
+- **A data record comes back as data, whatever its colour map**: `udeep.read_png_data(path)` and
+  `udeep.metadata.values_pq16`. Each pixel's code is found among the file's levels, and its value is the middle of
+  that level. The validator now reads `fire` and `ice` files back as well as `grey` ones, which it used to skip.
+  The Rust core and the Julia package do not do this yet.
+- **The namespace address is a page**: <https://ultradeeprange.github.io/udeep/ns/0.3/> lists the properties,
+  copied from the profile by `tools/build_namespace_page.py`. The address used to give "not found".
+- **Security considerations** in the profile (section 16, informative), and `SECURITY.md` points to them.
+- **The digest examples in profile 8.6 were wrong.** They still gave the digests under the names before 11 October
+  (`hdrplot-data-1`, `hdrplot-rgb8-1`). The code and the golden vectors were right; a test now holds the profile's
+  examples to the code.
 - **HDR figures inline in a notebook** (work plan 6.2): `hp.inline(fig)` at the end of a Jupyter cell shows the
   gain-map JPEG that `savefig_hdr` writes, byte for byte, with the caption generated from its declaration. A
   browser that reads gain maps shows the images above white on an HDR display; any other shows the ordinary
@@ -75,8 +95,8 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
   `tools/julia_artifacts.jl` writes the `Artifacts.toml` from such archives. Tried with the archives the workflow
   built: the package's tests pass on them. No `Artifacts.toml` is in the repository yet, since it must point at a
   release and there is none.
-- One thing this showed and did not settle: a PQ file does not say what luminance its white is written at. The
-  tools write and read at 203 cd/m2 (BT.2408), and the validator says that it assumes so.
+- One thing this showed: a PQ file does not say what luminance its white is written at. The tools wrote and read
+  at 203 cd/m2 (BT.2408), and the validator said that it assumed so. Settled the same day: see the first entry.
 
 ### 2026-10-13
 

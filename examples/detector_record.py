@@ -8,8 +8,12 @@ rounding error, a step over the square root of 12, may be at most a tenth of the
 too coarse, so it is a rendering. The PNG's are fine enough, so it may be declared a data record: a reader can
 take the counts back out of it to within the noise.
 
+The two files are one figure: they declare the same data (DataDigest) and the same SDR figure of record
+(SdrDigest). The PNG holds no SDR image of its own, so the profile requires it to name one (9.1.2); here it is the
+JPEG's base.
+
 The levels are worked out by the package (udeep.metadata.data_steps for the 8-bit path, data_steps_pq16 for the
-16-bit one), and the PNG is read back by it (udeep.read_png_pq).
+16-bit one), and the PNG is read back as counts by it (udeep.read_png_data).
 """
 import dataclasses
 from pathlib import Path
@@ -17,8 +21,8 @@ from pathlib import Path
 import numpy as np
 from _common import OUTPUT
 
-from udeep import Declaration, hdr_view, read_metadata, read_png_pq, to_xmp, write_gainmap_jpeg, write_png_pq
-from udeep.metadata import data_steps, data_steps_pq16, description, digest_data, rounding_to_noise
+from udeep import Declaration, hdr_view, read_metadata, read_png_data, to_xmp, write_gainmap_jpeg, write_png_pq
+from udeep.metadata import data_steps, data_steps_pq16, description, digest_data, digest_sdr, rounding_to_noise
 from udeep.validate import validate
 
 FULL_SCALE, READ_NOISE, KNEE, HEADROOM = 4095.0, 3.0, 1000.0, 4.0
@@ -40,7 +44,8 @@ def main(folder: Path = OUTPUT) -> dict:
     view = hdr_view(data, "extend", KNEE, STRETCH, HEADROOM, "grey")
     mapping = view.mapping
     common = {**dataclasses.asdict(mapping), "data_unit": "counts", "knee_rule": "preset; white at 1,000 counts",
-              "noise_model": NOISE[0], "noise_parameter": NOISE[1], "preset": "extend", "data_digest": digest_data(data)}
+              "noise_model": NOISE[0], "noise_parameter": NOISE[1], "preset": "extend", "data_digest": digest_data(data),
+              "sdr_digest": digest_sdr(view.sdr)}
     out = {}
     for name, steps in (("jpeg", data_steps(mapping, scaled_by=HEADROOM)), ("png", data_steps_pq16(mapping))):
         against = rounding_to_noise(mapping, NOISE, steps=steps)
@@ -57,12 +62,13 @@ def main(folder: Path = OUTPUT) -> dict:
                      "ratio": read.rounding_to_noise, "record": read.record, "meets": against["meets"]}
         print(f"{path.name}: {out[name]['levels']:,} levels across the range; widest step {read.max_data_step:.3g} counts; "
               f"rounding is {read.rounding_to_noise:.3g} of the noise (limit 0.1); the file declares itself a {read.record}")
-    back = mapping.value(read_png_pq(out["png"]["path"])[..., 1])       # a grey figure: any channel is the light
+    back, _ = read_png_data(out["png"]["path"])                  # the file's codes, turned back into counts
     out["png"]["recovered_error"] = float(np.abs(back - data).max())
     out["png"]["recovered_exactly"] = bool(np.array_equal(np.round(back), data))
     print(f"read back from the PNG: every count within {out['png']['recovered_error']:.3g} of the frame; "
           f"rounded to whole counts, {'the frame itself' if out['png']['recovered_exactly'] else 'NOT the frame'}")
-    report = validate(out["png"]["path"], data=data)           # the claim, checked from the file and the data
+    # the claim, checked from the file and the data; and that the JPEG is the SDR figure the PNG names
+    report = validate(out["png"]["path"], data=data, sdr=out["jpeg"]["path"])
     out["png"]["report"] = report
     print(report)
     return out

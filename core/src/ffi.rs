@@ -656,7 +656,8 @@ pub unsafe extern "C" fn udeep_levels_pq16(
 /// A 16-bit PQ PNG of `rgb` (`height * width * 3` `double`s, row by row: linear RGB, BT.709 primaries, multiples
 /// of SDR white), with `1.0` written at `white_nits`. `xmp` is an XMP packet to carry (the declaration), of
 /// `xmp_length` bytes, or null with a length of 0. The bytes are returned in `data` and `length`; release them
-/// with [`udeep_bytes_free`].
+/// with [`udeep_bytes_free`]. A declaration (a packet in the `udeep` namespace) is written only with white at 203
+/// cd/m^2 (profile 9.1.1): at any other white, `UDEEP_ERROR_BAD_DECLARATION`.
 ///
 /// # Safety
 /// `rgb` must point to `height * width * 3` readable `double`s, `xmp` to `xmp_length` readable bytes (or be null
@@ -691,6 +692,7 @@ pub unsafe extern "C" fn udeep_png_pq(
             }
             OK
         }
+        Err(crate::png::PngError::White) => Error::BadDeclaration as i32,
         Err(_) => Error::BadImage as i32,
     }
 }

@@ -11,8 +11,11 @@ how its data became light, so that the mapping can be inverted and checked.
     max_data_step    the widest range of data values that one stored code stands for (section 7.2.3)
     rounding_to_noise  the data criterion (section 7.2.1): that rounding against the stated uncertainty
     digest_data, digest_pixels   the digests that tie a file to its data and to its SDR figure of record
+    digest_sdr       SdrDigest of a fair SDR rendering given as light, as the writers store it in 8 bits
+    values_pq16, read_png_data   a 16-bit PQ PNG's light, and such a file, read back as data values
 
-The namespace URI is provisional (profile section 10, open issue 1).
+The namespace URI resolves to a page listing these properties; it is provisional until version 1.0 (profile
+section 10, open issue 1).
 """
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ from xml.sax.saxutils import quoteattr
 import numpy as np
 
 from udeep.color import REF_WHITE_NITS
-from udeep.export import pq16_codes, srgb_oetf
+from udeep.export import pq16_codes, read_png_pq, srgb_oetf
 from udeep.mapping import ABOVE_KNEE, Mapping
 
 VERSION = "0.3"
@@ -206,6 +209,17 @@ def digest_pixels(rgb8) -> str:
     return "sha256:" + h.hexdigest()
 
 
+def digest_sdr(sdr) -> str:
+    """The SdrDigest (profile 8.6) of a fair SDR rendering given as light: height x width x 3, linear, 0 to 1, as
+    HdrView.sdr holds it. It is taken over the 8-bit sRGB codes the writers store for it (the base of a gain-map
+    JPEG before compression, and udeep.write_png_sdr's file), with a NaN stored as 0.
+
+    A file with no SDR base of its own, such as a 16-bit PQ PNG, must declare it (profile 9.1.2); the gain-map JPEG
+    of the same figure then declares the same value."""
+    light = np.nan_to_num(np.asarray(sdr, dtype=np.float64), nan=0.0)
+    return digest_pixels(np.round(srgb_oetf(light) * 255.0).astype(np.uint8))
+
+
 def description(d: Declaration) -> bytes:
     """The declaration as one rdf:Description element, to sit beside others in an existing packet.
 
@@ -370,6 +384,82 @@ def data_steps_pq16(mapping: Mapping, sdr_white_nits: float = REF_WHITE_NITS,
     edges = np.flatnonzero(np.any(code[1:] != code[:-1], axis=1)) + 1
     x = mapping.value_at(np.concatenate([[0.0], t[edges], [1.0]]))
     return x[:-1], np.diff(x)
+
+
+def _key(code: np.ndarray) -> np.ndarray:
+    """Three 16-bit codes as one number, for looking them up."""
+    code = code.astype(np.int64)
+    return (code[..., 0] << 32) | (code[..., 1] << 16) | code[..., 2]
+
+
+def values_pq16(mapping: Mapping, light, sdr_white_nits: float = REF_WHITE_NITS,
+                samples: int = 1 << 20) -> np.ndarray:
+    """The data values that a 16-bit PQ PNG's light stands for (`light` as udeep.read_png_pq gives it): the
+    declared mapping turned back, through the file's own codes, whatever the colour map.
+
+    Each stored level is a run of data values that share one code in all three channels (data_steps_pq16). A
+    pixel is given the middle of the run whose code it holds, and so comes back to within half that run's width,
+    which is at most half of MaxDataStep. The ends of the runs are found to within a millionth of the sampling's
+    spacing. A writer that rounds a sum of three products in a different order can leave a rare code one step
+    from the reference's (udeep.core); a pixel whose code is in no run takes the nearest run that is a step away
+    in each channel at most, and a pixel with none so near is not a colour of this mapping and is NaN.
+
+    ValueError when two separate runs share one code: that code would not say which data value it stands for. It
+    has not happened with any map tried (grey, fire and ice, linear over 0 to 4095 at a 4x headroom)."""
+    light = np.asarray(light, dtype=np.float64)
+    if light.ndim < 1 or light.shape[-1] != 3:
+        raise ValueError("light must end in an axis of 3 channels")
+    code_at = lambda s: pq16_codes(mapping.colours(mapping.light_at(s)), sdr_white_nits)
+    t = np.linspace(0.0, 1.0, max(int(samples), 2))
+    code = code_at(t)
+    edges = np.flatnonzero(np.any(code[1:] != code[:-1], axis=1)) + 1
+    lo, hi, before = t[edges - 1], t[edges], code[edges - 1]
+    for _ in range(20):                                   # each change of code, to a millionth of a sample's spacing
+        mid = 0.5 * (lo + hi)
+        same = np.all(code_at(mid) == before, axis=1)
+        lo, hi = np.where(same, mid, lo), np.where(same, hi, mid)
+    x = mapping.value_at(np.concatenate([[0.0], hi, [1.0]]))
+    middle = 0.5 * (x[:-1] + x[1:])
+    keys = _key(code[np.concatenate([[0], edges])])
+    order = np.argsort(keys, kind="stable")
+    ordered = keys[order]
+    if np.any(ordered[1:] == ordered[:-1]):
+        raise ValueError("two separate runs of data values share one code, so the code does not say which value "
+                         "it stands for: this mapping's colours cannot be read back as data")
+
+    def find(k):
+        at = np.minimum(np.searchsorted(ordered, k), len(ordered) - 1)
+        return np.where(ordered[at] == k, order[at], -1)
+
+    pixel = pq16_codes(light, sdr_white_nits).reshape(-1, 3).astype(np.int64)  # the file's codes, exactly
+    run = find(_key(pixel))
+    missing = np.flatnonzero(run < 0)
+    if missing.size:                                      # the nearest run a step away, by the fewest channels moved
+        near, moved = np.full(missing.size, -1), np.full(missing.size, 4)
+        for step in np.array(np.meshgrid(*[[-1, 0, 1]] * 3, indexing="ij")).reshape(3, -1).T:
+            if not step.any():
+                continue
+            found = find(_key(np.clip(pixel[missing] + step, 0, 65535)))
+            better = (found >= 0) & (np.abs(step).sum() < moved)
+            near, moved = np.where(better, found, near), np.where(better, np.abs(step).sum(), moved)
+        run[missing] = near
+    values = np.where(run >= 0, middle[np.maximum(run, 0)], np.nan)
+    return values.reshape(light.shape[:-1])
+
+
+def read_png_data(path, samples: int = 1 << 20) -> tuple[np.ndarray, Declaration]:
+    """A 16-bit PQ PNG read back as data: the data values its pixels stand for under the declaration it carries
+    (values_pq16), height x width, and that declaration. A value outside the declared range was stored at the
+    range's end, and a masked pixel holds its fair SDR light instead of its value (profile 6.2a), so neither comes
+    back as it was. The file need not declare itself a data record; if it does not, the values are good only to
+    within its levels, which may be wider than the data's uncertainty.
+
+    ValueError if the file is not a 16-bit PQ PNG, carries no declaration, or its colour map is one this reader
+    has no table for."""
+    d = read_metadata(path)
+    if d is None:
+        raise ValueError(f"{path}: the file carries no udeep declaration, so its light cannot be turned into data")
+    return values_pq16(d.mapping, read_png_pq(path), samples=samples), d
 
 
 def max_data_step(mapping: Mapping, scaled_by: float | None = None, samples: int = 1 << 16) -> float:

@@ -34,7 +34,8 @@ _STRETCH = {"linear": 0, "log": 1, "asinh": 2, "proportional": 3}
 _ERRORS = {1: "a required pointer was null", 2: "unknown stretch", 3: "the declared range is not valid",
            4: "the knee is not inside the declared range", 5: "the headroom or the exit slope is out of range",
            6: "the stretch width, or a proportional mapping's range, is not valid",
-           7: "the colour-map table is not two segments of nodes x 3", 10: "a number in the mapping is not finite"}
+           7: "the colour-map table is not two segments of nodes x 3", 10: "a number in the mapping is not finite",
+           11: "the declaration is one the profile refuses (in a PQ file: one with white at other than 203 cd/m2)"}
 _state = {"library": None, "looked": False, "on": None}      # on: None until asked, then True or False
 _DOUBLES = ctypes.POINTER(ctypes.c_double)
 

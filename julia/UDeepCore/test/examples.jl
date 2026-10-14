@@ -50,6 +50,12 @@ end
         @test file[1:8] == UInt8[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
         text = String(copy(file))
         @test occursin("cICP", text) && occursin(xmp_packet(result.png), text) && occursin("udeep:Record=\"data-record\"", text)
+        # one figure in two files: the PNG names the JPEG's base as its SDR figure (profile 9.1.2)
+        @test result.png.sdr_digest !== nothing && result.png.sdr_digest == result.jpeg.sdr_digest
+        @test occursin("udeep:SdrDigest=\"$(result.png.sdr_digest)\"", text)
+        # the example of profile 8.6: one row, white then black
+        sdr = reshape([1.0, 0.0, 1.0, 0.0, 1.0, 0.0], 1, 2, 3)
+        @test digest_sdr(sdr) == "sha256:72f4b9b910f818d01b50d3c137ab5cc22cd48b94b1bb1bf6c69b85655751c7a1"
     end
     @testset "the stream of random numbers is the same everywhere" begin
         space = example("spectral_map")

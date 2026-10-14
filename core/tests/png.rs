@@ -166,3 +166,15 @@ fn a_sixteen_bit_file_holds_a_twelve_bit_frame_to_within_its_noise() {
     let own: Vec<[u16; 3]> = (0..=4095).map(|c| pq16_codes([mapping.light(f64::from(c)); 3], WHITE)).collect();
     assert!(own.windows(2).all(|pair| pair[0] != pair[1]));
 }
+
+#[test]
+fn a_declaration_is_written_with_white_at_203_and_no_other() {
+    // profile 9.1.1: the file cannot say what its white was, so a file that carries a declaration has it at 203
+    let rgb = picture(5, 4);
+    let declared = br#"<x:xmpmeta><rdf:Description xmlns:udeep="https://ultradeeprange.github.io/udeep/ns/0.3/"/></x:xmpmeta>"#;
+    assert_eq!(write_png_pq(&rgb, 5, 4, 240.0, declared), Err(PngError::White));
+    assert!(write_png_pq(&rgb, 5, 4, WHITE, declared).is_ok());
+    // without a declaration, any white: a file for one's own screen, read back with the same value
+    let mine = write_png_pq(&rgb, 5, 4, 240.0, b"<x:xmpmeta>another packet</x:xmpmeta>").unwrap();
+    assert!(read_png_pq(&mine, 240.0).is_ok());
+}

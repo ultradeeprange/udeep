@@ -27,7 +27,8 @@
     6: 'the stretch width, or a proportional mapping, is not valid',
     7: 'the colour-map table is not two segments of nodes x 3', 8: 'the image cannot be written or is not of this kind',
     9: 'the image codec failed, or the gain map could not be kept within the headroom',
-    10: 'a number in the mapping is not finite', 11: 'the declaration is one the profile refuses',
+    10: 'a number in the mapping is not finite',
+    11: 'the declaration is one the profile refuses (in a PQ file: one with white at other than 203 cd/m2)',
   };
   const STRETCH = { linear: 0, log: 1, asinh: 2, proportional: 3 };
   const NOISE = { unknown: 0, constant: 1, poisson: 2, relative: 3, tolerance: 4 };
@@ -293,8 +294,9 @@
       caption: d => scoped(take => text.decode(owned(take, (data, length) => x.udeep_caption(putDeclaration(take, d), data, length)))),
 
       // A 16-bit PQ PNG of `rgb` (height x width x 3 numbers, row by row: linear RGB, BT.709 primaries, multiples
-      // of SDR white), with 1.0 written at `whiteNits`; `xmp` is an XMP packet to carry, as bytes. And one read
-      // back as light, in multiples of the white written at `whiteNits`.
+      // of SDR white), with 1.0 written at `whiteNits`; `xmp` is an XMP packet to carry, as bytes. A packet that
+      // holds a declaration is written only with white at 203 cd/m2 (profile 9.1.1; otherwise error 11). And one
+      // read back as light, in multiples of the white written at `whiteNits`.
       pngPq: (rgb, width, height, { whiteNits = REF_WHITE_NITS, xmp = null } = {}) => scoped(take => {
         feature('png');
         const numbers = image(rgb, width, height, 'rgb'), packet = xmp === null ? new Uint8Array(0) : asBytes(xmp, 'the XMP packet');

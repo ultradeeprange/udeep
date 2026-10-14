@@ -49,7 +49,8 @@ It is a profile of existing standards. It defines no new image or file format.
 ## 3. Terms
 
 - **Nominal diffuse white** (ISO 22028-5): the display's reference white for ordinary content. In this
-  profile it has the value 1.0 and is also called **SDR white**. Its default luminance is 203 cd/m² (BT.2408).
+  profile it has the value 1.0 and is also called **SDR white**. Its luminance is a matter for the display (6.1),
+  except in a PQ or HLG file, which places it at BT.2408's reference white, 203 cd/m² (9.1.1).
 - **Data-referred image state**: an image whose light is a declared function of measured or computed data
   values. It stands beside the scene-referred and display-referred states of ISO 22028-1.
 - **Declared range**: the interval of data values, from *low* to *high*, over which the mapping is defined.
@@ -269,12 +270,12 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
   | `udeep:DataDigest` | Text | optional: the digest of the array that was mapped, as defined in 8.6. It ties the file to its data: a reader holding the data can confirm it is the same. Where the figure shows processed data (whitened, binned, calibrated), the digest is of the processed array. *Added 2026-10-08.* |
   | `udeep:DataSource` | Text | optional: where the data is kept: `doi:…` where the data has one, otherwise a URL, otherwise a description; several are separated by `; `. *Added 2026-10-08.* |
   | `udeep:DataUnitCode` | Text | optional: the unit in machine-readable form, as a UCUM code (for example `K`, `s-1`). `DataUnit` remains the text for people. *Added 2026-10-08.* |
-  | `udeep:SdrDigest` | Text | optional: the digest of the fair SDR rendering's 8-bit RGB pixels, before any lossy coding, as defined in 8.6. It ties an HDR file to the figure of record (§6.8). *Added 2026-10-08.* |
+  | `udeep:SdrDigest` | Text | optional, except in a file with no SDR base of its own, which MUST declare it (9.1.2): the digest of the fair SDR rendering's 8-bit RGB pixels, before any lossy coding, as defined in 8.6. It ties an HDR file to the figure of record (§6.8). *Added 2026-10-08; required of such a file 2026-10-14.* |
   | `udeep:ColourMap` | Text | the map from light to colour (§6.10): `grey`, or a registered map as `name/version` (for example `fire/2`). *Added 2026-10-07; versioned 2026-10-08.* |
   | `udeep:ColourMapTable` | Text | required unless the map is `grey` or a registered map at a registered headroom: the table itself, as the node count, `;`, then base64 of the two segments' numbers (little-endian float32, row by row). *Added 2026-10-08.* |
 
-  `NoiseParameter`, `DerivedMask` and `ColourMapTable` are required in the cases their rows state. `Preset`,
-  `RoundingToNoise`, `DataDigest`, `DataSource`, `DataUnitCode` and `SdrDigest` are optional. Every other property
+  `NoiseParameter`, `DerivedMask`, `ColourMapTable` and `SdrDigest` are required in the cases their rows state.
+  `Preset`, `RoundingToNoise`, `DataDigest`, `DataSource` and `DataUnitCode` are optional. Every other property
   MUST be present, including one whose value is zero or the usual one (`Masked`, `DerivedMasked`, `StretchOffset`,
   `StretchWidth`, `AboveKnee`).
 
@@ -326,7 +327,7 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
     ones included; the mask is not part of it.
   - **`DataDigest`, an example.** One row holding 1, −0 and NaN: the header `udeep-data-1;1x3;` and then the 24
     bytes `00 00 00 00 00 00 F0 3F`, `00 00 00 00 00 00 00 00`, `00 00 00 00 00 00 F8 7F` give
-    `sha256:449b644ce7f301ef25711531396fe1b992a510c98c6e8430ef6bc094ed94c872`.
+    `sha256:25ac76fd7a21babcec77fdef5bef6efa3e39f575f1d58bd709962a55bda18bf1`.
   - **Several images in one figure.** Each image has its digest as above. The file's `DataDigest` is then SHA-256
     of the ASCII text made by joining those digests, each complete with its `sha256:`, with `|`, in the order the
     images were added to the figure; it is written in the same way.
@@ -334,7 +335,7 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
     First the ASCII header `udeep-rgb8-1;`, the height in pixels, `x`, the width, `;`. Then three bytes for each
     pixel, red, green and blue, each an unsigned 8-bit value, the top row first and each row from left to right.
     Example: one row of two pixels, white then black, has the header `udeep-rgb8-1;1x2;` and the bytes
-    `FF FF FF 00 00 00`, and gives `sha256:9c590fe054308e0920383c4b5da555eb22d11afa88da6d9bc20f674bb2b5bfbc`.
+    `FF FF FF 00 00 00`, and gives `sha256:72f4b9b910f818d01b50d3c137ab5cc22cd48b94b1bb1bf6c69b85655751c7a1`.
 - 8.7 **A figure for a light and for a dark page.** *Added 2026-10-10.* A figure MAY be published in more than one
   version that differ only in the furniture and the background it is drawn on.
   The data, the mapping, the colours of the data and every pixel that is above white MUST be the same in each.
@@ -351,9 +352,23 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
 | Delivery | Requirement | Notes |
 |---|---|---|
 | **Compatibility** | MAY be an 8-bit gain-map JPEG per ISO 21496-1 (Ultra HDR layout accepted). Its base image MUST be the fair SDR rendering, and `HDRCapacityMax` = log2(ReferenceHeadroom). | Opens everywhere; SDR viewers show the correct figure. It is always a rendering (§7.3). The gain map SHOULD be full resolution and 3-channel, because a reduced map blurs sharp data into halos. Writers SHOULD include the ISO 21496-1 binary block as well as the XMP. |
-| **Precision** | MAY be a 16-bit PNG, PQ, BT.2020, signalled with `cICP` (9, 16, 0, 1). | Lossless and smooth on the tested path. It has no SDR base, so it MUST be accompanied by the fair SDR rendering. |
+| **Precision** | MAY be a 16-bit PNG, PQ, BT.2020, signalled with `cICP` (9, 16, 0, 1). | Lossless and smooth on the tested path. It has no SDR base, so it MUST be accompanied by the fair SDR rendering, and MUST name it (9.1.2). White is at 203 cd/m² (9.1.1). |
 | **Compact** | MAY be AVIF, PQ or HLG, 10- or 12-bit. An AVIF with an ISO 21496-1 gain map SHOULD be preferred when available, because it carries its own SDR base. | 10-bit MUST be dithered (7.1.1). The gain-map AVIF is untested (Annex B). |
 | **Archive** | SHOULD be JPEG XL or 12-bit AVIF, PQ. JPEG XL MAY carry the data itself as extra float channels. | For future displays and decoders. |
+
+- 9.1.1 **White in a PQ or HLG file.** *Added 2026-10-14.* A file in a PQ or HLG encoding (the precision, compact
+  and archive forms above) MUST place nominal diffuse white at BT.2408's reference white: 203 cd/m² in PQ, 75 % of
+  the signal in HLG. PQ is absolute, so a PQ file has its white at some luminance, and the file has nowhere to say
+  which (6.1 keeps luminance out of the declared mapping). With that luminance fixed, a reader turns the file's
+  light back into multiples of white without being told, and a data record (7.3) reads back as its data. Placing a
+  figure's white where a particular screen has its own SDR white is display rendering (§12), done when the file is
+  shown, not when it is written. A gain map is relative to its own SDR base and needs no such rule.
+- 9.1.2 **A file without an SDR base names its SDR figure.** *Added 2026-10-14.* A file that holds no SDR base of
+  its own, such as a 16-bit PQ PNG, MUST declare the `SdrDigest` (8.6) of the fair SDR rendering that accompanies
+  it. That rendering is either an 8-bit image whose pixels give the digest, or another delivery of the same figure,
+  such as its gain-map JPEG, that declares the same `SdrDigest`. Two deliveries of one figure share the mapping,
+  `DataDigest` and `SdrDigest`, and differ only in what depends on the encoding (`MaxDataStep`, `RoundingToNoise`
+  and `Record`); two versions for a light and a dark page share everything but `SdrDigest` (8.7).
 
 ### 9.2 Vector (hybrid SVG)
 
@@ -488,9 +503,12 @@ they are reported as skipped.
 - *Added 2026-10-14.* For a 16-bit PQ PNG, point 6 works the stored levels out again from the declaration (the
   run of data values that share one code in all three channels) and fails a file that declares itself a data
   record when they do not meet 7.3.1. The headroom limit of point 4 allows a lossless file only its own rounding
-  (0.1 %). With the data supplied, it also reads every value back out of a `grey` file and fails it if any value
-  inside the declared range comes back further than half the widest level from where it was. It takes nominal
-  diffuse white to be written at 203 cd/m², which the file does not state (open issue 11), and says so.
+  (0.1 %), and reads white at 203 cd/m² (9.1.1). Point 1 fails a PNG that does not declare `SdrDigest` (9.1.2), and
+  point 7 takes as the SDR figure either an 8-bit image, compared by its pixels, or the gain-map JPEG of the same
+  figure, compared by the `SdrDigest` it declares once its `DataDigest` and mapping are found to be the PNG's. With
+  the data supplied, it also reads every value back out of the file, whatever its colour map: each pixel's code is
+  found among the levels, and its value is the middle of that level. It fails the file if any value inside the
+  declared range comes back further than half the widest level from where it was.
 
 - Point 1 fails when a property that §8 requires is absent, when a carried `ColourMapTable` cannot be decoded,
   when a registered map is declared at a headroom it is not registered for and no table is carried, or when the
@@ -504,7 +522,10 @@ they are reported as skipped.
 - Point 6 fails an 8-bit gain-map JPEG that claims to be a data record (7.3.3), whatever else it declares.
 
 Open issues:
-1. The namespace URI is a placeholder. It needs an address under the editor's control.
+1. *Resolved 2026-10-14.* The namespace URI, `https://ultradeeprange.github.io/udeep/ns/0.3/`, is under the
+   editor's GitHub organisation, and a page at that address lists the properties of 8.1. It is provisional until
+   version 1.0. Still open: the address depends on the organisation's name on GitHub; an address on a domain of
+   the editor's own would outlive a change of name.
 2. The reference implementation's curve conforms to 6.3 from UDeep 0.3 (the reference form of 6.7). Other strictly
    increasing forms, such as linear or logarithmic segments, have not been compared with it.
 3. The reference implementation writes the §8 metadata into gain-map JPEGs (and, on request, PQ PNGs) from
@@ -519,7 +540,8 @@ Open issues:
    19.5 HU wide: rounding is 0.94 of the noise at its worst, and over the limit across 92 % of the range.
    *Added 2026-10-14.* For a 16-bit PQ PNG it works out the stored levels (`udeep.metadata.data_steps_pq16`),
    but does not yet compose the declaration itself: the caller does, as the repository's worked example
-   `examples/detector_record.py` shows.
+   `examples/detector_record.py` shows. It reads such a file back as data (`udeep.read_png_data`), whatever its
+   colour map; the Rust core and the Julia package read back only the light.
 4. Gain-map AVIF (9.1), the SVG media-query fallback (9.2.4) and metadata inside MP4 (9.3.3) are untested.
 5. Precision of colour maps and of gain-map JPEGs has not been analysed (Annex C).
 6. Device evidence comes from one phone and one monitor (Annex B). More devices are needed. Reports are kept as
@@ -570,12 +592,10 @@ Open issues:
 
     6.9 now says what "strictly increasing" is measured on and for whom. Still open: no tolerance is stated for
     an embedded table, and nothing checks one.
-11. *Added 2026-10-14.* PQ is absolute, so a PQ file is written with nominal diffuse white at some luminance, and
-    6.1 keeps luminance out of the declared mapping. The file does not say which luminance was used. The reference
-    writes 203 cd/m² (BT.2408) unless told otherwise, and the reference reader and validator assume it. A file
-    written with another white reads back scaled by the ratio of the two, and a data record (7.3) is then read as
-    the wrong values. The profile does not yet say whether a PQ data record must use 203 cd/m², or must state the
-    luminance it used.
+11. *Resolved 2026-10-14 (9.1.1).* PQ is absolute, and a PQ file does not say what luminance its white was written
+    at; one written at another white reads back scaled by the ratio of the two, and a data record (7.3) is then
+    read as the wrong values. A PQ or HLG file now places white at BT.2408's reference white, so a reader needs no
+    property for it. The reference writers refuse to write a declaration into a PQ file at any other white.
 
 ## 11. Viewer requirements
 
@@ -600,6 +620,10 @@ Rendering for a particular screen happens at view time and never changes the fil
 - **Variation.** Headroom changes with the device, the brightness setting and the room light. The same file
   therefore looks different on different screens; the declared mapping does not change.
 - **Dither** 10-bit output where gradients are smooth.
+- **White.** *Added 2026-10-14.* A PQ figure's white is at 203 cd/m² (9.1.1). A screen whose own SDR white is set
+  elsewhere shows ordinary content at that other level, so a viewer that wants the figure's white to meet the
+  page's scales the figure's light by the ratio of the two when it shows it. A gain-map JPEG, which is relative to
+  its base, needs no such step.
 
 ## 13. Layer 5: presets (informative)
 
@@ -631,6 +655,28 @@ Claims that an HDR rendering improves a figure SHOULD be supported by:
 
 Preference judgements alone are insufficient: preference and scientific usefulness correlate weakly
 (R² ≈ 0.31, Park & Montag 2007).
+
+## 16. Security considerations (informative)
+
+*Added 2026-10-14.* A figure file comes from whoever made it, and a reader treats it as untrusted input.
+
+- **Digests are links, not signatures.** `DataDigest` and `SdrDigest` show that a file belongs with a given array
+  and a given SDR figure. They do not show who made the file, or that it has not been changed since: anyone who
+  alters the data or the figure can work out new digests and write them in. Where that matters, the file is signed
+  by other means, or its digest is published somewhere the reader already trusts, such as a data repository's
+  record of the dataset.
+- **Sizes stated before the data.** An image file states its size before its data, and a decoder that believes it
+  may ask for all that memory at once: a JPEG of 3 KB can claim 65,535 × 65,535 pixels. A careful reader checks
+  that the data could hold an image of that size before making room for it. The reference implementation's Rust
+  readers refuse a JPEG that claims more than 1,024 pixels for each byte of the file, and both of its PNG readers
+  refuse a PNG whose image would be more than 1,040 times the size of its compressed data, a ratio that deflate
+  cannot reach.
+- **The declaration is XML.** Nothing in a declaration needs a document type definition, an entity or anything
+  fetched from elsewhere, so a reader can parse it with all three refused, which closes entity expansion and
+  external entities. The reference parser refuses a packet with a document type declaration.
+- **Addresses in a file.** The namespace URI is a name: a reader never needs to fetch it. `DataSource` may hold a
+  URL written by whoever made the file; a viewer that offers it as a link treats it like any other link in an
+  untrusted document.
 
 ## Annex A — Device verification protocol (normative for claims about devices)
 
@@ -776,6 +822,13 @@ Each line is one normative addition or change, with the date it was made.
 - 2026-10-12 · **Third versions of the registered maps** (6.10, §10 point 10): `fire/3` and `ice/3` are version 2
   with every table value below 1e-7 of white set to zero, so that the tables can be made again bit for bit on any
   machine. Versions 1 and 2 stay registered. The golden vectors grow from 82 to 90 cases.
+- 2026-10-14 · **White in a PQ or HLG file** (9.1.1, §3, §12; open issue 11): BT.2408's reference white, 203 cd/m²
+  in PQ and 75 % of the signal in HLG. Matching a screen's own SDR white is display rendering.
+- 2026-10-14 · **A file without an SDR base names its SDR figure** (9.1.2, 8.1): such a file, a 16-bit PQ PNG
+  among them, MUST declare `SdrDigest`. Two deliveries of one figure share the mapping and both digests.
+- 2026-10-14 · **The digest examples corrected** (8.6): the two worked examples still gave the digests under the
+  names before 2026-10-11 (`hdrplot-data-1`, `hdrplot-rgb8-1`). They now give the `udeep-` ones. The definitions,
+  the golden vectors and the reference implementations were right.
 
 ## References
 

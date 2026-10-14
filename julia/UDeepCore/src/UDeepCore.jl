@@ -21,7 +21,7 @@ using Libdl
 using SHA: sha256
 
 # `position` is not exported: Base has a function of that name (for streams). Call it as UDeepCore.position.
-export Mapping, light, light!, sdr_light, value, colours, digest_data, digest_pixels, core_version
+export Mapping, light, light!, sdr_light, value, colours, digest_data, digest_pixels, digest_sdr, core_version
 export value_at, srgb_encode, srgb_decode, isolated, colour_table, hdr_view, HdrView, levels, Declaration
 export description, caption, gainmap_jpeg, gainmap_from_renders, hdrimage!, hdrcolorbar!, save_hdr, hdr_declaration, hdr_caption, hdr_theme
 export levels_pq16, png_pq, read_png_pq, xmp_packet
@@ -43,7 +43,8 @@ const ERRORS = Dict(
          "not be kept within the headroom at this gain quality (use gain_quality = 100)",
     10 => "the range, the knee, the headroom, the stretch width and the offset must all be finite numbers",
     11 => "a declaration the profile would refuse: a required text empty or not UTF-8, an unknown noise model or " *
-          "knee rule, a noise parameter without its model, or a number that means nothing",
+          "knee rule, a noise parameter without its model, or a number that means nothing; or a declaration for " *
+          "a PQ file whose white is not at 203 cd/m2 (profile 9.1.1)",
 )
 const DIGEST_LENGTH = 71
 const HANDLE = Ref{Ptr{Cvoid}}(C_NULL)
