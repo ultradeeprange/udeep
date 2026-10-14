@@ -21,6 +21,7 @@ CICP_BT2020_PQ_FULL = bytes([9, 16, 0, 1])  # primaries, transfer, matrix (RGB),
 
 
 def pq_encode(nits) -> np.ndarray:
+    """Luminance in cd/m^2 -> PQ signal in [0, 1] (SMPTE ST 2084). Luminance outside 0..10000 is clipped to it."""
     y = (np.clip(np.asarray(nits, dtype=np.float64), 0.0, 10000.0) / 10000.0) ** _M1
     return ((_C1 + _C2 * y) / (1 + _C3 * y)) ** _M2
 
@@ -137,17 +138,28 @@ def read_png_pq(path, sdr_white_nits: float = REF_WHITE_NITS) -> np.ndarray:
     if size is None or not declared:
         raise ValueError(f"{path}: not a 16-bit PQ PNG (16 bits a channel, RGB, not interlaced, cICP BT.2020 PQ)")
     width, height = size
-    rows = np.frombuffer(zlib.decompress(b"".join(parts)), dtype=np.uint8).reshape(height, 1 + width * 6)
-    codes = _unfilter(rows).view(">u2").reshape(height, width, 3)
+    packed = b"".join(parts)
+    # deflate cannot shrink data more than about 1032 times: an image larger than that is not in the file
+    if width == 0 or height == 0 or (1 + width * 6) * height > 1040 * len(packed) + 64:
+        raise ValueError(f"{path}: the header gives {width} x {height} pixels, which its data cannot hold")
+    try:
+        rows = np.frombuffer(zlib.decompress(packed), dtype=np.uint8).reshape(height, 1 + width * 6)
+        codes = _unfilter(rows).view(">u2").reshape(height, width, 3)
+    except (zlib.error, ValueError) as err:                    # cut short, damaged, or not the size it says
+        raise ValueError(f"{path}: the PNG's image data cannot be read: {err}") from err
     wide = pq_decode(codes / 65535.0) / float(sdr_white_nits)
     return np.einsum("ij,...j->...i", np.linalg.inv(_SRGB_TO_BT2020), wide)
 
 
 def srgb_oetf(v) -> np.ndarray:
+    """Linear light, 1.0 = SDR white -> the sRGB signal in [0, 1] (IEC 61966-2-1), as an 8-bit SDR file stores it
+    once multiplied by 255 and rounded. Light outside 0..1 is clipped to it; NaN stays NaN."""
     v = np.clip(np.asarray(v, dtype=np.float64), 0.0, 1.0)
     return np.where(v <= 0.0031308, 12.92 * v, 1.055 * v ** (1 / 2.4) - 0.055)
 
 
 def write_png_sdr(rgb, path) -> None:
+    """An 8-bit sRGB PNG of `rgb` (height x width x 3, linear, 1.0 = SDR white). A channel above 1 is clipped to
+    it, and a NaN is stored as 0."""
     rgb = np.nan_to_num(np.asarray(rgb, dtype=np.float64), nan=0.0)
     Image.fromarray(np.round(srgb_oetf(rgb) * 255.0).astype(np.uint8), "RGB").save(path)

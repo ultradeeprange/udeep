@@ -163,6 +163,8 @@ class Table:
 
     @property
     def digest(self) -> str:
+        """The SHA-256 of `to_bytes`, as "sha256:" and the hexadecimal digits: what the index of the shipped tables
+        records for each, and what a shipped table is checked against when it is read."""
         return "sha256:" + hashlib.sha256(self.to_bytes()).hexdigest()
 
     def to_text(self) -> str:
@@ -171,6 +173,7 @@ class Table:
 
     @classmethod
     def from_text(cls, name: str, headroom: float, text: str) -> Table:
+        """The table that `to_text` wrote, read back from a file that carries it."""
         nodes, _, body = text.partition(";")
         a = np.frombuffer(base64.b64decode(body), dtype="<f4").reshape(2, int(nodes), 3)
         return cls(name, headroom, a[0], a[1])
@@ -222,6 +225,8 @@ def table(name: str, headroom: float, version: int = VERSION) -> Table:
 
 
 def is_registered(headroom: float) -> bool:
+    """Whether a table is shipped for this reference headroom: 2, 4, 8 or 16, and 1 (an SDR figure, which uses the
+    lower segment of a shipped table). At any other headroom a file must carry its table."""
     return headroom == 1.0 or headroom in REGISTERED_HEADROOMS
 
 

@@ -37,18 +37,24 @@ def _mm(m: np.ndarray, v) -> np.ndarray:
 
 
 def srgb_to_xyz(rgb) -> np.ndarray:
+    """Linear sRGB (BT.709 primaries, D65 white) -> CIE XYZ, in the same unit as it is given."""
     return _mm(_SRGB_TO_XYZ, rgb)
 
 
 def xyz_to_srgb(xyz) -> np.ndarray:
+    """CIE XYZ -> linear sRGB (BT.709 primaries, D65 white): the inverse of srgb_to_xyz. Nothing is clipped, so a
+    colour outside the gamut comes back with a component below zero."""
     return _mm(_XYZ_TO_SRGB, xyz)
 
 
 def srgb_to_bt2020(rgb) -> np.ndarray:
+    """Linear sRGB (BT.709 primaries) -> linear RGB with BT.2020 primaries (ITU-R BT.2087), in the same unit."""
     return _mm(_SRGB_TO_BT2020, rgb)
 
 
 def xyz_to_jzazbz(xyz) -> np.ndarray:
+    """CIE XYZ (D65 white) in absolute cd/m^2 -> Jzazbz (Safdar et al. 2017): the lightness Jz, then az and bz.
+    A cone response below zero is taken as zero."""
     xyz = np.asarray(xyz, dtype=np.float64)
     x, y, z = xyz[..., 0], xyz[..., 1], xyz[..., 2]
     lms = _mm(_XYZ_TO_LMS, np.stack([_B * x - (_B - 1) * z, _G * y - (_G - 1) * x, z], -1))
@@ -60,6 +66,7 @@ def xyz_to_jzazbz(xyz) -> np.ndarray:
 
 
 def jzazbz_to_xyz(jab) -> np.ndarray:
+    """Jzazbz -> CIE XYZ in absolute cd/m^2: the inverse of xyz_to_jzazbz."""
     jab = np.asarray(jab, dtype=np.float64)
     jz = jab[..., 0] + _D0
     iz = jz / (1 + _D - _D * jz)

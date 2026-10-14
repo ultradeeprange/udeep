@@ -48,6 +48,19 @@ _RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
 @dataclass(frozen=True)
 class Declaration:
+    """What a file declares about how its data became light (profile section 8), checked as it is made.
+
+    The fields are the `udeep:` metadata properties under Python names: `range_low` is written `udeep:RangeLow`.
+    Those that define the colours are the fields of a Mapping, which the `mapping` property gives. The rest say
+    what the data is (`data_unit`, `data_unit_code`), why the knee is where it is (`knee_rule`: "physical",
+    "statistical", "preset" or "percentile", then "; " and a description), how uncertain the data is
+    (`noise_model`, `noise_parameter`), how finely the file stores it (`max_data_step`, `rounding_to_noise`),
+    which pixels were held (`masked`, `derived_mask`, `derived_masked`), which preset made the figure (`preset`),
+    whether the file is a data record or a rendering (`record`), and what ties it to its data and to its SDR
+    figure (`data_digest`, `data_source`, `sdr_digest`). `version` and `image_state` are fixed by the profile.
+
+    ValueError, with the reason, for a declaration the profile does not allow."""
+
     data_unit: str
     stretch: str
     range_low: float
@@ -232,8 +245,8 @@ def _declared(xmp: bytes) -> dict | None:
 
 
 def parse(xmp: bytes) -> Declaration | None:
-    """The declaration in an XMP packet, or None if it holds none. An invalid declaration raises ValueError
-    (a value out of range) or TypeError (a required property missing).
+    """The declaration in an XMP packet, or None if it holds none. An invalid declaration raises ValueError: a
+    value out of range or not a number, or a property the record cannot be made without.
 
     A property the packet does not carry takes the record's default, so the result does not show what the file
     itself states: `missing_properties` does."""
@@ -247,7 +260,10 @@ def parse(xmp: bytes) -> Declaration | None:
             continue
         kind = str(f.type)
         kw[f.name] = float(raw) if "float" in kind else int(raw) if kind == "int" else raw
-    return Declaration(**kw)
+    try:
+        return Declaration(**kw)
+    except TypeError as err:                                   # a field with no default was not in the packet
+        raise ValueError(f"the declaration is incomplete: {err}") from err
 
 
 def missing_properties(xmp: bytes) -> list[str] | None:
@@ -268,7 +284,8 @@ def packet(data: bytes) -> bytes | None:
 
 
 def read_metadata(path) -> Declaration | None:
-    """The declaration a file carries (gain-map JPEG, PNG, SVG or a bare packet), or None if it has none."""
+    """The declaration a file carries (gain-map JPEG, PNG, SVG or a bare packet), or None if it has none.
+    ValueError if it carries one that cannot be read."""
     xmp = packet(Path(path).read_bytes())
     return None if xmp is None else parse(xmp)
 

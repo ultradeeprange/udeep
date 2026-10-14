@@ -71,6 +71,8 @@ def report(table) -> dict:
 
 
 def main() -> None:
+    """The command line, `python -m udeep.vision`: prints `report` for each current map at each registered
+    headroom."""
     import importlib
 
     cm = importlib.import_module("udeep.cmap")           # the package also exports a function called cmap

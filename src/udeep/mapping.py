@@ -49,6 +49,17 @@ def _cmap_module():
 
 @dataclass(frozen=True)
 class Mapping:
+    """The parameters of one mapping from data to light and colour, under the names a file declares them by.
+
+    A record is checked as it is made, and refused (ValueError, with the reason) if the curve could not draw it
+    as declared: among other things the range must be finite and rising, the knee must lie inside it and not
+    within KNEE_MIN of either end unless it is exactly at the top, a log stretch must start above zero, and a
+    proportional mapping must be the straight line light = value / knee. Nothing is adjusted to make a record
+    pass.
+
+    Build one from the authoring form with `from_stretch`; a file's declaration gives its own
+    (udeep.metadata.Declaration.mapping)."""
+
     stretch: str                         # linear, log, asinh or proportional
     range_low: float                     # the declared range, in data units, after the offset is subtracted
     range_high: float
@@ -134,10 +145,13 @@ class Mapping:
 
     @property
     def kind(self) -> str:
+        """The scale the positions are worked out on: the stretch, with a proportional mapping counted as linear."""
         return "linear" if self.stretch == "proportional" else self.stretch
 
     @property
     def exit_slope(self) -> float:
+        """The slope with which the curve reaches the top of the range, read from `above_knee`, in units of the
+        secant from the knee to the top: 1 is the reference form (profile 6.7)."""
         return _exit_slope(self.above_knee)
 
     @property

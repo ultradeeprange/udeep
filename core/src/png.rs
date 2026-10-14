@@ -18,6 +18,8 @@ pub const CICP_BT2020_PQ_FULL: [u8; 4] = [9, 16, 0, 1];
 const SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n'];
 const XMP_KEY: &[u8] = b"XML:com.adobe.xmp\0\0\0\0\0";
 const COMPRESSION: u8 = 6;
+/// More than deflate can compress by (its limit is 1032 to 1): the bound on how large an image a file can hold.
+const DEFLATE_MOST: u128 = 1040;
 
 /// What can go wrong writing or reading one.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -159,6 +161,12 @@ fn parse(file: &[u8]) -> Result<Parsed, PngError> {
     }
     if !pq {
         return Err(PngError::NotPq16);
+    }
+    // A header may claim any size. The compression PNG uses cannot shrink data more than about 1032 times, so an
+    // image larger than that many times its data is not in the file: say so now, before anyone makes room for it.
+    let claimed = (width as u128 * 6 + 1) * height as u128;
+    if claimed > data.len() as u128 * DEFLATE_MOST + 64 {
+        return Err(PngError::Corrupt);
     }
     Ok(Parsed { width, height, data })
 }

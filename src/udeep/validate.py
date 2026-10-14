@@ -64,6 +64,9 @@ PNG_HEADROOM_TOLERANCE = 1.001   # a 16-bit PQ PNG is lossless: only its own rou
 
 @dataclass(frozen=True)
 class Check:
+    """One check made on one file: the conformance point it belongs to, its name, how it came out, and what was
+    found, in words."""
+
     point: str                   # the conformance point, as numbered in profile section 10
     name: str
     status: str                  # "pass", "fail" or "skipped"
@@ -72,18 +75,26 @@ class Check:
 
 @dataclass
 class Report:
+    """What `validate` found for one file: the checks in the order they were made, and the declaration the file
+    carries, if one could be read. As text (`str(report)`) it is a line that says whether the file conforms, and
+    then a line for each check."""
+
     path: str
     checks: list[Check] = field(default_factory=list)
     declaration: Declaration | None = None
 
     @property
     def ok(self) -> bool:
+        """True if no check failed. A skipped check is not a failure: it could not be made from what was given."""
         return not any(c.status == "fail" for c in self.checks)
 
     def status(self, name: str) -> str:
+        """How the check called `name` came out: "pass", "fail" or "skipped". StopIteration if no check has
+        that name."""
         return next(c.status for c in self.checks if c.name == name)
 
     def add(self, point: str, name: str, status: str, detail: str) -> None:
+        """Record one check's result."""
         self.checks.append(Check(point, name, status, detail))
 
     def __str__(self) -> str:
@@ -443,6 +454,9 @@ def validate(path, expected: tuple | None = None, data=None, sdr=None, data_dige
 
 
 def main(argv: list[str] | None = None) -> int:
+    """The command line, `python -m udeep.validate FILE [FILE ...]`: prints each file's report. With one file,
+    `--sdr FIGURE.png` also checks the SDR figure of record. Returns the exit status: 0 if every file conforms,
+    1 if one does not, 2 for a command line it cannot use."""
     paths = list(sys.argv[1:] if argv is None else argv)
     sdr = None
     if "--sdr" in paths:

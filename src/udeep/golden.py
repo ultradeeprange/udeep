@@ -157,6 +157,7 @@ def _awkward_numbers() -> Declaration:
 
 
 def make() -> dict:
+    """Every golden case, worked out now by this package: the dictionary that golden.json is written from."""
     x = [-1.0, 0.0, 0.5, 1.0, 3.0, 10.0, 100.0, 1000.0, math.nan]
     t = np.linspace(0.0, 1.0, 11)
     y = np.concatenate([np.linspace(0.0, 4.0, 17), np.linspace(0.013, 3.987, 23), [-0.5, 4.5]])   # on nodes, between, outside
@@ -255,6 +256,7 @@ def agree(got, want, case: dict, where: str = "") -> list[str]:
 
 
 def main() -> None:
+    """The command line, `python -m udeep.golden`: writes golden.json from `make`."""
     # allow_nan=False: an infinity or a NaN that reaches here is not JSON, and another language could not read it
     PATH.write_text(json.dumps(make(), indent=1, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8")
     print(f"wrote {PATH}")

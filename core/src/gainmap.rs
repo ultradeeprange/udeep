@@ -567,10 +567,30 @@ fn split(file: &[u8]) -> Result<(&[u8], &[u8]), ReadError> {
     Ok(file.split_at(file.len() - length))
 }
 
+/// More pixels than a byte of JPEG can hold. A header may claim any size up to 65,535 a side, and the decoder
+/// makes room for what it claims before it reads the data: a file of a few kilobytes could ask for gigabytes, and
+/// a failed allocation ends the program. The densest JPEG there can be spends at least a bit on each 8 x 8 block
+/// (512 pixels a byte, for a grey image whose blocks are all alike), so a claim beyond that is refused first.
+const JPEG_MOST_PIXELS_A_BYTE: u64 = 1024;
+
+/// A JPEG's size from its header, refused if its data could not hold an image that large.
+fn header(decoder: &mut jpeg_decoder::Decoder<&[u8]>, bytes: usize) -> Result<jpeg_decoder::ImageInfo, ReadError> {
+    decoder.read_info().map_err(|e| ReadError::NotAGainMap(e.to_string()))?;
+    let info = decoder.info().ok_or_else(|| ReadError::NotAGainMap("a JPEG with no header".into()))?;
+    let pixels = u64::from(info.width) * u64::from(info.height);
+    if pixels == 0 || pixels > bytes as u64 * JPEG_MOST_PIXELS_A_BYTE {
+        return Err(ReadError::NotAGainMap(format!(
+            "the header gives {} x {} pixels, which {bytes} bytes cannot hold",
+            info.width, info.height
+        )));
+    }
+    Ok(info)
+}
+
 fn decode_rgb(jpeg: &[u8]) -> Result<(Vec<u8>, usize, usize), ReadError> {
     let mut decoder = jpeg_decoder::Decoder::new(jpeg);
+    let info = header(&mut decoder, jpeg.len())?;
     let pixels = decoder.decode().map_err(|e| ReadError::NotAGainMap(e.to_string()))?;
-    let info = decoder.info().ok_or_else(|| ReadError::NotAGainMap("a JPEG with no header".into()))?;
     let (width, height) = (usize::from(info.width), usize::from(info.height));
     match info.pixel_format {
         jpeg_decoder::PixelFormat::RGB24 => Ok((pixels, width, height)),
@@ -582,9 +602,7 @@ fn decode_rgb(jpeg: &[u8]) -> Result<(Vec<u8>, usize, usize), ReadError> {
 /// The size of a gain-map JPEG's image, `(width, height)`.
 pub fn gainmap_size(file: &[u8]) -> Result<(usize, usize), ReadError> {
     let (primary, _) = split(file)?;
-    let mut decoder = jpeg_decoder::Decoder::new(primary);
-    decoder.read_info().map_err(|e| ReadError::NotAGainMap(e.to_string()))?;
-    let info = decoder.info().ok_or_else(|| ReadError::NotAGainMap("a JPEG with no header".into()))?;
+    let info = header(&mut jpeg_decoder::Decoder::new(primary), primary.len())?;
     Ok((usize::from(info.width), usize::from(info.height)))
 }
 

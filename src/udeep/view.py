@@ -18,8 +18,9 @@ pixel held for the view, against 56). The mapping is worked out in float64 eithe
 once as it is stored, so a float32 rendering is within one part in 10 million of the float64 one, far inside an
 8-bit file's step; but it is not the same number, so the default stays float64.
 
-The mapping is done in NumPy, the reference, unless the Rust core has been turned on (udeep.core.enable()): then
-the core does it, on every processor core, to within about one part in 10^12 of the reference.
+The mapping is done by the Rust core wherever it is found (udeep.core), on every processor core, to within about
+one part in 10^12 of the reference. The reference is the NumPy code, which does it where the core is not found or
+has been turned off (udeep.core.enable(False)).
 
 The mapping itself is a `Mapping` record (udeep.mapping) and is pointwise. This module applies it to an
 image in three steps: derive any mask the preset calls for, map every pixel, hold the masked ones.
@@ -40,6 +41,13 @@ LIMITER_FRACTION = 0.10          # above-white area beyond which panels dim larg
 
 @dataclass
 class HdrView:
+    """What hdr_view returns: the two renderings of an image, and what was done to make them.
+
+    `sdr` and `hdr` are height x width x 3, linear RGB (BT.709 primaries) in multiples of SDR white; `y` is each
+    pixel's light before colour. `mapping` is the record that defines every colour here, `colourbar` samples it
+    at 256 positions (the data value and the light at each), and `warnings` holds what a reader of the figure
+    should be told, in words."""
+
     sdr: np.ndarray              # fair SDR plot: clipped at the same white (H x W x 3, 0..1)
     hdr: np.ndarray              # HDR plot, multiples of SDR white (0..headroom)
     y: np.ndarray                # HDR luminance multiple per pixel, before colour
@@ -56,6 +64,19 @@ class HdrView:
 
 def hdr_view(data, mode: str, knee: float | None, stretch: dict, headroom: float = 2.0,
              cmap: str = "fire", mask=None, proportional: bool = False, float32: bool = False) -> HdrView:
+    """The fair SDR plot and the HDR plot of `data`, under one of the two presets.
+
+    `mode` is "highlight" or "extend". `knee` is the data value shown at SDR white, in data units; None takes a
+    percentile of the finite data (the 99.5th for highlight, the 95th for extend) and says so in the view's
+    warnings, since that is exploratory and not a meaningful threshold. `stretch` is the scale in its authoring
+    form, {"kind", "lo", "hi", optional "width", "offset"}, `headroom` the light at the top of the range in
+    multiples of SDR white, and `cmap` "grey" or a colour map's name, alone or with a version ("fire/1"): all as
+    Mapping.from_stretch takes them, as it does `proportional`.
+
+    `mask` is true at the pixels that must never be lifted (saturated, clipped, invalid): they are held at their
+    SDR light. `float32=True` keeps the renderings in half the memory.
+
+    ValueError for a mode that is not one of the two, and for a mapping that Mapping refuses."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
     d = np.asarray(data, dtype=np.float64)

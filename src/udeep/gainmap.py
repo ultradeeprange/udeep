@@ -313,10 +313,14 @@ def read_iso_metadata(path) -> dict | None:
     if at < 0:
         return None
     body = gain[at + len(ISO_NS):]
+    if len(body) < 5 + 14 * 4:
+        raise ValueError("the ISO 21496-1 metadata is cut short")
     min_version, _writer, flags = struct.unpack(">HHB", body[:5])
     if min_version != 0 or flags not in (0, ISO_BASE_COLOUR_SPACE):
         raise ValueError(f"unsupported ISO 21496-1 metadata (minimum_version {min_version}, flags {flags:#04x})")
     v = struct.unpack(">IIIIiIiIIIiIiI", body[5:5 + 14 * 4])
+    if not all(v[1::2]):
+        raise ValueError("the ISO 21496-1 metadata divides by zero")
     names = ("base_hdr_headroom", "alternate_hdr_headroom", "gain_map_min", "gain_map_max", "gamma", "base_offset",
              "alternate_offset")
     return {name: v[2 * i] / v[2 * i + 1] for i, name in enumerate(names)}
@@ -328,17 +332,32 @@ def read_gainmap_jpeg(path, display_boost: float) -> np.ndarray:
     Read by the Rust core when it is in use (udeep.core), with the JPEG decoder its writer checks files against;
     otherwise, and for any file the core does not take, by the code below with Pillow's decoder. The two decoders
     differ by a code or two at some pixels, which is a few per cent of a lifted pixel where one SDR channel is
-    small: a file reads exactly as its writer left it only on the decoder its writer used."""
+    small: a file reads exactly as its writer left it only on the decoder its writer used.
+
+    A file that is not a gain-map JPEG, or is damaged, is refused with ValueError, whatever the decoder made of
+    it: files come from anyone, and a caller should have one thing to catch."""
     from udeep import core
     data = Path(path).read_bytes()
     if core.files():
         shown = core.read_gainmap(data, display_boost)
         if shown is not None:
             return shown
-    m = re.search(rb'Item:Semantic="GainMap"[^>]*?Item:Length="(\d+)"', data, re.DOTALL)
+    try:
+        return _read_with_pillow(data, display_boost)
+    except ValueError:
+        raise
+    except Exception as err:                                    # Pillow's decoder raises many kinds for a bad file
+        raise ValueError(f"not a gain-map JPEG that can be read: {type(err).__name__}: {err}") from err
+
+
+def _read_with_pillow(data: bytes, display_boost: float) -> np.ndarray:
+    m = re.search(rb'Item:Semantic="GainMap"[^>]*?Item:Length="(\d{1,12})"', data, re.DOTALL)
     if m is None:
         raise ValueError("no gain-map container directory in the primary XMP")
-    n = int(m.group(1)); primary, gain = data[:-n], data[-n:]
+    n = int(m.group(1))
+    if not 0 < n < len(data):
+        raise ValueError(f"the container directory gives the gain map {n} bytes of a file of {len(data)}")
+    primary, gain = data[:-n], data[-n:]
     sdr = _srgb_eotf(np.asarray(Image.open(io.BytesIO(primary)).convert("RGB"), dtype=np.float64) / 255.0)
     g_img = Image.open(io.BytesIO(gain)).convert("RGB")
     if g_img.size != (sdr.shape[1], sdr.shape[0]):
@@ -348,6 +367,8 @@ def read_gainmap_jpeg(path, display_boost: float) -> np.ndarray:
     gamma = _attr(gain, "Gamma", 1.0)
     o_sdr, o_hdr = _attr(gain, "OffsetSDR", OFFSET), _attr(gain, "OffsetHDR", OFFSET)
     cmin, cmax = _attr(gain, "HDRCapacityMin", 0.0), _attr(gain, "HDRCapacityMax")
+    if not (gamma > 0.0 and cmax > cmin and display_boost > 0.0):
+        raise ValueError(f"the gain map's metadata cannot be used (gamma {gamma}, capacity {cmin} to {cmax})")
     weight = float(np.clip((np.log2(display_boost) - cmin) / (cmax - cmin), 0.0, 1.0))
     log_rec = rec ** (1.0 / gamma)
     log_boost = gmin * (1.0 - log_rec) + gmax * log_rec

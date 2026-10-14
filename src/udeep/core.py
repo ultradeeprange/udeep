@@ -1,4 +1,4 @@
-"""The Rust core, used from Python when it is asked for.
+"""The Rust core, used from Python wherever it is found.
 
     import udeep.core
     udeep.core.enabled()           # True when the core was found and has not been turned off

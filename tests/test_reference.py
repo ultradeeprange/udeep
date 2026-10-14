@@ -31,6 +31,11 @@ def test_every_module_is_listed_and_every_link_in_the_page_has_its_target():
     assert {"mpl.savefig_hdr", "view.hdr_view", "mapping.Mapping", "metadata.Declaration", "validate.validate"} <= ids
 
 
+def test_every_public_python_name_has_a_description():
+    """A function, class or method added without a docstring is listed as having none: this asks for one."""
+    assert "No description in the source" not in reference.article()[0]
+
+
 def test_every_name_the_julia_package_exports_is_listed_with_its_docstring():
     source = (reference.JULIA / "UDeepCore.jl").read_text(encoding="utf-8")
     exported = set(re.findall(r"[\w!]+", " ".join(re.findall(r"^export (.+)$", source, re.MULTILINE))))

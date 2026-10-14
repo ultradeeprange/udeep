@@ -11,6 +11,28 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-14
 
+- **Read by programs we did not write.** Google's reference library for gain-map JPEGs (libultrahdr v2.0.2,
+  commit 66821e0) decoded all six gallery and example files tried, took their ISO 21496-1 metadata (which agrees
+  with the XMP), and gave the same picture as udeep's reader: on the lifted pixels the two differ by a median of
+  0.03 to 0.4 % and a 99th percentile of 0.5 to 3.6 %, with no factor or gamut between them; the cause of that
+  residual was not traced. An ordinary decoder (Pillow) opens each file as the SDR figure, within 3 codes of
+  udeep's. FFmpeg 9.0.2 reads the 16-bit PNG as 48-bit RGB, BT.2020 primaries, SMPTE 2084, full range, from its
+  cICP chunk. pngcheck 3.0.3 calls cICP an unknown chunk: it predates the chunk.
+- **Fuzzed.** The four Rust readers ran under cargo-fuzz for six minutes each (over 110 million inputs to the PNG
+  reader and its size check, 44,500 to the full JPEG reader), with no panic, crash or hang. The metadata parser
+  refuses hostile XML (entity expansion, external entities) before parsing it. What was found, and fixed:
+  - a JPEG of 3 KB whose header claims 65,535 x 65,535 pixels made the JPEG decoder ask for 4 GiB before reading
+    any data, and a failed allocation ends the program. The readers now refuse a JPEG or PNG that claims more
+    pixels than its data could hold, before anything makes room for them, and the size functions do the same so
+    that a caller is never handed such a size;
+  - the reference JPEG reader let Pillow's own errors out (OSError and others) where it promises ValueError;
+  - the reference PNG reader let zlib's error out for a cut-short file;
+  - `metadata.parse` raised TypeError for a declaration missing a property; it raises ValueError now.
+  Tests that damage valid files thousands of times now run with every build (`core/tests/malformed.rs`,
+  `tests/test_malformed.py`). One thing left: the JPEG decoder library leaks a few hundred bytes in its worker
+  threads at exit; it is not ours and does not grow.
+- **Every public Python name has a docstring**, and a test holds that.
+
 - **The 16-bit PQ PNG is in the Rust core** (feature `png`): a writer, a reader that takes any of PNG's row
   filters, and the stored levels of such a file (`levels_pq16`), with their C functions. The core is now built
   with `--features jpeg,png`. The two writers store the same codes; the compressed bytes are each writer's own.

@@ -100,7 +100,7 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      94 public functions and classes in 17 Python modules, and the 32 names the Julia
+      93 public functions and classes in 17 Python modules, and the 32 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -233,12 +233,17 @@ view.mapping.position(data))` when wanted.</p>
 pixel held for the view, against 56). The mapping is worked out in float64 either way and each colour is rounded
 once as it is stored, so a float32 rendering is within one part in 10 million of the float64 one, far inside an
 8-bit file&#x27;s step; but it is not the same number, so the default stays float64.</p>
-<p>The mapping is done in NumPy, the reference, unless the Rust core has been turned on (udeep.core.enable()): then
-the core does it, on every processor core, to within about one part in 10^12 of the reference.</p>
+<p>The mapping is done by the Rust core wherever it is found (udeep.core), on every processor core, to within about
+one part in 10^12 of the reference. The reference is the NumPy code, which does it where the core is not found or
+has been turned off (udeep.core.enable(False)).</p>
 <p>The mapping itself is a <code>Mapping</code> record (udeep.mapping) and is pointwise. This module applies it to an
 image in three steps: derive any mask the preset calls for, map every pixel, hold the masked ones.</p>
 <h3 id="view.HdrView"><span class="kind">class</span>HdrView</h3>
-<p class="none">No description in the source.</p>
+<p>What hdr_view returns: the two renderings of an image, and what was done to make them.</p>
+<p><code>sdr</code> and <code>hdr</code> are height x width x 3, linear RGB (BT.709 primaries) in multiples of SDR white; <code>y</code> is each
+pixel&#x27;s light before colour. <code>mapping</code> is the record that defines every colour here, <code>colourbar</code> samples it
+at 256 positions (the data value and the light at each), and <code>warnings</code> holds what a reader of the figure
+should be told, in words.</p>
 <h3 id="view.hdr_view"><span class="kind">function</span>hdr_view</h3>
 <pre class="sig">hdr_view(
     data,
@@ -251,7 +256,16 @@ image in three steps: derive any mask the preset calls for, map every pixel, hol
     proportional: bool = False,
     float32: bool = False,
 ) -&gt; HdrView</pre>
-<p class="none">No description in the source.</p>
+<p>The fair SDR plot and the HDR plot of <code>data</code>, under one of the two presets.</p>
+<p><code>mode</code> is &quot;highlight&quot; or &quot;extend&quot;. <code>knee</code> is the data value shown at SDR white, in data units; None takes a
+percentile of the finite data (the 99.5th for highlight, the 95th for extend) and says so in the view&#x27;s
+warnings, since that is exploratory and not a meaningful threshold. <code>stretch</code> is the scale in its authoring
+form, {&quot;kind&quot;, &quot;lo&quot;, &quot;hi&quot;, optional &quot;width&quot;, &quot;offset&quot;}, <code>headroom</code> the light at the top of the range in
+multiples of SDR white, and <code>cmap</code> &quot;grey&quot; or a colour map&#x27;s name, alone or with a version (&quot;fire/1&quot;): all as
+Mapping.from_stretch takes them, as it does <code>proportional</code>.</p>
+<p><code>mask</code> is true at the pixels that must never be lifted (saturated, clipped, invalid): they are held at their
+SDR light. <code>float32=True</code> keeps the renderings in half the memory.</p>
+<p>ValueError for a mode that is not one of the two, and for a mapping that Mapping refuses.</p>
 <h2 id="mapping">udeep.mapping</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/mapping.py">src/udeep/mapping.py</a></p>
 <p>The mapping from data to light and colour, as one record of parameters (design decision D3).</p>
@@ -263,7 +277,14 @@ C struct of the native library and the uniform block of the shader.</p>
 <p>Each method is a pure function of single values: no pixel looks at a neighbour (D1, D2). All are float64 and
 written against the Array API standard, so they run on any array library that follows it (D8, D22).</p>
 <h3 id="mapping.Mapping"><span class="kind">class</span>Mapping</h3>
-<p class="none">No description in the source.</p>
+<p>The parameters of one mapping from data to light and colour, under the names a file declares them by.</p>
+<p>A record is checked as it is made, and refused (ValueError, with the reason) if the curve could not draw it
+as declared: among other things the range must be finite and rising, the knee must lie inside it and not
+within KNEE_MIN of either end unless it is exactly at the top, a log stretch must start above zero, and a
+proportional mapping must be the straight line light = value / knee. Nothing is adjusted to make a record
+pass.</p>
+<p>Build one from the authoring form with <code>from_stretch</code>; a file&#x27;s declaration gives its own
+(udeep.metadata.Declaration.mapping).</p>
 <div class="member">
 <h4 id="mapping.Mapping.from_stretch">from_stretch <span class="kind">class method</span></h4>
 <pre class="sig">from_stretch(
@@ -280,10 +301,11 @@ reproducing an older figure. A map at a headroom it is not registered for gets i
 record stays complete.</p>
 <h4 id="mapping.Mapping.kind">kind <span class="kind">property</span></h4>
 <pre class="sig">kind</pre>
-<p class="none">No description in the source.</p>
+<p>The scale the positions are worked out on: the stretch, with a proportional mapping counted as linear.</p>
 <h4 id="mapping.Mapping.exit_slope">exit_slope <span class="kind">property</span></h4>
 <pre class="sig">exit_slope</pre>
-<p class="none">No description in the source.</p>
+<p>The slope with which the curve reaches the top of the range, read from <code>above_knee</code>, in units of the
+secant from the knee to the top: 1 is the reference form (profile 6.7).</p>
 <h4 id="mapping.Mapping.knee_position">knee_position <span class="kind">property</span></h4>
 <pre class="sig">knee_position</pre>
 <p>Where the knee is drawn. A record is refused unless the curve can draw it there, so nothing is moved.</p>
@@ -356,13 +378,14 @@ Float64, on any array library that follows the Array API standard.</p>
 <p>The table&#x27;s numbers: <code>below</code> then <code>above</code>, row by row, little-endian float32.</p>
 <h4 id="cmap.Table.digest">digest <span class="kind">property</span></h4>
 <pre class="sig">digest</pre>
-<p class="none">No description in the source.</p>
+<p>The SHA-256 of <code>to_bytes</code>, as &quot;sha256:&quot; and the hexadecimal digits: what the index of the shipped tables
+records for each, and what a shipped table is checked against when it is read.</p>
 <h4 id="cmap.Table.to_text">to_text <span class="kind">method</span></h4>
 <pre class="sig">to_text(self) -&gt; str</pre>
 <p>For carrying a table inside a file: &quot;&lt;nodes&gt;;&quot; and the bytes in base64.</p>
 <h4 id="cmap.Table.from_text">from_text <span class="kind">class method</span></h4>
 <pre class="sig">from_text(cls, name: str, headroom: float, text: str) -&gt; Table</pre>
-<p class="none">No description in the source.</p>
+<p>The table that <code>to_text</code> wrote, read back from a file that carries it.</p>
 </div>
 <h3 id="cmap.identifier"><span class="kind">function</span>identifier</h3>
 <pre class="sig">identifier(name: str, version: int=VERSION) -&gt; str</pre>
@@ -380,7 +403,8 @@ now at EMBED_NODES nodes, which the file must then carry. Headroom 1 (an SDR fig
 of a shipped table.</p>
 <h3 id="cmap.is_registered"><span class="kind">function</span>is_registered</h3>
 <pre class="sig">is_registered(headroom: float) -&gt; bool</pre>
-<p class="none">No description in the source.</p>
+<p>Whether a table is shipped for this reference headroom: 2, 4, 8 or 16, and 1 (an SDR figure, which uses the
+lower segment of a shipped table). At any other headroom a file must carry its table.</p>
 <h3 id="cmap.cmap"><span class="kind">function</span>cmap</h3>
 <pre class="sig">cmap(y, name: str=&#x27;fire&#x27;, headroom: float=4.0, version: int=VERSION) -&gt; np.ndarray</pre>
 <p>Colours for light y, from the map&#x27;s table: linear RGB in multiples of SDR white, float64.</p>
@@ -437,6 +461,8 @@ written before 2026-10-10 have flags 0 (bit 6 not set); they are read the same.<
 otherwise, and for any file the core does not take, by the code below with Pillow&#x27;s decoder. The two decoders
 differ by a code or two at some pixels, which is a few per cent of a lifted pixel where one SDR channel is
 small: a file reads exactly as its writer left it only on the decoder its writer used.</p>
+<p>A file that is not a gain-map JPEG, or is damaged, is refused with ValueError, whatever the decoder made of
+it: files come from anyone, and a caller should have one thing to catch.</p>
 <h2 id="export">udeep.export</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/export.py">src/udeep/export.py</a></p>
 <p>Write HDR (PQ-tagged 16-bit PNG) and SDR (8-bit sRGB PNG) images from linear sRGB.</p>
@@ -445,7 +471,7 @@ The HDR file is BT.2020 primaries, PQ transfer (BT.2100), signalled by a PNG <co
 (PNG 3rd edition), which Chromium-based browsers display as HDR.</p>
 <h3 id="export.pq_encode"><span class="kind">function</span>pq_encode</h3>
 <pre class="sig">pq_encode(nits) -&gt; np.ndarray</pre>
-<p class="none">No description in the source.</p>
+<p>Luminance in cd/m^2 -&gt; PQ signal in [0, 1] (SMPTE ST 2084). Luminance outside 0..10000 is clipped to it.</p>
 <h3 id="export.pq_decode"><span class="kind">function</span>pq_decode</h3>
 <pre class="sig">pq_decode(signal) -&gt; np.ndarray</pre>
 <p>PQ signal in [0, 1] -&gt; luminance in cd/m^2 (SMPTE ST 2084): the inverse of pq_encode.</p>
@@ -471,10 +497,12 @@ grey figure, any channel is the light, and Mapping.value turns it back into data
 PQ in a cICP chunk. Read by the Rust core when it is in use, otherwise by the code here.</p>
 <h3 id="export.srgb_oetf"><span class="kind">function</span>srgb_oetf</h3>
 <pre class="sig">srgb_oetf(v) -&gt; np.ndarray</pre>
-<p class="none">No description in the source.</p>
+<p>Linear light, 1.0 = SDR white -&gt; the sRGB signal in [0, 1] (IEC 61966-2-1), as an 8-bit SDR file stores it
+once multiplied by 255 and rounded. Light outside 0..1 is clipped to it; NaN stays NaN.</p>
 <h3 id="export.write_png_sdr"><span class="kind">function</span>write_png_sdr</h3>
 <pre class="sig">write_png_sdr(rgb, path) -&gt; None</pre>
-<p class="none">No description in the source.</p>
+<p>An 8-bit sRGB PNG of <code>rgb</code> (height x width x 3, linear, 1.0 = SDR white). A channel above 1 is clipped to
+it, and a NaN is stored as 0.</p>
 <h2 id="metadata">udeep.metadata</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/metadata.py">src/udeep/metadata.py</a></p>
 <p>The declared metadata of the UDeep Figure Profile (v0.3, section 8): what a file must say about
@@ -491,7 +519,16 @@ rounding_to_noise  the data criterion (section 7.2.1): that rounding against the
 digest_data, digest_pixels   the digests that tie a file to its data and to its SDR figure of record</pre>
 <p>The namespace URI is provisional (profile section 10, open issue 1).</p>
 <h3 id="metadata.Declaration"><span class="kind">class</span>Declaration</h3>
-<p class="none">No description in the source.</p>
+<p>What a file declares about how its data became light (profile section 8), checked as it is made.</p>
+<p>The fields are the <code>udeep:</code> metadata properties under Python names: <code>range_low</code> is written <code>udeep:RangeLow</code>.
+Those that define the colours are the fields of a Mapping, which the <code>mapping</code> property gives. The rest say
+what the data is (<code>data_unit</code>, <code>data_unit_code</code>), why the knee is where it is (<code>knee_rule</code>: &quot;physical&quot;,
+&quot;statistical&quot;, &quot;preset&quot; or &quot;percentile&quot;, then &quot;; &quot; and a description), how uncertain the data is
+(<code>noise_model</code>, <code>noise_parameter</code>), how finely the file stores it (<code>max_data_step</code>, <code>rounding_to_noise</code>),
+which pixels were held (<code>masked</code>, <code>derived_mask</code>, <code>derived_masked</code>), which preset made the figure (<code>preset</code>),
+whether the file is a data record or a rendering (<code>record</code>), and what ties it to its data and to its SDR
+figure (<code>data_digest</code>, <code>data_source</code>, <code>sdr_digest</code>). <code>version</code> and <code>image_state</code> are fixed by the profile.</p>
+<p>ValueError, with the reason, for a declaration the profile does not allow.</p>
 <div class="member">
 <h4 id="metadata.Declaration.mapping">mapping <span class="kind">property</span></h4>
 <pre class="sig">mapping</pre>
@@ -529,8 +566,8 @@ already be unsigned 8-bit: any other type raises ValueError, since casting it wo
 a file must not state a mapping other than the one that made its pixels (profile 6.4).</p>
 <h3 id="metadata.parse"><span class="kind">function</span>parse</h3>
 <pre class="sig">parse(xmp: bytes) -&gt; Declaration | None</pre>
-<p>The declaration in an XMP packet, or None if it holds none. An invalid declaration raises ValueError
-(a value out of range) or TypeError (a required property missing).</p>
+<p>The declaration in an XMP packet, or None if it holds none. An invalid declaration raises ValueError: a
+value out of range or not a number, or a property the record cannot be made without.</p>
 <p>A property the packet does not carry takes the record&#x27;s default, so the result does not show what the file
 itself states: <code>missing_properties</code> does.</p>
 <h3 id="metadata.missing_properties"><span class="kind">function</span>missing_properties</h3>
@@ -542,7 +579,8 @@ record&#x27;s order; None if the packet holds no declaration at all.</p>
 <p>The XMP packet in a file&#x27;s bytes that uses the udeep namespace, or None.</p>
 <h3 id="metadata.read_metadata"><span class="kind">function</span>read_metadata</h3>
 <pre class="sig">read_metadata(path) -&gt; Declaration | None</pre>
-<p>The declaration a file carries (gain-map JPEG, PNG, SVG or a bare packet), or None if it has none.</p>
+<p>The declaration a file carries (gain-map JPEG, PNG, SVG or a bare packet), or None if it has none.
+ValueError if it carries one that cannot be read.</p>
 <h3 id="metadata.declared_light"><span class="kind">function</span>declared_light</h3>
 <pre class="sig">declared_light(d: Declaration, x) -&gt; np.ndarray</pre>
 <p>The declared mapping itself: data values -&gt; light in multiples of SDR white, computed from the declaration
@@ -612,19 +650,23 @@ precision is right. Whether the pixels are that mapping of the data (points 3 to
 <p>Files come from anyone (design decision D24), so <code>validate</code> never raises on one: whatever cannot be read or
 checked becomes a failed check that says what it was.</p>
 <h3 id="validate.Check"><span class="kind">class</span>Check</h3>
-<p class="none">No description in the source.</p>
+<p>One check made on one file: the conformance point it belongs to, its name, how it came out, and what was
+found, in words.</p>
 <h3 id="validate.Report"><span class="kind">class</span>Report</h3>
-<p class="none">No description in the source.</p>
+<p>What <code>validate</code> found for one file: the checks in the order they were made, and the declaration the file
+carries, if one could be read. As text (<code>str(report)</code>) it is a line that says whether the file conforms, and
+then a line for each check.</p>
 <div class="member">
 <h4 id="validate.Report.ok">ok <span class="kind">property</span></h4>
 <pre class="sig">ok</pre>
-<p class="none">No description in the source.</p>
+<p>True if no check failed. A skipped check is not a failure: it could not be made from what was given.</p>
 <h4 id="validate.Report.status">status <span class="kind">method</span></h4>
 <pre class="sig">status(self, name: str) -&gt; str</pre>
-<p class="none">No description in the source.</p>
+<p>How the check called <code>name</code> came out: &quot;pass&quot;, &quot;fail&quot; or &quot;skipped&quot;. StopIteration if no check has
+that name.</p>
 <h4 id="validate.Report.add">add <span class="kind">method</span></h4>
 <pre class="sig">add(self, point: str, name: str, status: str, detail: str) -&gt; None</pre>
-<p class="none">No description in the source.</p>
+<p>Record one check&#x27;s result.</p>
 </div>
 <h3 id="validate.validate"><span class="kind">function</span>validate</h3>
 <pre class="sig">validate(
@@ -642,7 +684,9 @@ of record: each is compared with the digest the file declares (or pass the diges
 <p>It does not raise on a file, whatever the file holds: see the report&#x27;s checks.</p>
 <h3 id="validate.main"><span class="kind">function</span>main</h3>
 <pre class="sig">main(argv: list[str] | None=None) -&gt; int</pre>
-<p class="none">No description in the source.</p>
+<p>The command line, <code>python -m udeep.validate FILE [FILE ...]</code>: prints each file&#x27;s report. With one file,
+<code>--sdr FIGURE.png</code> also checks the SDR figure of record. Returns the exit status: 0 if every file conforms,
+1 if one does not, 2 for a command line it cannot use.</p>
 <h2 id="scale">udeep.scale</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/scale.py">src/udeep/scale.py</a></p>
 <p>Data -&gt; normalised position t in [0, 1]. Element-wise; limits are passed in, never inferred.</p>
@@ -725,9 +769,6 @@ bound on visibility, not an upper one.</p>
 <h3 id="jnd.jnd_relative"><span class="kind">function</span>jnd_relative</h3>
 <pre class="sig">jnd_relative(nits)</pre>
 <p>Relative luminance step (dL/L) of one GSDF JND at <code>nits</code>.</p>
-<h3 id="jnd.pq_decode"><span class="kind">function</span>pq_decode</h3>
-<pre class="sig">pq_decode(v)</pre>
-<p class="none">No description in the source.</p>
 <h3 id="jnd.pq_step_in_jnd"><span class="kind">function</span>pq_step_in_jnd</h3>
 <pre class="sig">pq_step_in_jnd(nits, bits: int)</pre>
 <p>Size of one PQ code-value step at <code>nits</code>, in GSDF JNDs, for a <code>bits</code>-bit signal.</p>
@@ -756,7 +797,8 @@ map&#x27;s whole lightness range; the share of the map&#x27;s perceptual length 
 the map&#x27;s flattest stretch (one of PARTS equal runs of light, in either segment).</p>
 <h3 id="vision.main"><span class="kind">function</span>main</h3>
 <pre class="sig">main() -&gt; None</pre>
-<p class="none">No description in the source.</p>
+<p>The command line, <code>python -m udeep.vision</code>: prints <code>report</code> for each current map at each registered
+headroom.</p>
 <h2 id="color">udeep.color</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/color.py">src/udeep/color.py</a></p>
 <p>Colour spaces for HDR plotting. Element-wise over a trailing axis of 3; float64.</p>
@@ -764,22 +806,24 @@ the map&#x27;s flattest stretch (one of PARTS equal runs of light, in either seg
 Jzazbz takes CIE XYZ in absolute cd/m^2: Safdar et al., Opt. Express 25(13), 15131 (2017).</p>
 <h3 id="color.srgb_to_xyz"><span class="kind">function</span>srgb_to_xyz</h3>
 <pre class="sig">srgb_to_xyz(rgb) -&gt; np.ndarray</pre>
-<p class="none">No description in the source.</p>
+<p>Linear sRGB (BT.709 primaries, D65 white) -&gt; CIE XYZ, in the same unit as it is given.</p>
 <h3 id="color.xyz_to_srgb"><span class="kind">function</span>xyz_to_srgb</h3>
 <pre class="sig">xyz_to_srgb(xyz) -&gt; np.ndarray</pre>
-<p class="none">No description in the source.</p>
+<p>CIE XYZ -&gt; linear sRGB (BT.709 primaries, D65 white): the inverse of srgb_to_xyz. Nothing is clipped, so a
+colour outside the gamut comes back with a component below zero.</p>
 <h3 id="color.srgb_to_bt2020"><span class="kind">function</span>srgb_to_bt2020</h3>
 <pre class="sig">srgb_to_bt2020(rgb) -&gt; np.ndarray</pre>
-<p class="none">No description in the source.</p>
+<p>Linear sRGB (BT.709 primaries) -&gt; linear RGB with BT.2020 primaries (ITU-R BT.2087), in the same unit.</p>
 <h3 id="color.xyz_to_jzazbz"><span class="kind">function</span>xyz_to_jzazbz</h3>
 <pre class="sig">xyz_to_jzazbz(xyz) -&gt; np.ndarray</pre>
-<p class="none">No description in the source.</p>
+<p>CIE XYZ (D65 white) in absolute cd/m^2 -&gt; Jzazbz (Safdar et al. 2017): the lightness Jz, then az and bz.
+A cone response below zero is taken as zero.</p>
 <h3 id="color.jzazbz_to_xyz"><span class="kind">function</span>jzazbz_to_xyz</h3>
 <pre class="sig">jzazbz_to_xyz(jab) -&gt; np.ndarray</pre>
-<p class="none">No description in the source.</p>
+<p>Jzazbz -&gt; CIE XYZ in absolute cd/m^2: the inverse of xyz_to_jzazbz.</p>
 <h2 id="core">udeep.core</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/core.py">src/udeep/core.py</a></p>
-<p>The Rust core, used from Python when it is asked for.</p>
+<p>The Rust core, used from Python wherever it is found.</p>
 <pre class="block">import udeep.core
 udeep.core.enabled()           # True when the core was found and has not been turned off
 udeep.core.enable(False)       # use the NumPy and Pillow code instead, from here on</pre>
@@ -985,13 +1029,13 @@ clearly the worst. Elsewhere (constant noise, a tolerance, relative noise on a l
 worst ratio to within rounding, so which of them is found is not part of the contract and <code>at</code> is left out.</p>
 <h3 id="golden.make"><span class="kind">function</span>make</h3>
 <pre class="sig">make() -&gt; dict</pre>
-<p class="none">No description in the source.</p>
+<p>Every golden case, worked out now by this package: the dictionary that golden.json is written from.</p>
 <h3 id="golden.agree"><span class="kind">function</span>agree</h3>
 <pre class="sig">agree(got, want, case: dict, where: str=&#x27;&#x27;) -&gt; list[str]</pre>
 <p>Differences between a result and the expected output, under the case&#x27;s own tolerance; empty if none.</p>
 <h3 id="golden.main"><span class="kind">function</span>main</h3>
 <pre class="sig">main() -&gt; None</pre>
-<p class="none">No description in the source.</p>
+<p>The command line, <code>python -m udeep.golden</code>: writes golden.json from <code>make</code>.</p>
 <h2 id="julia">UDeepCore (Julia)</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/julia/UDeepCore">julia/UDeepCore</a> &middot; its Makie extension is in <a href="https://github.com/ultradeeprange/udeep/blob/main/julia/UDeepCore/ext/UDeepCoreMakieExt.jl">ext/UDeepCoreMakieExt.jl</a></p>
 <p>The mapping from scientific data to light and colour of the UDeep Figure Profile, for Julia.</p>
