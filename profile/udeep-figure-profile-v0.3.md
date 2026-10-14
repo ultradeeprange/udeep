@@ -1,6 +1,6 @@
 # UDeep Figure Profile — draft v0.3
 
-Status: **working draft**, 2026-10-12. Not endorsed by any standards body. Editor: Mathew Newman
+Status: **working draft**, 2026-10-14. Not endorsed by any standards body. Editor: Mathew Newman
 (ORCID 0000-0003-1784-3250). Reference implementation: `udeep` (Python), with a JavaScript port, a Rust core and
 golden test vectors (§10). Supersedes v0.2 (2026-09-27); changes from v0.2 are listed in Annex D, and changes made
 since the first v0.3 draft of 2026-10-06 in Annex E.
@@ -459,21 +459,38 @@ classes are in use:
 | 10⁻¹², relative and absolute | float64 arithmetic: the scale, the tone curve, the PQ and sRGB encodings, and mapping records with the `grey` map | 19 |
 | 2 × 10⁻⁶, relative and absolute | anything through a float32 colour-map table: the map lookups, and mapping records with a colour map | 7 |
 | 10⁻⁹, relative and absolute | stored levels and the data criterion, which are found by sampling the declared range; whether the criterion is met is compared exactly | 32 |
-| exact | text, bytes and yes-or-no results: the tables' digests, both digests of §8.6, the metadata text, the caption, the mask rule and the ISO 21496-1 block | 24 |
+| exact | text, bytes and yes-or-no results: the tables' digests, both digests of §8.6, the metadata text, the caption, the mask rule and the ISO 21496-1 block | 32 |
 
-A case's own statement governs; this table reports what the file holds on 2026-10-10.
+A case's own statement governs; this table reports what the file holds on 2026-10-14.
 
-Implementations, on 2026-10-12. The Python reference generates the suite and reproduces all 90 cases. The
+Implementations, on 2026-10-14. The Python reference generates the suite and reproduces all 90 cases. The
 JavaScript port reproduces 55: every case of the 11 kinds it implements. It does not compute stored levels and
 does not write the metadata or the caption. The Rust core implements all 14 kinds; it reproduces all 90 cases.
-A Julia binding calls the Rust core and takes the mapping and digest cases from the same file. Decoder checks
-against libultrahdr were made on an earlier build and have not been repeated.
+A WebAssembly build of the same core, with its JavaScript binding, reproduces the 50 cases its C interface
+reaches. A Julia binding calls the Rust core and takes the mapping and digest cases from the same file.
 
-The reference validator is `udeep.validate` (`python -m udeep.validate FILE.jpg`). It does not stop at a
-file it cannot read: whatever cannot be read or checked is reported as a failed check that says what it was.
-From the file alone it checks points 1, 2 and 6 and the headroom limit of point 4, and point 7 against an SDR
-figure given with `--sdr`. A file does not carry its data, so points 3, 5 and the rest of 4 need the figure or
-the data that made it (`udeep.mpl.validate(fig, path)`); from the file alone they are reported as skipped.
+*Independent decoders, 2026-10-14.* Google's reference library for gain maps, libultrahdr (v2.0.2, commit
+66821e0), decoded six of the reference writers' gain-map JPEGs (four from the gallery, two from the worked
+examples) without error. It took their ISO 21496-1 metadata, which agrees with the XMP beside it. At a display
+boost of 4 its pixels agree with the reference reader's: on the pixels above white they differ by a median of
+0.03 to 0.4 % and a 99th percentile of 0.5 to 3.6 %, with no constant factor or change of gamut between them; the
+residual is not explained. An ordinary decoder (Pillow) opens each as its SDR base, within 3 codes of the
+reference reader. FFmpeg 9.0.2 reads a 16-bit PQ PNG written by the reference as 16 bits a channel, BT.2020
+primaries, SMPTE ST 2084, full range, from its `cICP` chunk. No viewer was part of these checks.
+
+The reference validator is `udeep.validate` (`python -m udeep.validate FILE`). It reads gain-map JPEGs and
+16-bit PQ PNGs. It does not stop at a file it cannot read: whatever cannot be read or checked is reported as a
+failed check that says what it was. From the file alone it checks points 1, 2 and 6 and the headroom limit of
+point 4, and point 7 against an SDR figure given with `--sdr`. A file does not carry its data, so points 3, 5 and
+the rest of 4 need the figure or the data that made it (`udeep.mpl.validate(fig, path)`); from the file alone
+they are reported as skipped.
+
+- *Added 2026-10-14.* For a 16-bit PQ PNG, point 6 works the stored levels out again from the declaration (the
+  run of data values that share one code in all three channels) and fails a file that declares itself a data
+  record when they do not meet 7.3.1. The headroom limit of point 4 allows a lossless file only its own rounding
+  (0.1 %). With the data supplied, it also reads every value back out of a `grey` file and fails it if any value
+  inside the declared range comes back further than half the widest level from where it was. It takes nominal
+  diffuse white to be written at 203 cd/m², which the file does not state (open issue 11), and says so.
 
 - Point 1 fails when a property that §8 requires is absent, when a carried `ColourMapTable` cannot be decoded,
   when a registered map is declared at a headroom it is not registered for and no table is carried, or when the
@@ -493,15 +510,20 @@ Open issues:
 3. The reference implementation writes the §8 metadata into gain-map JPEGs (and, on request, PQ PNGs) from
    UDeep 0.3. Its `MaxDataStep` covers the 8-bit quantisation of its render path and not JPEG loss. It does not
    yet write an ICC profile. It writes the ISO 21496-1 binary block beside the Ultra HDR XMP; the layout was
-   taken from libultrahdr's source and has not yet been read back by an independent decoder. Its flags byte says
+   taken from libultrahdr's source, and libultrahdr reads it back and prefers it to the XMP (2026-10-14, above).
+   Its flags byte says
    that the gain is applied in the base image's colour space (bit 6), as the XMP beside it means; files written
    before 2026-10-10 have that bit clear. It evaluates the data criterion (7.2.1) when it
    saves, records the result (`RoundingToNoise`) and warns when the file is too coarse. On the synthetic CT of the
    reference site (noise 6 HU, range −160 to 1850 HU, 4× headroom) an 8-bit gain-map JPEG has levels up to
    19.5 HU wide: rounding is 0.94 of the noise at its worst, and over the limit across 92 % of the range.
+   *Added 2026-10-14.* For a 16-bit PQ PNG it works out the stored levels (`udeep.metadata.data_steps_pq16`),
+   but does not yet compose the declaration itself: the caller does, as the repository's worked example
+   `examples/detector_record.py` shows.
 4. Gain-map AVIF (9.1), the SVG media-query fallback (9.2.4) and metadata inside MP4 (9.3.3) are untested.
 5. Precision of colour maps and of gain-map JPEGs has not been analysed (Annex C).
-6. Device evidence comes from one phone and one monitor (Annex B). More devices are needed.
+6. Device evidence comes from one phone and one monitor (Annex B). More devices are needed. Reports are kept as
+   records in the reference repository's `evidence/` folder, one for each report.
 7. The noise models of 5.2 have no law for spectral power (exponential, or χ² in general), so the reference
    gallery's gravitational-wave figures declare `unknown`. One declaration per file also means a figure with two
    differently mapped images cannot be stored as one file.
@@ -509,6 +531,13 @@ Open issues:
    other map travels inside the file. Still open: where the registered tables are published for others to fetch
    (today they ship with the reference implementation, `udeep/tables/`), and a check that an embedded table has
    strictly increasing lightness.
+9. Points 3 to 5 of the conformance list cannot be checked from the file alone. From UDeep 0.3 the file
+   declares digests of its data and of its fair SDR rendering (§8), so a reader who holds either can confirm the
+   link (conformance point 7). That proves which data and which figure, not that the pixels follow the mapping:
+   for that the data must be re-rendered, and the file does not record where the data sits inside the figure.
+   Carrying the data itself (for example as JPEG XL extra channels) is still open. The reference check with the
+   figure (`udeep.mpl.validate`) builds the pixels it expects by the same steps as the reference writer (6.11),
+   so it is not an independent test of those steps.
 10. **The registered maps and 6.9: closed 2026-10-10 by a second version of each map.** Version 1 (`fire/1`,
     `ice/1`) did not fully meet 6.9 (found 2026-10-08, `udeep.vision`). Lightness (Jz) was checked node by node,
     for normal vision and for simulated protanopia, deuteranopia and tritanopia (Machado et al. 2009, full
@@ -541,13 +570,12 @@ Open issues:
 
     6.9 now says what "strictly increasing" is measured on and for whom. Still open: no tolerance is stated for
     an embedded table, and nothing checks one.
-9. Points 3 to 5 of the conformance list cannot be checked from the file alone. From UDeep 0.3 the file
-   declares digests of its data and of its fair SDR rendering (§8), so a reader who holds either can confirm the
-   link (conformance point 7). That proves which data and which figure, not that the pixels follow the mapping:
-   for that the data must be re-rendered, and the file does not record where the data sits inside the figure.
-   Carrying the data itself (for example as JPEG XL extra channels) is still open. The reference check with the
-   figure (`udeep.mpl.validate`) builds the pixels it expects by the same steps as the reference writer (6.11),
-   so it is not an independent test of those steps.
+11. *Added 2026-10-14.* PQ is absolute, so a PQ file is written with nominal diffuse white at some luminance, and
+    6.1 keeps luminance out of the declared mapping. The file does not say which luminance was used. The reference
+    writes 203 cd/m² (BT.2408) unless told otherwise, and the reference reader and validator assume it. A file
+    written with another white reads back scaled by the ratio of the two, and a data record (7.3) is then read as
+    the wrong values. The profile does not yet say whether a PQ data record must use 203 cd/m², or must state the
+    luminance it used.
 
 ## 11. Viewer requirements
 
@@ -724,9 +752,6 @@ Each line is one normative addition or change, with the date it was made.
 - 2026-10-08 · **Required properties, and declarations that are not valid** (8.1, 8.5): which properties must be
   present, and which values a reader refuses.
 - 2026-10-08 · **The caption's numbers** (8.2): the reference caption writes six significant figures.
-- 2026-10-11 · **Which code runs** (§10): the reference package uses its Rust core wherever the library is present,
-  for the mapping and for writing and reading gain-map JPEGs; the NumPy and Pillow code remains as the second
-  implementation. The golden vectors and their tolerances are unchanged.
 - 2026-10-10 · **Second versions of the registered maps** (§6.9, §6.10, §10 point 10): `fire/2` and `ice/2` end
   exactly at white and rise in lightness at every node for normal vision and three simulated deficiencies; 6.9
   says how that is measured. Version 1 stays registered. The golden vectors grow from 74 to 82 cases.
@@ -740,14 +765,17 @@ Each line is one normative addition or change, with the date it was made.
   headroom before writing. The statement that the reference writer stayed within ~5 % of the headroom is
   withdrawn: with a colour map it did not (58 of 190 test figures, at worst 1.093 ×). A note records that another
   JPEG decoder reads lifted pixels several per cent differently.
+- 2026-10-11 · **Which code runs** (§10): the reference package uses its Rust core wherever the library is present,
+  for the mapping and for writing and reading gain-map JPEGs; the NumPy and Pillow code remains as the second
+  implementation. The golden vectors and their tolerances are unchanged.
 - 2026-10-11 · **A registered map is taken from its table, never recomputed** (6.10): the generator's
   results depend on the machine it runs on, in the values of a version-2 table that are almost zero.
-- 2026-10-12 · **Third versions of the registered maps** (6.10, §10 point 10): `fire/3` and `ice/3` are version 2
-  with every table value below 1e-7 of white set to zero, so that the tables can be made again bit for bit on any
-  machine. Versions 1 and 2 stay registered. The golden vectors grow from 82 to 90 cases.
 - 2026-10-11 · **Renamed** (§8, §10): the profile is the UDeep Figure Profile. The metadata prefix is `udeep` in place of
   `scihdr`, with a new provisional namespace, and the digests are taken over `udeep-data-1` and `udeep-rgb8-1` in
   place of `hdrplot-data-1` and `hdrplot-rgb8-1`, so every digest changes. No file was published under the old names.
+- 2026-10-12 · **Third versions of the registered maps** (6.10, §10 point 10): `fire/3` and `ice/3` are version 2
+  with every table value below 1e-7 of white set to zero, so that the tables can be made again bit for bit on any
+  machine. Versions 1 and 2 stay registered. The golden vectors grow from 82 to 90 cases.
 
 ## References
 
