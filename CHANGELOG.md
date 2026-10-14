@@ -11,6 +11,10 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-14
 
+- **One command remakes every generated file** (`tools/build_all.py`), and GitHub checks on every push that none
+  is stale. **A security policy** (`SECURITY.md`) with private reporting. The Rust core's dependencies are checked
+  on every push for published advisories, licences and sources (`cargo deny`, `core/deny.toml`), and the actions
+  the workflows use are pinned to exact commits.
 - **Read by programs we did not write.** Google's reference library for gain-map JPEGs (libultrahdr v2.0.2,
   commit 66821e0) decoded all six gallery and example files tried, took their ISO 21496-1 metadata (which agrees
   with the XMP), and gave the same picture as udeep's reader: on the lifted pixels the two differ by a median of

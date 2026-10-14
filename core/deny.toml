@@ -1,0 +1,26 @@
+# What `cargo deny check` holds the core's dependencies to (run on every push: .github/workflows/tests.yml).
+# The core links its dependencies into the library that the wheels and the Julia package ship, so their licences
+# travel with it (LICENSE-THIRD-PARTY.txt) and a known vulnerability in one is a vulnerability in UDeep.
+
+[graph]
+all-features = true
+
+[advisories]
+# a crate with a published security advisory fails the check; one marked unmaintained or yanked is reported
+version = 2
+yanked = "deny"
+
+[licenses]
+version = 2
+# the licences of what the core links today: jpeg-encoder is (MIT OR Apache-2.0) AND IJG, the rest MIT or Apache
+allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "Zlib", "0BSD", "IJG"]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

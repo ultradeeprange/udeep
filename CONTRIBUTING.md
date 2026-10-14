@@ -47,8 +47,9 @@ A change is ready when:
   (`python -m udeep.golden`) and bring the other implementations into line in the same change;
 - **the profile and the code say the same thing.** A change to what a file means is a change to the profile, and
   is listed in its Annex E with the date;
-- **generated files are regenerated, not edited**: the profile page (`tools/build_profile_page.py`), the site
-  chrome (`tools/site_chrome.py`), the evidence table (`tools/evidence.py`);
+- **generated files are regenerated, not edited**: `python tools/build_all.py` remakes them all in the right order
+  (the colour tables, the golden vectors, the live view's copies, the profile and reference pages, the evidence
+  table and the site's chrome), and GitHub checks on every push that they are current;
 - **data in a figure is real or is labelled.** Synthetic and simulated data are marked as such in the figure's
   caption and in the code that makes them. No measurement, citation or device result is invented.
 
@@ -65,6 +66,11 @@ to contribute it.
 Code is under the BSD 3-Clause licence ([`LICENSE`](LICENSE)); the profile, the site's text and the documentation
 are under CC BY 4.0 ([`LICENSE-docs.txt`](LICENSE-docs.txt)). By contributing you agree that your contribution is
 offered under the same licence as the part of the repository it changes.
+
+## Security
+
+A file that makes a reader crash, hang or use far more memory than it should is a security fault: report it
+privately, as [`SECURITY.md`](SECURITY.md) says, not in a public issue.
 
 ## Conduct
 
