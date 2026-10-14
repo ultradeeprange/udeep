@@ -13,8 +13,11 @@ from udeep.validate import validate
 
 @pytest.fixture(autouse=True)
 def core_back_on():
+    """Each test may turn the core off: put back what was there before it, which is no core at all
+    where none was built."""
+    was = core.enabled()
     yield
-    core.enable(True)
+    core.enable(was)
 
 
 def damaged(data: bytes, rng) -> bytes:
