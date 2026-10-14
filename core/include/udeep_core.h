@@ -157,6 +157,15 @@ int32_t udeep_levels_pq16(const udeep_mapping *mapping, const float *table, size
 /* Release bytes returned by this library. */
 void udeep_bytes_free(uint8_t *data, size_t length);
 
+/* ---- Only in a WebAssembly build (cargo build --release --target wasm32-unknown-unknown --features jpeg,png). ----
+ *
+ * Memory for a host whose buffers must lie inside the module's memory: size bytes, zeroed and aligned for a double,
+ * or NULL when size is 0 or the memory is not to be had. Release with udeep_buffer_free and the same size. There
+ * are no threads in such a build: the functions that take a number of threads run in the caller's, whatever is
+ * asked for, with the same result. */
+void *udeep_buffer_alloc(size_t size);
+void udeep_buffer_free(void *data, size_t size);
+
 /* ---- Only in a library built with the `jpeg` feature (the reader's two functions are at the end of this part) (cargo build --release --features jpeg,png). ----
  *
  * Write a gain-map JPEG (Ultra HDR layout, with the ISO 21496-1 block) into memory owned by the library.

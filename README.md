@@ -120,12 +120,12 @@ Two modes use the same tone curve:
 
 | Path | Contents |
 |---|---|
-| `src/udeep/` | scaling, the tone curve (a strictly increasing, invertible shoulder; the flat BT.2390-style roll-off is kept for display rendering), Jzazbz HDR colour maps, PQ PNG, gain-map JPEG writer/reader, matplotlib front end, `jnd` (PQ steps against the DICOM GSDF), a JavaScript port (`js/udeepcore.js`) |
-| `core/` | the Rust core with a C interface (see `core/README.md`) |
+| `src/udeep/` | scaling, the tone curve (a strictly increasing, invertible shoulder; the flat BT.2390-style roll-off is kept for display rendering), Jzazbz HDR colour maps, PQ PNG, gain-map JPEG writer/reader, matplotlib front end, `jnd` (PQ steps against the DICOM GSDF), a JavaScript port (`js/udeepcore.js`), and a JavaScript binding to the core built as WebAssembly (`js/udeepwasm.js`) |
+| `core/` | the Rust core with a C interface, which also builds as WebAssembly (see `core/README.md`) |
 | `docs/view/` | a live view in the browser (WebGPU): data drawn through the reference shader, above white on an HDR screen |
 | `julia/UDeepCore/` | a Julia binding to the core, with a Makie extension that saves HDR figures (CairoMakie) |
 | `src/udeep/shaders/mapping.wgsl` | the mapping as a WebGPU shader; `udeep.gpu` runs it (needs `pip install wgpu`) |
-| `src/udeep/golden.json` | the contract: 90 reference cases of 14 kinds, each with its stated tolerance. Python reproduces all of them; the JavaScript port the 55 it implements; for the Rust core, all 14 kinds are implemented; it reproduces all 74 cases |
+| `src/udeep/golden.json` | the contract: 90 reference cases of 14 kinds, each with its stated tolerance. Python reproduces all of them; the JavaScript port the 55 it implements; the Rust core all 90; the core built as WebAssembly, called through its C interface, the 50 that interface reaches |
 | `tests/` | pytest suite (`pip install -e ".[test]" && pytest`) |
 | `examples/` | four worked examples on synthetic data, with their figures (`examples/README.md`) |
 | `profile/` | the UDeep Figure Profile |

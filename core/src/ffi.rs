@@ -353,6 +353,38 @@ pub unsafe extern "C" fn udeep_bytes_free(data: *mut u8, length: usize) {
     }
 }
 
+/// Memory for a host that has none of its own the library can reach: a WebAssembly host, whose buffers must lie
+/// inside the module's memory. `size` bytes, zeroed and aligned for a `double`; null when `size` is 0 or the
+/// memory is not to be had. Release it with [`udeep_buffer_free`] and the same size. Only in a WebAssembly
+/// build: anywhere else the caller's own buffers are passed as they are.
+#[cfg(target_family = "wasm")]
+#[unsafe(no_mangle)]
+pub extern "C" fn udeep_buffer_alloc(size: usize) -> *mut u8 {
+    match std::alloc::Layout::from_size_align(size, BUFFER_ALIGN) {
+        Ok(layout) if size > 0 => unsafe { std::alloc::alloc_zeroed(layout) },
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Release memory that [`udeep_buffer_alloc`] gave. Null is ignored.
+///
+/// # Safety
+/// `data` must be what `udeep_buffer_alloc(size)` returned for this same `size`, and not already released.
+#[cfg(target_family = "wasm")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_buffer_free(data: *mut u8, size: usize) {
+    if data.is_null() {
+        return;
+    }
+    if let Ok(layout) = std::alloc::Layout::from_size_align(size, BUFFER_ALIGN) {
+        unsafe { std::alloc::dealloc(data, layout) };
+    }
+}
+
+/// The alignment of memory from [`udeep_buffer_alloc`]: that of a `double`, the widest thing the interface takes.
+#[cfg(target_family = "wasm")]
+const BUFFER_ALIGN: usize = 8;
+
 /// Text passed in: `length` bytes of UTF-8 at `data`. A null `data` means the property is absent.
 #[derive(Clone, Copy)]
 #[repr(C)]

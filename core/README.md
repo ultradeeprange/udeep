@@ -10,11 +10,11 @@ vectors (`../src/udeep/golden.json`).
 
 | In the core | Not yet |
 |---|---|
-| scale and its inverse; the tone curve | a PNG (PQ) writer |
-| the `Mapping` record: position, light, fair SDR light, and the inverse (light back to data) | the validator |
-| colour-map tables: lookup by linear interpolation; their digests | a WebAssembly build |
-| PQ and sRGB encoding | a Python wheel (Julia binds through the C interface: `../julia/UDeepCore`) |
-| the `isolated-3x3` mask rule | reading metadata back (parsing XMP) |
+| scale and its inverse; the tone curve | the validator |
+| the `Mapping` record: position, light, fair SDR light, and the inverse (light back to data) | reading metadata back (parsing XMP) |
+| colour-map tables: lookup by linear interpolation; their digests | |
+| PQ and sRGB encoding | |
+| the `isolated-3x3` mask rule | |
 | the bytes of the ISO 21496-1 gain-map block | |
 | the data and pixel digests (its own SHA-256, checked against the FIPS 180-4 examples) | |
 | stored levels and the data criterion, for each noise model | |
@@ -22,9 +22,13 @@ vectors (`../src/udeep/golden.json`).
 | the declared metadata's serialised form and the generated caption, byte for byte | |
 | the reference's checks on a mapping record and on a declaration | |
 | a C interface over buffers, with error codes | |
-| **with the `jpeg` feature:** a gain-map JPEG writer (Ultra HDR layout, ISO 21496-1 block, the declared metadata) | |
+| **with the `jpeg` feature:** a gain-map JPEG writer (Ultra HDR layout, ISO 21496-1 block, the declared metadata) and reader | |
 | **with the `png` feature:** a 16-bit PQ PNG writer and reader (`cICP`, the declaration as XMP): the form in which a file can be a data record | |
 | the stored levels of a 16-bit PQ file (`levels_pq16`), with no feature needed | |
+| **a WebAssembly build** of the same C interface, with a JavaScript binding (see [WebAssembly](#webassembly)) | |
+
+The Python package carries the library (`setup.py` builds it into the wheel), and the Julia package binds the same
+C interface (`../julia/UDeepCore`).
 
 By default the library depends on no other crate and reads or writes no image formats. The gain-map JPEG writer
 is behind the `jpeg` feature, which brings in two pure-Rust crates, `jpeg-encoder` and `jpeg-decoder` (both
@@ -34,11 +38,13 @@ the difference between two JPEG encoders. It draws nothing.
 
 ## Build and test
 
-    cargo test                      # all 82 golden cases, each to its own stated tolerance
+    cargo test                      # all 90 golden cases, each to its own stated tolerance
     cargo test --features jpeg,png      # the same, and the gain-map JPEG writer's own test
     cargo build --release           # target/release/udeep_core.dll (.so, .dylib)
     cargo build --release --features jpeg,png     # the same, with the gain-map JPEG writer
     cargo clippy --all-targets --features jpeg,png -- -D warnings
+    cargo build --release --target wasm32-unknown-unknown --features jpeg,png
+                                    # target/wasm32-unknown-unknown/release/udeep_core.wasm
 
 The test fails if any case is skipped, and a second test fails if the golden file no longer holds the kinds and
 numbers of cases this port was written against.
@@ -133,6 +139,46 @@ data value, for colour-bar ticks) and `udeep_mask_isolated` (the `isolated-3x3` 
 `../tests/test_udeep_rust.py` builds the library and calls every function through this interface from Python
 (ctypes), comparing with the golden vectors and, record by record, with what the reference accepts and refuses.
 No C compiler has been run against the header itself.
+
+## WebAssembly
+
+    rustup target add wasm32-unknown-unknown        # once
+    cargo build --release --target wasm32-unknown-unknown --features jpeg,png
+
+The same source builds as a WebAssembly module that imports nothing and exports the whole C interface with its
+memory: 388 KB with both features, 156 KB without them (2026-10-14). It is the library a page or node can load
+in place of the JavaScript port, so a browser runs the core's own arithmetic, writers and readers.
+
+Two things differ from a native build, and the header says so:
+
+- **No threads.** WebAssembly as a browser or node loads it has none, and starting one would stop the module.
+  `par::THREADS` is false there: every loop runs in the caller's thread, whatever number of threads a call asks
+  for, with the same result as anywhere on one thread. The two JPEGs of a gain map are decoded one after the other.
+- **Memory from the library.** A host's buffers must lie inside the module's memory, so the build exports
+  `udeep_buffer_alloc` and `udeep_buffer_free` (zeroed, aligned for a `double`). On wasm32 a pointer and a
+  `size_t` are four bytes: `udeep_declaration` is 200 bytes there, against 296 on a 64-bit machine. The memory
+  is at most 4 GiB, and an allocation the core cannot make inside it stops the module (a trap) as it would end a
+  native program; the binding refuses a buffer that a 32-bit size cannot describe before it asks for one.
+
+The binding is `../src/udeep/js/udeepwasm.js`, a plain script like the port: `await UDeepWasm.load(bytes)` gives
+functions over typed arrays (`light(mapping, values)`, `colours(light, table)`, `description(declaration)`,
+`pngPq(...)`, `readGainmap(...)` and the rest), takes mapping records and declarations under the metadata's own
+names, copies numbers in and out, and turns an error code into an `Error` carrying it.
+
+`../tests/test_udeep_wasm.py` builds the module and, in node:
+
+- runs `check_golden_wasm.mjs`, which reproduces through the binding every golden case the C interface reaches:
+  50 of the 90 (the levels cases in the two numbers the interface returns). Scale, tone, PQ encoding, the shipped
+  tables' digests and the ISO block have no function of their own in the interface and are held to the vectors
+  by `cargo test`;
+- checks that the module exports exactly the functions of the header, that a call asking for threads runs and
+  gives the plain loop's bits, that what the core refuses comes back as an error with its code, and that 1,200
+  damaged files (`../tests/test_malformed.py`'s damage), and a PNG and a JPEG whose headers claim vast images,
+  come back as images or as codes and never stop the module;
+- writes a 16-bit PQ PNG whose codes are the reference's (at most one code apart, at fewer than 0.1 % of values,
+  as for the native build) and a gain-map JPEG that the Python validator passes, with the declaration the module
+  serialised itself; and reads the reference writer's files as the reference reads them: the same 16-bit PNG
+  light to 1e-12, and a gain map a code or two apart from Pillow's decoding at about 1 % of pixels.
 
 ## Measured (2026-10-08)
 

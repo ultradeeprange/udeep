@@ -6,13 +6,19 @@ use std::{num::NonZero, ops::Range, sync::OnceLock, thread};
 
 use crate::Mapping;
 
+/// Whether a thread can be started here. WebAssembly, as a browser or node loads this library, has none: the
+/// standard library's `spawn` fails there. Every loop then runs in the caller's thread, which gives the same
+/// result, as it does anywhere on one thread.
+pub const THREADS: bool = cfg!(not(target_family = "wasm"));
+
 /// The number of threads to use for `n` values: `requested`, or every available core when it is 0, but never
-/// more than one thread per `MIN_PER_THREAD` values (starting a thread costs more than mapping a few thousand).
+/// more than one thread per `MIN_PER_THREAD` values (starting a thread costs more than mapping a few thousand),
+/// and one where there are no threads ([`THREADS`]), whatever was asked for.
 pub fn threads_for(requested: usize, n: usize) -> usize {
     const MIN_PER_THREAD: usize = 16_384;
     let most = n / MIN_PER_THREAD;
-    if most <= 1 {
-        return 1; // too few values for a second thread: the cores are not even counted
+    if most <= 1 || !THREADS {
+        return 1; // too few values for a second thread, or no threads at all: the cores are not even counted
     }
     let available = if requested == 0 { cores() } else { requested };
     available.min(most).max(1)
@@ -40,6 +46,19 @@ pub fn in_ranges(n: usize, threads: usize, work: impl Fn(Range<usize>) + Sync) {
             scope.spawn(move || work(first..(first + chunk).min(n)));
         }
     });
+}
+
+/// Two pieces of work that do not depend on each other: `second` on a thread of its own while `first` runs in the
+/// caller's, or one after the other where there are no threads ([`THREADS`]). `None` for `second` if its thread
+/// panicked.
+pub fn both<A, B: Send>(first: impl FnOnce() -> A, second: impl FnOnce() -> B + Send) -> (A, Option<B>) {
+    if !THREADS {
+        return (first(), Some(second()));
+    }
+    thread::scope(|scope| {
+        let other = scope.spawn(second);
+        (first(), other.join().ok())
+    })
 }
 
 /// [`Mapping::light_into`] on `threads` threads (0: every available core). The result is identical to the

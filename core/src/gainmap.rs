@@ -616,11 +616,9 @@ pub fn read_gainmap_jpeg(
     threads: usize,
 ) -> Result<(Vec<f32>, usize, usize), ReadError> {
     let (primary, gain) = split(file)?;
-    // the two JPEGs are independent: one thread each
-    let (base, map) = std::thread::scope(|scope| {
-        let other = scope.spawn(|| decode_rgb(gain));
-        (decode_rgb(primary), other.join().unwrap_or_else(|_| Err(ReadError::NotAGainMap("the decoder failed".into()))))
-    });
+    // the two JPEGs are independent: one thread each, where there are threads
+    let (base, map) = par::both(|| decode_rgb(primary), || decode_rgb(gain));
+    let map = map.unwrap_or_else(|| Err(ReadError::NotAGainMap("the decoder failed".into())));
     let (base, width, height) = base?;
     let (map, map_width, map_height) = map?;
     if (map_width, map_height) != (width, height) {

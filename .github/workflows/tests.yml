@@ -1,7 +1,8 @@
 name: tests
 
-# The same three suites that are run before every change: the Python reference (with the JavaScript port and the
-# Rust core's C interface checked against it), the Rust core's own tests, and the Julia package.
+# The same three suites that are run before every change: the Python reference (with the JavaScript port, the
+# Rust core's C interface and the core built as WebAssembly checked against it), the Rust core's own tests, and the
+# Julia package.
 
 on:
   push:
@@ -38,6 +39,7 @@ jobs:
       - name: Build the Rust core
         run: |
           rustup update stable
+          rustup target add wasm32-unknown-unknown
           cargo build --release --features jpeg,png --manifest-path core/Cargo.toml
       - name: Install
         run: python -m pip install -e ".[test]"
@@ -54,6 +56,10 @@ jobs:
         run: cargo test --release --features jpeg,png --manifest-path core/Cargo.toml
       - name: Clippy
         run: cargo clippy --release --features jpeg,png --manifest-path core/Cargo.toml -- -D warnings
+      - name: Clippy, built as WebAssembly
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo clippy --release --target wasm32-unknown-unknown --features jpeg,png --manifest-path core/Cargo.toml -- -D warnings
       - name: Dependencies (known vulnerabilities, licences, sources; core/deny.toml)
         run: |
           cargo install cargo-deny --locked --version 0.20.2

@@ -11,6 +11,15 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-14
 
+- **The core builds as WebAssembly** (`cargo build --release --target wasm32-unknown-unknown --features jpeg,png`):
+  a module of 388 KB that imports nothing and exports the whole C interface. There are no threads in it, so every
+  loop runs in the caller's thread with the same result, and it lends a host its memory (`udeep_buffer_alloc`,
+  `udeep_buffer_free`). `src/udeep/js/udeepwasm.js` is its binding, a plain script like the JavaScript port:
+  functions over typed arrays, mapping records and declarations under the metadata's own names, and errors that
+  carry the core's code. Through it the module reproduces the 50 golden cases the C interface reaches (the levels
+  cases in the two numbers the interface returns); the PNG it writes holds the reference's codes, and the
+  gain-map JPEG it writes, with the declaration it serialises itself, passes the Python validator. The tests
+  and CI build and check it; no module is published yet.
 - **One command remakes every generated file** (`tools/build_all.py`), and GitHub checks on every push that none
   is stale. **A security policy** (`SECURITY.md`) with private reporting. The Rust core's dependencies are checked
   on every push for published advisories, licences and sources (`cargo deny`, `core/deny.toml`), and the actions
@@ -36,7 +45,6 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
   `tests/test_malformed.py`). One thing left: the JPEG decoder library leaks a few hundred bytes in its worker
   threads at exit; it is not ours and does not grow.
 - **Every public Python name has a docstring**, and a test holds that.
-
 - **The 16-bit PQ PNG is in the Rust core** (feature `png`): a writer, a reader that takes any of PNG's row
   filters, and the stored levels of such a file (`levels_pq16`), with their C functions. The core is now built
   with `--features jpeg,png`. The two writers store the same codes; the compressed bytes are each writer's own.
