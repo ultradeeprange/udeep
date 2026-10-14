@@ -63,6 +63,7 @@ import udeep
 udeep.read_metadata("figure.jpg")                               # unit, mapping, knee and its rule, precision
 print(hp.validate(fig, "figure.jpg"))                             # check the file against the profile
 # from a shell:  python -m udeep.validate figure.jpg --sdr figure.png   (the file, and its link to the SDR figure)
+# in a notebook, end a cell with  hp.inline(fig)  to show that file, with its caption, in the cell's output
 ```
 
 Three things to know about that example:

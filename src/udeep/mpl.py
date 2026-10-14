@@ -6,6 +6,7 @@
     hp.colorbar(img, ax=ax, label="HU")
     hp.savefig_hdr(fig, "figure.jpg")                 # one file: the ordinary figure + a gain map
     print(hp.caption(fig))                            # a caption generated from the declared mapping
+    hp.inline(fig)                                    # in a notebook: that file, shown in the cell's output
 
 matplotlib only ever draws the fair SDR plot, so the figure, `savefig` PNG/PDF and the gain-map base are
 all the ordinary figure. `savefig_hdr` renders the figure four times: as it is; with each HDR layer scaled
@@ -20,12 +21,16 @@ declaration all follow from it, so a file cannot be saved at another.
 """
 from __future__ import annotations
 
+import base64
 import contextlib
 import dataclasses
 import hashlib
+import html
 import io
+import tempfile
 import warnings
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -34,7 +39,15 @@ from PIL import Image
 
 from udeep.export import srgb_oetf
 from udeep.gainmap import write_gainmap_jpeg
-from udeep.metadata import Declaration, data_steps, description, digest_data, digest_pixels, rounding_to_noise
+from udeep.metadata import (
+    Declaration,
+    data_steps,
+    description,
+    digest_data,
+    digest_pixels,
+    read_metadata,
+    rounding_to_noise,
+)
 from udeep.metadata import caption as _caption
 from udeep.scale import CHUNK
 from udeep.view import hdr_view
@@ -361,6 +374,47 @@ def savefig_hdr(fig, path, headroom: float | None = None, quality: int = 95, tig
     else:
         write_gainmap_jpeg(base, hdr, path, headroom=head, quality=quality, gain_quality=gain_quality,
                            description=extra)
+
+
+class HdrFigure:
+    """A figure as its gain-map JPEG, for a notebook to show (`inline`): `data` is the file, byte for byte what
+    savefig_hdr writes, and `caption` the caption generated from the declaration the file carries.
+
+    Jupyter shows it as an image in the cell's output. The file itself is what the page is given, so a browser that
+    reads gain maps on an HDR display shows the images above white, and any other shows the ordinary figure."""
+
+    def __init__(self, data: bytes, caption: str = ""):
+        self.data, self.caption = bytes(data), caption
+
+    def save(self, path) -> None:
+        """Write the file: the same bytes savefig_hdr would have written."""
+        Path(path).write_bytes(self.data)
+
+    def _repr_mimebundle_(self, include=None, exclude=None) -> dict:
+        encoded = base64.b64encode(self.data).decode("ascii")
+        text = html.escape(self.caption)
+        figure = (f'<figure style="margin: 0"><img src="data:image/jpeg;base64,{encoded}" alt="{text}">'
+                  + (f"<figcaption>{text}</figcaption>" if text else "") + "</figure>")
+        return {"text/html": figure, "image/jpeg": encoded,
+                "text/plain": f"<UDeep figure: a gain-map JPEG of {len(self.data):,} bytes>"}
+
+
+def inline(fig, headroom: float | None = None, quality: int = 95, tight: bool = True, pad_inches: float = 0.1,
+           caption: bool = True, close: bool = True) -> HdrFigure:
+    """The figure as savefig_hdr writes it, to show in a notebook: end a cell with `hp.inline(fig)`.
+
+    The other arguments are savefig_hdr's. With `caption` the caption generated from the file's declaration is
+    shown under it. `close` closes the figure afterwards, which stops the notebook from also showing it as an
+    ordinary image at the end of the cell; pass close=False to go on drawing in it. Call `.save(path)` on the
+    result to keep the file."""
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "figure.jpg"
+        savefig_hdr(fig, path, headroom=headroom, quality=quality, tight=tight, pad_inches=pad_inches)
+        data, declared = path.read_bytes(), read_metadata(path) if caption else None
+    if close:
+        import matplotlib.pyplot as plt
+        plt.close(fig)
+    return HdrFigure(data, _caption(declared) if declared is not None else "")
 
 
 def _render_with(fig, ls, colours, tight: bool, pad_inches: float, crop=None) -> np.ndarray:

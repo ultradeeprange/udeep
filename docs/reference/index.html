@@ -100,7 +100,7 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      93 public functions and classes in 17 Python modules, and the 32 names the Julia
+      95 public functions and classes in 17 Python modules, and the 32 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -114,7 +114,8 @@ img = hp.imshow(ax, data, mode=&quot;extend&quot;, knee=240, stretch={&quot;kind
                 unit=&quot;HU&quot;, knee_rule=&quot;preset; top of the soft-tissue window&quot;, noise=(&quot;constant&quot;, 10.0))
 hp.colorbar(img, ax=ax, label=&quot;HU&quot;)
 hp.savefig_hdr(fig, &quot;figure.jpg&quot;)                 # one file: the ordinary figure + a gain map
-print(hp.caption(fig))                            # a caption generated from the declared mapping</pre>
+print(hp.caption(fig))                            # a caption generated from the declared mapping
+hp.inline(fig)                                    # in a notebook: that file, shown in the cell&#x27;s output</pre>
 <p>matplotlib only ever draws the fair SDR plot, so the figure, <code>savefig</code> PNG/PDF and the gain-map base are
 all the ordinary figure. <code>savefig_hdr</code> renders the figure four times: as it is; with each HDR layer scaled
 into range; and with the layers all black and then all white, which shows the pixels that an HDR layer
@@ -210,6 +211,31 @@ brightest value (udeep.gainmap.write_gainmap_jpeg), which takes several coding p
 one SDR channel is small each gain code is a large step. The passes may then not converge, and ValueError is
 raised and no file written rather than a file that reads over its headroom. Leave it at 100 unless the figure
 is grey.</p>
+<h3 id="mpl.HdrFigure"><span class="kind">class</span>HdrFigure</h3>
+<p>A figure as its gain-map JPEG, for a notebook to show (<code>inline</code>): <code>data</code> is the file, byte for byte what
+savefig_hdr writes, and <code>caption</code> the caption generated from the declaration the file carries.</p>
+<p>Jupyter shows it as an image in the cell&#x27;s output. The file itself is what the page is given, so a browser that
+reads gain maps on an HDR display shows the images above white, and any other shows the ordinary figure.</p>
+<div class="member">
+<h4 id="mpl.HdrFigure.save">save <span class="kind">method</span></h4>
+<pre class="sig">save(self, path) -&gt; None</pre>
+<p>Write the file: the same bytes savefig_hdr would have written.</p>
+</div>
+<h3 id="mpl.inline"><span class="kind">function</span>inline</h3>
+<pre class="sig">inline(
+    fig,
+    headroom: float | None = None,
+    quality: int = 95,
+    tight: bool = True,
+    pad_inches: float = 0.1,
+    caption: bool = True,
+    close: bool = True,
+) -&gt; HdrFigure</pre>
+<p>The figure as savefig_hdr writes it, to show in a notebook: end a cell with <code>hp.inline(fig)</code>.</p>
+<p>The other arguments are savefig_hdr&#x27;s. With <code>caption</code> the caption generated from the file&#x27;s declaration is
+shown under it. <code>close</code> closes the figure afterwards, which stops the notebook from also showing it as an
+ordinary image at the end of the cell; pass close=False to go on drawing in it. Call <code>.save(path)</code> on the
+result to keep the file.</p>
 <h3 id="mpl.validate"><span class="kind">function</span>validate</h3>
 <pre class="sig">validate(fig, path, tight: bool=True, pad_inches: float=0.1, sdr=None)</pre>
 <p>Check a file written by savefig_hdr against the figure: every conformance point of the profile,

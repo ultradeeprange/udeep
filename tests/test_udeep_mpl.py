@@ -481,3 +481,30 @@ def test_the_black_and_white_renders_are_those_of_full_size_images(kw):
     assert (black != white).any(-1).mean() > 0.3                          # the images are a good part of the figure
     plt.close(fig)
 
+
+
+def test_inline_shows_the_saved_file_with_its_caption_in_a_notebook(tmp_path):
+    import base64
+
+    from udeep.metadata import caption, read_metadata
+    from udeep.validate import validate
+    fig, _ax, _img = fig_with_image()
+    hp.savefig_hdr(fig, tmp_path / "saved.jpg")
+    shown = hp.inline(fig)
+    assert not plt.fignum_exists(fig.number)                    # closed: the notebook does not show it a second time
+    assert shown.data == (tmp_path / "saved.jpg").read_bytes()   # the file savefig_hdr writes, byte for byte
+    assert shown.caption == caption(read_metadata(tmp_path / "saved.jpg")) != ""
+    bundle = shown._repr_mimebundle_()
+    assert base64.b64decode(bundle["image/jpeg"]) == shown.data
+    assert f'<img src="data:image/jpeg;base64,{bundle["image/jpeg"]}"' in bundle["text/html"]
+    assert "<figcaption>" in bundle["text/html"] and "gain-map JPEG" in bundle["text/plain"]
+    shown.save(tmp_path / "kept.jpg")
+    assert validate(tmp_path / "kept.jpg").ok
+
+
+def test_inline_can_leave_the_figure_open_and_the_caption_out():
+    fig, _ax, _img = fig_with_image()
+    shown = hp.inline(fig, caption=False, close=False)
+    assert plt.fignum_exists(fig.number) and shown.caption == ""
+    assert "<figcaption>" not in shown._repr_mimebundle_()["text/html"]
+    plt.close(fig)

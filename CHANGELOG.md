@@ -11,6 +11,11 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-14
 
+- **HDR figures inline in a notebook** (work plan 6.2): `hp.inline(fig)` at the end of a Jupyter cell shows the
+  gain-map JPEG that `savefig_hdr` writes, byte for byte, with the caption generated from its declaration. A
+  browser that reads gain maps shows the images above white on an HDR display; any other shows the ordinary
+  figure. It closes the figure, so the notebook does not show it a second time (`close=False` keeps it).
+  Not yet looked at in a notebook on an HDR display.
 - **The header is read by a C compiler.** A C program (`core/tests/header_check.c`) is compiled against
   `udeep_core.h` with warnings as errors and linked to the library; what the library gives it matches the golden
   vectors and the reference. Until now the header had only been read as text.
