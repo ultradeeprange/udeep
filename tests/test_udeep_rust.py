@@ -92,6 +92,17 @@ def lib():
     bytes_ = ctypes.POINTER(ctypes.c_uint8)
     dll.udeep_mask_isolated.argtypes = [bytes_, ctypes.c_size_t, ctypes.c_size_t, bytes_]
     dll.udeep_mask_isolated.restype = ctypes.c_int32
+    dll.udeep_scale.argtypes = [ctypes.c_uint32, ctypes.c_double, ctypes.c_double, ctypes.c_double, doubles, doubles,
+                                ctypes.c_size_t]
+    dll.udeep_scale.restype = ctypes.c_int32
+    dll.udeep_tone.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, doubles, doubles, ctypes.c_size_t]
+    dll.udeep_tone.restype = ctypes.c_int32
+    dll.udeep_pq_encode.argtypes = [doubles, doubles, ctypes.c_size_t]
+    dll.udeep_pq_encode.restype = ctypes.c_int32
+    dll.udeep_digest_bytes.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_char_p]
+    dll.udeep_digest_bytes.restype = ctypes.c_int32
+    dll.udeep_iso21496_block.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_char_p]
+    dll.udeep_iso21496_block.restype = ctypes.c_int32
     return dll
 
 
@@ -120,6 +131,15 @@ def test_the_record_is_laid_out_as_the_header_says(lib):
     fields = [name for name, _ in CMapping._fields_]
     at = [header.index(f" {name};") for name in fields]
     assert at == sorted(at)                                     # the header declares the fields in the same order
+
+
+def test_the_library_exports_every_function_the_header_declares(lib):
+    """A C host links against the header: each function it declares must be in the library, except the two that
+    only a WebAssembly build has (tests/test_udeep_wasm.py holds that build to the whole header)."""
+    header = re.sub(r"/\*.*?\*/", "", (CORE / "include" / "udeep_core.h").read_text(encoding="utf-8"), flags=re.DOTALL)
+    declared = set(re.findall(r"\b(udeep_\w+)\(", header)) - {"udeep_buffer_alloc", "udeep_buffer_free"}
+    assert len(declared) == 33 and not [name for name in sorted(declared) if not hasattr(lib, name)]
+    assert not hasattr(lib, "udeep_buffer_alloc")               # memory is the host's own outside WebAssembly
 
 
 @pytest.mark.parametrize("name", mapping_cases())
@@ -575,6 +595,118 @@ def test_the_srgb_signal_through_the_c_interface_is_the_reference_one(lib):
     assert lib.udeep_srgb_encode(ptr(back), ptr(back), back.size) == 0          # in place, and there and back
     assert np.allclose(back, codes, rtol=0.0, atol=1e-14)
     assert lib.udeep_srgb_encode(None, ptr(out), 3) == 1 and lib.udeep_srgb_decode(None, None, 0) == 0
+
+
+def stage(lib, f, values, *parameters) -> tuple[int, list]:
+    """A per-value function of the C interface on `values` (None for NaN), as the golden vectors write them."""
+    x = np.array([math.nan if v is None else v for v in values], dtype=np.float64)
+    out = np.empty_like(x)
+    ptr = lambda a: a.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    status = f(*parameters, ptr(x), ptr(out), x.size)
+    return status, [None if math.isnan(v) else v for v in out.tolist()]
+
+
+def golden_cases(kind: str) -> dict:
+    cases = json.loads(golden.PATH.read_text(encoding="utf-8"))["cases"]
+    return {name: c for name, c in cases.items() if c["kind"] == kind}
+
+
+def test_the_stages_and_the_bytes_through_the_c_interface_reproduce_the_golden_vectors(lib):
+    """Scale, tone, PQ, a table's digest and the ISO 21496-1 block: the kinds the mapping record does not reach."""
+    computed = {}
+    for name, c in golden_cases("scale").items():
+        a = c["args"]
+        computed[name] = stage(lib, lib.udeep_scale, a["x"], STRETCH[a["kind"]], a["lo"], a["hi"], a["width"])
+    for name, c in golden_cases("tone").items():
+        a = c["args"]
+        computed[name] = stage(lib, lib.udeep_tone, a["t"], a["knee"], a["headroom"], a.get("exit_slope", 1.0))
+    for name, c in golden_cases("pq_encode").items():
+        computed[name] = stage(lib, lib.udeep_pq_encode, c["args"]["nits"])
+    out = ctypes.create_string_buffer(72)
+    for name, c in golden_cases("table").items():
+        data = (ROOT / "src" / "udeep" / "tables" / c["args"]["file"]).read_bytes()
+        computed[name] = (lib.udeep_digest_bytes(data, len(data), out),
+                          {"sha256": out.value.decode(), "nodes": len(data) // 24, "bytes": len(data)})
+    block = ctypes.create_string_buffer(61)
+    for name, c in golden_cases("iso21496").items():
+        a = c["args"]
+        computed[name] = (lib.udeep_iso21496_block(a["gain_map_min"], a["gain_map_max"], a["hdr_capacity_max"], block),
+                          block.raw.hex())
+    assert len(computed) == 3 + 11 + 1 + 24 + 1
+    cases = json.loads(golden.PATH.read_text(encoding="utf-8"))["cases"]
+    for name, (status, got) in computed.items():
+        assert status == 0, name
+        problems = golden.agree(got, cases[name]["out"], cases[name], name)
+        assert not problems, problems[:5]
+
+
+# kind, lo, hi, width, and the code the core gives: 0 where the reference's scale accepts them
+SCALES = [("linear", 0.0, 1.0, 1.0, 0), ("log", 1e-3, 10.0, 1.0, 0), ("asinh", -5.0, 5.0, 0.1, 0),
+          ("linear", 1.0, 1.0, 1.0, 3), ("linear", 2.0, 1.0, 1.0, 3), ("log", 0.0, 10.0, 1.0, 3),
+          ("log", -1.0, 10.0, 1.0, 3), ("asinh", 0.0, 1.0, 0.0, 6), ("linear", 0.0, 1.0, -1.0, 6),
+          ("linear", math.nan, 1.0, 1.0, 10), ("asinh", 0.0, 1.0, math.nan, 10), ("proportional", 0.0, 1.0, 1.0, 2),
+          ("cubic", 0.0, 1.0, 1.0, 2)]
+# knee, headroom, exit slope, and the code
+TONES = [(0.5, 4.0, 1.0, 0), (1.0, 1.0, 0.0, 0), (1e-6, 16.0, 3.0, 0), (0.0, 4.0, 1.0, 4), (1.5, 4.0, 1.0, 4),
+         (-0.5, 4.0, 1.0, 4), (0.5, 0.5, 1.0, 5), (0.5, 4.0, 3.5, 5), (0.5, 4.0, -0.1, 5), (math.nan, 4.0, 1.0, 10),
+         (0.5, math.nan, 1.0, 10), (0.5, 4.0, math.nan, 10)]
+KIND_CODE = {"linear": 0, "log": 1, "asinh": 2, "proportional": 3, "cubic": 9}
+
+
+@pytest.mark.parametrize(("kind", "lo", "hi", "width", "code"), SCALES)
+def test_the_bare_scale_is_refused_where_the_reference_refuses_it(lib, kind, lo, hi, width, code):
+    from udeep.scale import scale
+    x = [-1.0, 0.0, 0.5, 2.0, None]
+    status, got = stage(lib, lib.udeep_scale, x, KIND_CODE[kind], lo, hi, width)
+    assert status == code
+    try:
+        want = scale(np.array([math.nan if v is None else v for v in x]), kind, lo, hi, width)
+    except ValueError:
+        want = None
+    assert (want is None) == (code != 0)
+    if code == 0:
+        assert np.allclose(np.array(got[:-1], dtype=float), want[:-1], rtol=1e-12, atol=1e-12) and got[-1] is None
+
+
+@pytest.mark.parametrize(("knee", "headroom", "exit_slope", "code"), TONES)
+def test_the_tone_curve_is_refused_where_the_reference_refuses_it(lib, knee, headroom, exit_slope, code):
+    from udeep.tone import tone
+    t = [0.0, 0.25, 0.5, 0.75, 1.0, None]
+    status, got = stage(lib, lib.udeep_tone, t, knee, headroom, exit_slope)
+    assert status == code
+    try:
+        want = tone(np.array([math.nan if v is None else v for v in t]), knee, headroom, exit_slope)
+    except ValueError:
+        want = None
+    assert (want is None) == (code != 0)
+    if code == 0:
+        assert np.allclose(np.array(got[:-1], dtype=float), want[:-1], rtol=1e-12, atol=1e-12) and got[-1] is None
+
+
+def test_the_iso_block_and_the_bytes_digest_refuse_what_they_cannot_write(lib):
+    import hashlib
+    import struct
+
+    from udeep.gainmap import _iso_metadata
+    block = ctypes.create_string_buffer(61)
+    for values, code in (((-0.0125, 2.0, 2.0), 0), ((0.0, 0.0, 0.0), 0), ((math.nan, 2.0, 2.0), 10),
+                         ((0.0, math.inf, 2.0), 10), ((0.0, 2.0, -1.0), 8), ((0.0, 2200.0, 2.0), 8),
+                         ((-2200.0, 2.0, 2.0), 8), ((0.0, 2.0, 4300.0), 8), ((0.0, 2.0, 4294.0), 0)):
+        assert lib.udeep_iso21496_block(*values, block) == code, values
+        try:
+            reference = _iso_metadata(*values)
+        except (ValueError, OverflowError, struct.error):
+            reference = None
+        assert (reference is None) == (code != 0), values
+        if code == 0:
+            assert block.raw == reference
+    assert lib.udeep_iso21496_block(0.0, 2.0, 2.0, None) == 1
+    out = ctypes.create_string_buffer(72)
+    for data in (b"", b"abc", bytes(range(256)) * 9):
+        assert lib.udeep_digest_bytes(data, len(data), out) == 0
+        assert out.value.decode() == "sha256:" + hashlib.sha256(data).hexdigest()
+    assert lib.udeep_digest_bytes(None, 0, out) == 0 and out.value.decode() == "sha256:" + hashlib.sha256(b"").hexdigest()
+    assert lib.udeep_digest_bytes(None, 3, out) == 1 and lib.udeep_digest_bytes(b"abc", 3, None) == 1
 
 
 def test_the_isolated_rule_through_the_c_interface_is_the_reference_one(lib):

@@ -31,7 +31,7 @@ enum {
                                              headroom not above 1 */
     UDEEP_ERROR_CODEC = 9,              /* the image codec failed, a metadata segment was too large, or the gain
                                              map could not be kept within the headroom at this gain quality */
-    UDEEP_ERROR_NOT_FINITE = 10,        /* a number in the mapping record is NaN or infinite */
+    UDEEP_ERROR_NOT_FINITE = 10,        /* a number in the mapping record, or a parameter, is NaN or infinite */
     UDEEP_ERROR_BAD_DECLARATION = 11    /* a required text missing or not UTF-8, an unknown noise model, a
                                              number that means nothing */
 };
@@ -111,6 +111,31 @@ int32_t udeep_srgb_decode(const double *x, double *out, size_t n);
  * a pixel above the knee, out gets 1 where such a pixel lies in no full 3 x 3 block of them, else 0. The buffers
  * must not overlap. */
 int32_t udeep_mask_isolated(const uint8_t *above, size_t height, size_t width, uint8_t *out);
+
+/* ---- The stages of the mapping on their own, and the bytes a file is checked by ----
+ *
+ * For a host that keeps its own mapping, a viewer that draws the curve, or a port that checks itself against the
+ * golden vectors. Each refuses what the reference refuses, and first, unlike it, a parameter that is NaN or
+ * infinite (UDEEP_ERROR_NOT_FINITE). x and out may be the same buffer.
+ *
+ * A bare scale: data values -> position in [0, 1]. kind: UDEEP_STRETCH_LINEAR, _LOG or _ASINH (a proportional
+ * mapping is a linear scale). UDEEP_ERROR_UNKNOWN_STRETCH for another kind; UDEEP_ERROR_BAD_RANGE if hi <= lo or a
+ * log scale has lo <= 0; UDEEP_ERROR_BAD_STRETCH_PARAMETER if width <= 0. */
+int32_t udeep_scale(uint32_t kind, double lo, double hi, double width, const double *x, double *out, size_t n);
+/* The tone curve: position -> light. knee in (0, 1] (UDEEP_ERROR_KNEE_OUTSIDE_RANGE); headroom >= 1 and exit_slope
+ * in 0..3 (UDEEP_ERROR_BAD_HEADROOM). */
+int32_t udeep_tone(double knee, double headroom, double exit_slope, const double *t, double *out, size_t n);
+/* Luminance in cd/m^2 -> PQ signal in [0, 1] (SMPTE ST 2084); outside 0..10000 is clipped. */
+int32_t udeep_pq_encode(const double *nits, double *out, size_t n);
+/* The digest of any bytes, as the digests above (UDEEP_DIGEST_LENGTH characters and a zero): of a colour-map
+ * table's file, the digest the index of the shipped tables records. data may be NULL when length is 0. */
+int32_t udeep_digest_bytes(const uint8_t *data, size_t length, char *out);
+
+/* The ISO 21496-1 gain-map metadata block a gain-map JPEG carries: UDEEP_ISO21496_LENGTH bytes. The three values
+ * are log2, as the Ultra HDR XMP gives them, each stored over 1,000,000; UDEEP_ERROR_BAD_IMAGE if a numerator does
+ * not fit the block (32-bit signed for the gains, unsigned for the capacity). */
+#define UDEEP_ISO21496_LENGTH 61
+int32_t udeep_iso21496_block(double gain_map_min, double gain_map_max, double hdr_capacity_max, uint8_t *out);
 
 /* ---- What a file declares (profile section 8) ----
  *

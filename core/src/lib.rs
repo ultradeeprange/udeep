@@ -71,7 +71,7 @@ pub enum Error {
     /// The image codec failed, a metadata segment was too large for the file format, or the gain map could not be
     /// kept within the headroom at the gain quality asked for.
     Codec = 9,
-    /// A number in the mapping record is NaN or infinite.
+    /// A number in the mapping record, or a parameter, is NaN or infinite.
     NotFinite = 10,
     /// A declaration the profile would refuse: a required text missing or not UTF-8, an unknown noise model, a
     /// number that means nothing.

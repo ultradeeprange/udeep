@@ -37,7 +37,7 @@
   const DEFAULTS = { noise_model: 'unknown', record: 'rendering' };  // as the reference's Declaration has them
   const VERSION = '0.3', IMAGE_STATE = 'data-referred';              // the library's own: a record carries neither
   const ABOVE_KNEE = 'hermite; exit=1';
-  const MAPPING_BYTES = 64, DECLARATION_BYTES = 200, DIGEST_LENGTH = 71, REF_WHITE_NITS = 203.0;
+  const MAPPING_BYTES = 64, DECLARATION_BYTES = 200, DIGEST_LENGTH = 71, ISO21496_LENGTH = 61, REF_WHITE_NITS = 203.0;
 
   // An ArrayBuffer, a Uint8Array or a node Buffer (which is a Uint8Array), as a Uint8Array over the same memory.
   function asBytes(buffer, what) {
@@ -169,11 +169,13 @@
       check(x[name](record, at, at, numbers.length));
       return doublesAt(at, numbers.length).slice();
     });
-    const signal = name => values => scoped(take => {
+    // One value in, one value out, after the function's own parameters (none for the sRGB signal and PQ).
+    const staged = (name, values, parameters) => scoped(take => {
       const numbers = asDoubles(values, 'the values'), at = putDoubles(take, numbers);
-      check(x[name](at, at, numbers.length));
+      check(x[name](...parameters, at, at, numbers.length));
       return doublesAt(at, numbers.length).slice();
     });
+    const signal = name => values => staged(name, values, []);
     const position = each('udeep_position');
 
     function levelsOf(name, m, table, scaledBy, samples, noise, counted) {
@@ -224,6 +226,30 @@
       }),
       srgbEncode: signal('udeep_srgb_encode'),                     // linear light -> the sRGB signal, both in [0, 1]
       srgbDecode: signal('udeep_srgb_decode'),
+
+      // The stages of the mapping on their own, for a viewer that draws the curve or a check against the golden
+      // vectors: a bare scale (`kind` "linear", "log" or "asinh"), the tone curve, and PQ. They refuse what the
+      // reference's scale and tone refuse.
+      scale: (values, kind, lo, hi, width = 1) => {
+        const code = { linear: 0, log: 1, asinh: 2 }[kind];
+        if (code === undefined) throw new Error(`unknown scale kind: ${kind}`);
+        return staged('udeep_scale', values, [code, lo, hi, width]);
+      },
+      tone: (t, knee, headroom, exitSlope = 1) => staged('udeep_tone', t, [knee, headroom, exitSlope]),
+      pqEncode: signal('udeep_pq_encode'),                         // cd/m^2 -> PQ signal in [0, 1]
+      // "sha256:" and the digest of any bytes: of a colour-map table's file, what the index of the shipped tables
+      // records for it
+      digestBytes: bytes => scoped(take => {
+        const data = asBytes(bytes, 'what is digested'), from = putBytes(take, data), out = take(DIGEST_LENGTH + 1);
+        check(x.udeep_digest_bytes(from, data.length, out));
+        return text.decode(bytesAt(out, DIGEST_LENGTH));
+      }),
+      // The ISO 21496-1 block a gain-map JPEG carries, 61 bytes. The three values are log2, as the XMP gives them.
+      iso21496Metadata: (gainMapMin, gainMapMax, hdrCapacityMax) => scoped(take => {
+        const out = take(ISO21496_LENGTH);
+        check(x.udeep_iso21496_block(gainMapMin, gainMapMax, hdrCapacityMax, out));
+        return bytesAt(out, ISO21496_LENGTH).slice();
+      }),
 
       // The isolated-3x3 rule: of height x width bytes in which a non-zero one is a pixel above the knee, 1 where
       // such a pixel lies in no full 3 x 3 block of them, else 0.

@@ -11,6 +11,12 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-14
 
+- **Every golden case through the C interface.** Five functions give the stages of the mapping and the bytes a
+  file is checked by: `udeep_scale`, `udeep_tone`, `udeep_pq_encode`, `udeep_digest_bytes` and
+  `udeep_iso21496_block`. Each refuses what the reference's function refuses, and a parameter that is not finite.
+  The tests reproduce the scale, tone, PQ, table and ISO-block cases through them from Python, and the
+  WebAssembly module now reproduces all 90 cases through its binding (`scale`, `tone`, `pqEncode`,
+  `digestBytes`, `iso21496Metadata` there), where it reached 50.
 - **The core builds as WebAssembly** (`cargo build --release --target wasm32-unknown-unknown --features jpeg,png`):
   a module of 388 KB that imports nothing and exports the whole C interface. There are no threads in it, so every
   loop runs in the caller's thread with the same result, and it lends a host its memory (`udeep_buffer_alloc`,

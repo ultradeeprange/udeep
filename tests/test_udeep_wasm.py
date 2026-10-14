@@ -1,6 +1,6 @@
 """The Rust core built as WebAssembly, called in node through its binding (udeepwasm.js), as a page would call it.
 
-The module must reproduce the golden cases its C interface reaches, and what it writes must be what the Python
+The module must reproduce every golden case through its C interface, and what it writes must be what the Python
 reference reads: a 16-bit PQ PNG with the reference's codes, a gain-map JPEG the validator passes. The checker
 (check_golden_wasm.mjs) is itself under test, as the JavaScript port's is: it must fail when it has checked nothing,
 when it meets a kind of case it has never heard of, and when the binding hands the core the wrong bytes.
@@ -28,9 +28,10 @@ TABLES = ROOT / "src" / "udeep" / "tables"
 NODE, CARGO, RUSTC = shutil.which("node"), shutil.which("cargo"), shutil.which("rustc")
 TARGET = "wasm32-unknown-unknown"
 
-# What the C interface reaches, and the kinds with no function there (the core's own tests hold it to those).
-REACHED = {"srgb_oetf", "cmap", "mapping", "levels", "mask_isolated", "digest_data", "digest_pixels", "xmp", "caption"}
-NOT_IN_THE_INTERFACE = {"scale", "tone", "pq_encode", "table", "iso21496"}
+# What the C interface reaches: every kind. A kind given no function there would go in NOT_IN_THE_INTERFACE.
+REACHED = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "mask_isolated",
+           "digest_data", "digest_pixels", "xmp", "caption", "iso21496"}
+NOT_IN_THE_INTERFACE: set[str] = set()
 IN_PART = {"levels"}                     # compared in the two numbers the interface returns
 
 
@@ -152,7 +153,7 @@ console.log(JSON.stringify({ status, same: one.every((v, i) => Object.is(v, eigh
 
 # ---- the golden vectors
 
-def test_the_wasm_core_reproduces_the_golden_cases_its_interface_reaches(wasm):
+def test_the_wasm_core_reproduces_every_golden_case(wasm):
     r = check(wasm)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "PASS" in r.stdout
@@ -181,11 +182,6 @@ def test_the_check_fails_when_it_has_reproduced_nothing_or_meets_an_unknown_kind
     empty.write_text(json.dumps({"format": 2, "cases": {}}), encoding="utf-8")
     r = check(wasm, golden=empty)
     assert r.returncode != 0 and "PASS" not in r.stdout and "FAIL: no case was reproduced" in r.stdout
-    outside = tmp_path / "outside.json"
-    outside.write_text(json.dumps({"format": 2, "cases": {k: c for k, c in golden["cases"].items()
-                                                         if c["kind"] in NOT_IN_THE_INTERFACE}}), encoding="utf-8")
-    r = check(wasm, golden=outside)
-    assert r.returncode != 0 and "PASS" not in r.stdout and "FAIL: no case was reproduced" in r.stdout
     renamed = sum(c["kind"] == "levels" for c in golden["cases"].values())
     for case in golden["cases"].values():
         if case["kind"] == "levels":
@@ -206,6 +202,13 @@ def test_the_check_fails_when_it_has_reproduced_nothing_or_meets_an_unknown_kind
      "caption"),
     ("new Float32Array(x.memory.buffer, at, table.values.length).set(table.values);",
      "new Float32Array(x.memory.buffer, at, table.values.length).set(table.values.subarray(3));", "cmap_ice_4"),
+    ("const code = { linear: 0, log: 1, asinh: 2 }[kind];", "const code = { linear: 0, log: 2, asinh: 1 }[kind];",
+     "scale_log"),
+    ("check(x.udeep_iso21496_block(gainMapMin, gainMapMax, hdrCapacityMax, out));",
+     "check(x.udeep_iso21496_block(gainMapMax, gainMapMin, hdrCapacityMax, out));", "iso21496_block"),
+    ("tone: (t, knee, headroom, exitSlope = 1) => staged('udeep_tone', t, [knee, headroom, exitSlope]),",
+     "tone: (t, knee, headroom, exitSlope = 1) => staged('udeep_tone', t, [knee, headroom, 1]),",
+     "rolloff_0.8_2.0"),
     ("check(x[name](record, at, nodes, scaledBy, samples, NOISE[model], parameter ?? 0, out, out + 8, ...rest));",
      "check(x[name](record, at, nodes, scaledBy, samples, NOISE[model], (parameter ?? 0) * 2, out, out + 8, ...rest));",
      "levels_linear_grey"),
@@ -297,6 +300,11 @@ console.log(JSON.stringify({
   infinite: thrown(() => core.gainmapJpeg([0.5, 0.5, 0.5], [Infinity, 1, 1], 1, 1, 4)),
   // a table that says it holds 2^31 numbers: 8 GiB, which a 32-bit size would carry as 0
   wraps: thrown(() => core.colours([0.5], { values: { length: 2 ** 31 }, nodes: 2 ** 30, headroom: 4 })),
+  kind: thrown(() => core.scale([1], 'cubic', 0, 1)), log_from_zero: thrown(() => core.scale([1], 'log', 0, 10)),
+  width: thrown(() => core.scale([1], 'asinh', 0, 1, 0)), knee_zero: thrown(() => core.tone([0.5], 0, 4)),
+  steep: thrown(() => core.tone([0.5], 0.5, 4, 3.5)), no_headroom: thrown(() => core.tone([0.5], 0.5, undefined)),
+  iso_nan: thrown(() => core.iso21496Metadata(NaN, 2, 2)), iso_large: thrown(() => core.iso21496Metadata(0, 2200, 2)),
+  digest_text: thrown(() => core.digestBytes('abc')), empty: core.digestBytes(new Uint8Array(0)),
 }));
 """)
     assert (out["good"], out["knee"], out["range"], out["not_finite"], out["headroom"]) == (0, 4, 3, 10, 5)
@@ -309,6 +317,10 @@ console.log(JSON.stringify({
     assert out["none"] == [] and out["typed"] == [1.0]                         # the knee of that record is 240
     assert out["not_a_png"][0] == "Error" and out["not_a_png"][1] in (8, 9)
     assert out["not_a_jpeg"] == ["Error", 8] and out["infinite"] == ["Error", 8] and out["wraps"] == ["RangeError", None]
+    assert out["kind"] == ["Error", None] and out["log_from_zero"] == ["Error", 3] and out["width"] == ["Error", 6]
+    assert out["knee_zero"] == ["Error", 4] and out["steep"] == ["Error", 5] and out["no_headroom"] == ["Error", 10]
+    assert out["iso_nan"] == ["Error", 10] and out["iso_large"] == ["Error", 8] and out["digest_text"] == ["TypeError", None]
+    assert out["empty"] == "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 
 def test_damaged_files_are_refused_with_a_code_and_never_stop_the_module(wasm, tmp_path):

@@ -136,6 +136,13 @@ A declaration the profile would refuse comes back as `UDEEP_ERROR_BAD_DECLARATIO
 own code. For drawing there are `udeep_srgb_encode` / `udeep_srgb_decode`, `udeep_value_at` (position to
 data value, for colour-bar ticks) and `udeep_mask_isolated` (the `isolated-3x3` rule of the Highlight preset).
 
+The stages of the mapping are there on their own too, with the bytes a file is checked by: `udeep_scale` (a bare
+scale), `udeep_tone` (the tone curve), `udeep_pq_encode`, `udeep_digest_bytes` (the digest of any bytes, such as a
+shipped table's file) and `udeep_iso21496_block`. They are for a host that keeps its own mapping, a viewer that
+draws the curve, and a port that checks itself against the golden vectors: with them, every kind of golden case
+can be reproduced through the interface. Each refuses what the reference's function refuses, and before that,
+unlike the reference, a parameter that is NaN or infinite.
+
 `../tests/test_udeep_rust.py` builds the library and calls every function through this interface from Python
 (ctypes), comparing with the golden vectors and, record by record, with what the reference accepts and refuses.
 No C compiler has been run against the header itself.
@@ -167,10 +174,8 @@ names, copies numbers in and out, and turns an error code into an `Error` carryi
 
 `../tests/test_udeep_wasm.py` builds the module and, in node:
 
-- runs `check_golden_wasm.mjs`, which reproduces through the binding every golden case the C interface reaches:
-  50 of the 90 (the levels cases in the two numbers the interface returns). Scale, tone, PQ encoding, the shipped
-  tables' digests and the ISO block have no function of their own in the interface and are held to the vectors
-  by `cargo test`;
+- runs `check_golden_wasm.mjs`, which reproduces all 90 golden cases through the binding (the levels cases in the
+  two numbers the interface returns, the widest level and the worst ratio);
 - checks that the module exports exactly the functions of the header, that a call asking for threads runs and
   gives the plain loop's bits, that what the core refuses comes back as an error with its code, and that 1,200
   damaged files (`../tests/test_malformed.py`'s damage), and a PNG and a JPEG whose headers claim vast images,

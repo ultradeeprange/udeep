@@ -757,7 +757,7 @@ pub unsafe extern "C" fn udeep_png_pq_read(
     }
 }
 
-unsafe fn signal(f: fn(f64) -> f64, x: *const f64, out: *mut f64, n: usize) -> i32 {
+unsafe fn signal(f: impl Fn(f64) -> f64, x: *const f64, out: *mut f64, n: usize) -> i32 {
     if n == 0 {
         return OK;
     }
@@ -788,6 +788,134 @@ pub unsafe extern "C" fn udeep_srgb_encode(x: *const f64, out: *mut f64, n: usiz
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn udeep_srgb_decode(x: *const f64, out: *mut f64, n: usize) -> i32 {
     unsafe { signal(crate::srgb_eotf, x, out, n) }
+}
+
+// ---- The stages of the mapping on their own, as the golden vectors give them (scale, tone, PQ), and the bytes a
+// file is checked by (a table's digest, the ISO 21496-1 block). A host that keeps its own mapping, a viewer that
+// draws the curve, or a port that checks itself against the vectors needs these; the mapping record covers the rest.
+
+/// Data values -> position in `[0, 1]` on a bare scale: `kind` 0 linear, 1 log, 2 asinh. `lo` goes to 0 and `hi`
+/// to 1, clipped; NaN stays NaN; on a log scale a value at or below zero is position 0. Refused as the reference's
+/// `scale` refuses: another kind (`UnknownStretch`; a proportional mapping is a linear scale), `hi` not above `lo`
+/// or a log scale that does not start above zero (`BadRange`), a width not above zero (`BadStretchParameter`); and
+/// first, unlike the reference, a parameter that is not finite (`NotFinite`). `x` and `out` may be the same buffer.
+///
+/// # Safety
+/// `x` must point to `n` readable `double`s and `out` to `n` writable ones.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_scale(
+    kind: u32,
+    lo: f64,
+    hi: f64,
+    width: f64,
+    x: *const f64,
+    out: *mut f64,
+    n: usize,
+) -> i32 {
+    if !(lo.is_finite() && hi.is_finite() && width.is_finite()) {
+        return Error::NotFinite as i32;
+    }
+    let stretch = match crate::Stretch::from_code(kind) {
+        Ok(s) if kind <= 2 => s,
+        _ => return Error::UnknownStretch as i32,
+    };
+    if !(hi > lo) || (stretch == crate::Stretch::Log && !(lo > 0.0)) {
+        return Error::BadRange as i32;
+    }
+    if !(width > 0.0) {
+        return Error::BadStretchParameter as i32;
+    }
+    unsafe { signal(|v| crate::scale(v, stretch, lo, hi, width), x, out, n) }
+}
+
+/// Position in `[0, 1]` -> light, in multiples of SDR white: the tone curve alone, as the reference's `tone` draws
+/// it. `knee` is a position, in `(0, 1]` (`KneeOutsideRange` otherwise); `headroom` at least 1 and `exit_slope` in
+/// `0..=3` (`BadHeadroom` otherwise); none of them may be NaN or infinite (`NotFinite`, checked first). `t` and
+/// `out` may be the same buffer.
+///
+/// # Safety
+/// `t` must point to `n` readable `double`s and `out` to `n` writable ones.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_tone(
+    knee: f64,
+    headroom: f64,
+    exit_slope: f64,
+    t: *const f64,
+    out: *mut f64,
+    n: usize,
+) -> i32 {
+    if !(knee.is_finite() && headroom.is_finite() && exit_slope.is_finite()) {
+        return Error::NotFinite as i32;
+    }
+    if !(knee > 0.0 && knee <= 1.0) {
+        return Error::KneeOutsideRange as i32;
+    }
+    if !(headroom >= 1.0 && (0.0..=3.0).contains(&exit_slope)) {
+        return Error::BadHeadroom as i32;
+    }
+    unsafe { signal(|v| crate::tone(v, knee, headroom, exit_slope), t, out, n) }
+}
+
+/// Luminance in cd/m^2 -> PQ signal in `[0, 1]` (SMPTE ST 2084); luminance outside 0..10000 is clipped to it.
+/// `nits` and `out` may be the same buffer.
+///
+/// # Safety
+/// As [`udeep_srgb_encode`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_pq_encode(nits: *const f64, out: *mut f64, n: usize) -> i32 {
+    unsafe { signal(crate::pq_encode, nits, out, n) }
+}
+
+/// The digest of any bytes, written as the other digests are: `"sha256:"` and 64 hex digits, then a zero, into
+/// 72 bytes at `out`. Of a colour-map table's file it is the digest the index of the shipped tables records.
+/// `data` may be null when `length` is 0.
+///
+/// # Safety
+/// `data` must point to `length` readable bytes and `out` to 72 writable ones.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_digest_bytes(data: *const u8, length: usize, out: *mut u8) -> i32 {
+    if data.is_null() && length > 0 {
+        return Error::NullPointer as i32;
+    }
+    let bytes = if length == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(data, length) } };
+    unsafe { put_digest(&crate::sha256::digest(bytes), out) }
+}
+
+/// The length of the ISO 21496-1 gain-map metadata block this library writes.
+pub const ISO21496_LENGTH: usize = 61;
+
+/// The ISO 21496-1 metadata block of a gain map, the 61 bytes a gain-map JPEG carries: `gain_map_min`,
+/// `gain_map_max` and `hdr_capacity_max` are log2 values, as the Ultra HDR XMP gives them, each stored as a
+/// numerator over 1,000,000. A value that is not finite is refused (`NotFinite`), and one whose numerator does not
+/// fit the block (`BadImage`): a 32-bit signed number for the two gains, unsigned for the capacity. The reference
+/// refuses both.
+///
+/// # Safety
+/// `out` must point to 61 writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_iso21496_block(
+    gain_map_min: f64,
+    gain_map_max: f64,
+    hdr_capacity_max: f64,
+    out: *mut u8,
+) -> i32 {
+    if out.is_null() {
+        return Error::NullPointer as i32;
+    }
+    if !(gain_map_min.is_finite() && gain_map_max.is_finite() && hdr_capacity_max.is_finite()) {
+        return Error::NotFinite as i32;
+    }
+    let numerator = |v: f64| (v * 1_000_000.0).round_ties_even();
+    let signed = |v: f64| (f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(&numerator(v));
+    if !(signed(gain_map_min)
+        && signed(gain_map_max)
+        && (0.0..=f64::from(u32::MAX)).contains(&numerator(hdr_capacity_max)))
+    {
+        return Error::BadImage as i32;
+    }
+    let block = crate::iso21496_block(gain_map_min, gain_map_max, hdr_capacity_max);
+    unsafe { std::ptr::copy_nonoverlapping(block.as_ptr(), out, ISO21496_LENGTH) };
+    OK
 }
 
 /// The `isolated-3x3` mask rule (`udeep:DerivedMask`): of an image of `height` rows of `width` bytes, row
