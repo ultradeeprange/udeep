@@ -60,7 +60,9 @@ def main() -> None:
     for name, command in [*steps, CHROME]:
         run(name, command)
     if args.check:
-        changed = subprocess.run(["git", "status", "--porcelain", "--", "docs", "src/udeep/tables", "evidence"],
+        # docs/assets is left out: its pictures, the share image among them, are drawn with the machine's fonts
+        changed = subprocess.run(["git", "status", "--porcelain", "--", "docs", ":!docs/assets", "src/udeep/tables",
+                                  "evidence"],
                                  cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
         if changed:
             sys.exit("these generated files are not what the tools make; run tools/build_all.py and commit them:\n"
