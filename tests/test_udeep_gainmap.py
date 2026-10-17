@@ -3,6 +3,7 @@
 Spec: developer.android.com/media/platform/hdr-image-format (Ultra HDR v1). The reader implements the
 spec's display-time formula, so the round trip tests the maths, not just the file layout.
 """
+import math
 import re
 import struct
 
@@ -356,3 +357,13 @@ def test_the_iso_block_changes_no_pixel(tmp_path):
     assert read_iso_metadata(b) is None
     for boost in (1.0, 1.5, 2.0):
         assert np.array_equal(read_gainmap_jpeg(a, boost), read_gainmap_jpeg(b, boost))
+
+
+@pytest.mark.parametrize("headroom", [math.inf, math.nan, 1.0, 0.5, -4.0])
+def test_a_headroom_that_is_not_a_finite_number_above_one_is_refused(tmp_path, headroom):
+    """An infinite headroom once reached the Rust writer, which wrote it into the metadata as an infinity; the
+    reference raised OverflowError for it. Both refuse it now, the reference with ValueError."""
+    sdr, hdr = scene()[:2]
+    with pytest.raises(ValueError, match="headroom"):
+        write_gainmap_jpeg(sdr, hdr, tmp_path / "f.jpg", headroom=headroom)
+    assert not (tmp_path / "f.jpg").exists()

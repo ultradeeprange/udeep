@@ -175,7 +175,7 @@ def test_the_core_writer_refuses_what_the_python_one_refuses(tmp_path):
     good = np.full((8, 8, 3), 0.5)
     path = tmp_path / "bad.jpg"
     cases = ((good, good[:4], 4.0, "H x W x 3"), (good + 1.0, good, 4.0, "must lie in"),
-             (good, good, 1.0, "headroom must be > 1"), (good, np.full((8, 8, 3), np.inf), 4.0, "too large"))
+             (good, good, 1.0, "headroom must be a finite number > 1"), (good, np.full((8, 8, 3), np.inf), 4.0, "too large"))
     for sdr, hdr, headroom, message in cases:
         with pytest.raises(ValueError, match=message):
             write_gainmap_jpeg(sdr, hdr, path, headroom)
@@ -227,7 +227,7 @@ def test_renders_that_do_not_match_are_refused():
     r = np.zeros((8, 8, 3), np.uint8)
     with pytest.raises(ValueError, match="H x W x 3"):
         core.write_from_renders(r, r[:4], r, r, 4.0)
-    with pytest.raises(ValueError, match="headroom must be > 1"):
+    with pytest.raises(ValueError, match="headroom must be a finite number > 1"):
         core.write_from_renders(r, r, r, r, 1.0)
     data, lifted = core.write_from_renders(r + 200, r + 200, r + 200, r + 200, 4.0)      # nothing is an image alone
     assert lifted == 0 and data[:2] == b"\xff\xd8"

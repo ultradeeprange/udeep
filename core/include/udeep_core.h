@@ -168,7 +168,9 @@ int32_t udeep_caption(const udeep_declaration *declaration, uint8_t **data, size
 /* The stored levels of an 8-bit gain-map rendering: the widest (udeep:MaxDataStep) and the data criterion's worst
  * ratio (udeep:RoundingToNoise, at most 1e9). noise_model: 0 unknown (the ratio is then NaN), 1 constant,
  * 2 poisson, 3 relative, 4 tolerance. table: a colour-map table of `nodes` nodes per segment, or NULL for grey.
- * scaled_by: the headroom the file is written for. samples: positions looked at (the reference uses 65536). */
+ * scaled_by: the headroom the file is written for. samples: positions looked at (the reference uses 65536), at most
+ * UDEEP_MAX_SAMPLES; more is refused (UDEEP_ERROR_BAD_DECLARATION), here and in the two functions after this. */
+#define UDEEP_MAX_SAMPLES ((size_t)1 << 26)
 int32_t udeep_levels(const udeep_mapping *mapping, const float *table, size_t nodes, double scaled_by,
                        size_t samples, uint32_t noise_model, double noise_parameter, double *max_data_step,
                        double *rounding_to_noise);

@@ -148,10 +148,10 @@ unsafe fn each_parallel(
     let threads = par::threads_for(threads, n);
     let knee = m.knee_position();
     // Each thread owns a range of indices and, for each, reads `x` then writes `out`: sound for separate buffers
-    // and for one shared buffer alike. The addresses cross the thread boundary as integers.
-    let (from, to) = (x as usize, out as usize);
+    // and for one shared buffer alike.
+    let (from, to) = (par::Shared(x.cast_mut()), par::Shared(out));
     par::in_ranges(n, threads, |range| {
-        let (x, out) = (from as *const f64, to as *mut f64);
+        let (x, out) = (from.get().cast_const(), to.get());
         for i in range {
             let v = unsafe { x.add(i).read() };
             unsafe { out.add(i).write(f(m, knee, v)) };
@@ -219,9 +219,9 @@ pub unsafe extern "C" fn udeep_colours_parallel(
         }
     };
     let lookup = lookup.as_ref();
-    let (from, to) = (light as usize, rgb as usize);
+    let (from, to) = (par::Shared(light.cast_mut()), par::Shared(rgb));
     par::in_ranges(n, par::threads_for(threads, n), |range| {
-        let (light, rgb) = (from as *const f64, to as *mut f64);
+        let (light, rgb) = (from.get().cast_const(), to.get());
         for i in range {
             let colour = crate::colours(unsafe { light.add(i).read() }, lookup);
             for (k, c) in colour.into_iter().enumerate() {
@@ -555,9 +555,13 @@ pub unsafe extern "C" fn udeep_levels(
     }
 }
 
+/// The most samples the levels functions take: 2^26, 64 times what the reference uses for a 16-bit file. The
+/// work grows with the count, and a count near the top of a `size_t` would keep a call busy for years.
+pub const MAX_SAMPLES: usize = 1 << 26;
+
 /// The levels of a file of this mapping and the noise they are judged against: what [`udeep_levels`],
-/// [`udeep_levels_pq16`] and [`udeep_levels_criterion`] share. `scaled_by` is the headroom the 8-bit file is written for,
-/// or the white level in cd/m^2 of the 16-bit one.
+/// [`udeep_levels_pq16`] and [`udeep_levels_criterion`] share. `scaled_by` is the headroom the 8-bit file is written
+/// for, or the white level in cd/m^2 of the 16-bit one. More than [`MAX_SAMPLES`] samples are refused.
 #[allow(clippy::too_many_arguments)]
 unsafe fn found_levels(
     mapping: *const Mapping,
@@ -571,6 +575,9 @@ unsafe fn found_levels(
 ) -> Result<(record::Levels, Option<record::Noise>), Error> {
     let m = unsafe { mapping.as_ref() }.ok_or(Error::NullPointer)?;
     m.validate()?;
+    if samples > MAX_SAMPLES {
+        return Err(Error::BadDeclaration);
+    }
     let lookup = if table.is_null() {
         None
     } else {

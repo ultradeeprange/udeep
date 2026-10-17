@@ -22,6 +22,7 @@ build would put it), then in core/target/release of a source checkout (cargo bui
 from __future__ import annotations
 
 import ctypes
+import math
 import os
 import sys
 from pathlib import Path
@@ -297,8 +298,8 @@ def write_from_renders(base: np.ndarray, scaled: np.ndarray, black: np.ndarray, 
     renders = [np.ascontiguousarray(r, dtype=np.uint8) for r in (base, scaled, black, white)]
     if any(r.shape != renders[0].shape for r in renders) or renders[0].ndim != 3 or renders[0].shape[2] != 3:
         raise ValueError("the four renders must all be H x W x 3")
-    if not headroom > 1.0:
-        raise ValueError("headroom must be > 1")
+    if not (headroom > 1.0 and math.isfinite(headroom)):
+        raise ValueError(f"headroom must be a finite number > 1, got {headroom!r}")
     pointers = [r.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)) for r in renders]
     data, length, lifted = ctypes.POINTER(ctypes.c_uint8)(), ctypes.c_size_t(), ctypes.c_size_t()
     status = dll.udeep_gainmap_from_renders(*pointers, renders[0].shape[1], renders[0].shape[0], headroom, quality,

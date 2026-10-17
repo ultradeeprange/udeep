@@ -426,7 +426,7 @@ pub fn gainmap_file(
     if count == 0 || sdr.len() != count || hdr.len() != count || width > 0xFFFF || height > 0xFFFF {
         return Err(WriteError::Shape);
     }
-    if !(headroom > 1.0) || sdr.iter().any(|&v| v < -1e-6 || v > 1.0 + 1e-6) {
+    if !(headroom > 1.0 && headroom.is_finite()) || sdr.iter().any(|&v| v < -1e-6 || v > 1.0 + 1e-6) {
         return Err(WriteError::Range);
     }
     // Everything below that is done once for each sample is done on every processor core: it was half the
@@ -643,9 +643,9 @@ pub fn read_gainmap_jpeg(
         })
         .collect();
     let mut out = vec![0f32; base.len()];
-    let to = out.as_mut_ptr() as usize;
+    let to = crate::par::Shared(out.as_mut_ptr());
     crate::par::in_ranges(base.len(), crate::par::threads_for(threads, base.len()), |range| {
-        let out = to as *mut f32;
+        let out = to.get();
         for i in range {
             let value = linear[usize::from(base[i])] * boost[usize::from(map[i])] - offset_hdr;
             unsafe { out.add(i).write(value as f32) };

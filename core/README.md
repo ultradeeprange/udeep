@@ -81,6 +81,10 @@ figures over its headroom on this crate's decoder, at worst 1.045 x when read wi
 
 The gain-map writer refuses an infinite HDR value (`WriteError::Range`, code 8): its gain has no bound. A NaN in
 either figure is written as 0, as the reference writes it, because that is how a view marks a pixel with no data.
+It refuses a headroom that is not a finite number above 1 (code 8), as the reference does.
+
+The levels functions refuse more than `UDEEP_MAX_SAMPLES` (2^26) samples (code 11): the work grows with the
+count, and a count near the top of a `size_t` would keep a call busy for years.
 
 ## How numbers are written
 
@@ -155,6 +159,22 @@ It also compiles a C program against the header, with warnings as errors (MSVC `
 record and a declaration as a C host would, and what the library gives it is compared with the golden vectors
 and the reference. A record declared in another order than the library's fails it. The test is skipped where
 there is no C compiler; it has been run with MSVC 14.51 on Windows (2026-10-14).
+
+Two Rust tests hold the interface to what a careless or hostile host may do:
+
+- `tests/ffi_stress.rs`: 20,000 mapping records near a valid one, with NaNs, infinities, raw bit patterns and
+  unknown codes, through every per-value and levels function; null pointers; sizes whose product overflows;
+  declarations with text that is not UTF-8 or numbers that mean nothing; the same buffer in and out; calls from
+  16 threads at once; and the image writers and readers with wrong sizes, non-finite values and 2,000 damaged
+  files. Each call must come back with a code: a panic would abort the host.
+- `tests/ffi_leaks.rs`: an allocator that counts every byte, around 200 rounds of every function, good and
+  refused, with what they return released as the header says. Not one byte may be left over.
+
+The first is also run under Miri (`cargo +nightly miri test --test ffi_stress`, with `MIRIFLAGS=
+-Zmiri-deterministic-floats -Zmiri-strict-provenance`), which checks every access the unsafe code makes and
+reports memory never released; CI runs it. The image functions are left out there, the codecs being far too
+slow under Miri. Deterministic floats are needed because Miri otherwise varies the last bits of `ln`, `powf`
+and the like from call to call, which a bit-for-bit comparison takes for a fault.
 
 ## WebAssembly
 

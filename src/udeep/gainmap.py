@@ -14,6 +14,7 @@ by the gain-map JPEG [SOI, APP1 XMP hdrgm, ...].
 from __future__ import annotations
 
 import io
+import math
 import re
 import struct
 from pathlib import Path
@@ -250,8 +251,8 @@ def _checked(sdr, hdr, headroom: float) -> tuple[np.ndarray, np.ndarray]:
         raise ValueError("sdr and hdr must both be H x W x 3")
     if np.nanmin(sdr) < -1e-6 or np.nanmax(sdr) > 1.0 + 1e-6:
         raise ValueError("the SDR plot must lie in [0, 1]")
-    if not headroom > 1.0:
-        raise ValueError("headroom must be > 1")
+    if not (headroom > 1.0 and math.isfinite(headroom)):
+        raise ValueError(f"headroom must be a finite number > 1, got {headroom!r}")
     return sdr, hdr
 
 

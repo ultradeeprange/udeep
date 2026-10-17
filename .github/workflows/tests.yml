@@ -78,6 +78,17 @@ jobs:
       - name: Rebuild everything that is generated, and compare
         run: python tools/build_all.py --check
 
+  miri:
+    name: C interface under Miri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - run: rustup toolchain install nightly --profile minimal --component miri,rust-src
+      - name: Stress tests of the C interface, checked for undefined behaviour and leaks
+        env:
+          MIRIFLAGS: -Zmiri-deterministic-floats -Zmiri-strict-provenance
+        run: cargo +nightly miri test --manifest-path core/Cargo.toml --test ffi_stress
+
   julia:
     name: Julia package
     runs-on: ubuntu-latest

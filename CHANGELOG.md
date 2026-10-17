@@ -11,6 +11,18 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-17
 
+- **The C interface stress-tested** (`core/tests/ffi_stress.rs`, `core/tests/ffi_leaks.rs`): hostile records and
+  numbers, null pointers, overflowing sizes, bad text, aliased buffers, 16 threads at once and damaged files,
+  where every call must come back with a code; a counting allocator that finds no byte left allocated after
+  200 rounds of every function; and Miri, which finds no undefined behaviour or leak in the interface's unsafe
+  code (CI now runs it). What it found, and fixed:
+  - the Rust gain-map writer took an infinite headroom and wrote the infinity into the file's metadata; the
+    reference raised OverflowError for it. Both now refuse a headroom that is not a finite number above 1, the
+    reference with ValueError;
+  - the levels functions took any sample count, so a count near the top of a `size_t` kept a call busy for
+    years; they now refuse more than 2^26 (`UDEEP_MAX_SAMPLES`), 64 times what the reference uses;
+  - the parallel loops passed buffer addresses between threads as integers, which hides the accesses from
+    Miri; they now pass the pointers (`par::Shared`), and Miri checks them under strict provenance.
 - **The data criterion in full through the C interface**: `udeep_levels_criterion` gives the count of stored
   levels, the widest, where the first starts, the worst ratio and where it was taken, the fraction of the range
   over the limit, the limit and the verdict, as the reference's `data_steps` and `rounding_to_noise` do, for an

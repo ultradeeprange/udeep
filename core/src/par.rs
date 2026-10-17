@@ -32,6 +32,23 @@ fn cores() -> usize {
     *CORES.get_or_init(|| thread::available_parallelism().map_or(1, NonZero::get))
 }
 
+/// A pointer that the threads of [`in_ranges`] may share: each thread touches only the indices of its own range,
+/// so no two write to one place. Passing the pointer itself keeps what it may point to (its provenance), which an
+/// address cast to an integer and back does not; Miri can then check every access the threads make. Take it
+/// with [`Shared::get`] inside the closure, so that the closure holds the whole wrapper.
+#[derive(Clone, Copy)]
+pub struct Shared<T>(pub *mut T);
+
+// SAFETY: the wrapper only carries the pointer across; what each thread does with it is the caller's to keep apart.
+unsafe impl<T> Send for Shared<T> {}
+unsafe impl<T> Sync for Shared<T> {}
+
+impl<T> Shared<T> {
+    pub fn get(self) -> *mut T {
+        self.0
+    }
+}
+
 /// Run `work` over `0..n` cut into `threads` ranges of nearly equal length, each on a thread of its own. With one
 /// thread nothing is started: `work` runs in the caller's thread, so a small call costs no more than the loop.
 /// `threads` is the number already decided ([`threads_for`]).
