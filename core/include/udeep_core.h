@@ -180,6 +180,25 @@ int32_t udeep_levels_pq16(const udeep_mapping *mapping, const float *table, size
                             size_t samples, uint32_t noise_model, double noise_parameter, double *max_data_step,
                             double *rounding_to_noise, size_t *count);
 
+/* The levels and the data criterion in full, as the reference's data_steps and rounding_to_noise give them: those of
+ * udeep_levels (pq16 = 0; scaled_by is the headroom the 8-bit file is written for) or of udeep_levels_pq16 (pq16 = 1;
+ * scaled_by is the white level in cd/m^2). Fixed layout, 64 bytes on every machine. With noise_model 0 (unknown) the
+ * criterion's numbers are NaN and meets is 0. */
+typedef struct udeep_criterion {
+    uint64_t count;             /* stored levels */
+    double max_data_step;       /* the widest, in data units (udeep:MaxDataStep) */
+    double first_start;         /* where the first level starts, in data units */
+    double rounding_to_noise;   /* the worst ratio of rounding error to uncertainty, at most 1e9 */
+    double at;                  /* the data value where the uncertainty was taken for it */
+    double failing_fraction;    /* the fraction of the declared range over the limit */
+    double limit;               /* 0.1 for a noise model, 1 for a tolerance */
+    uint32_t meets;             /* 1 if no level is over the limit */
+    uint32_t reserved;
+} udeep_criterion;
+int32_t udeep_levels_criterion(const udeep_mapping *mapping, const float *table, size_t nodes, double scaled_by,
+                               size_t samples, uint32_t noise_model, double noise_parameter, uint32_t pq16,
+                               udeep_criterion *out);
+
 /* Release bytes returned by this library. */
 void udeep_bytes_free(uint8_t *data, size_t length);
 

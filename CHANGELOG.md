@@ -9,6 +9,15 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ## Unreleased
 
+### 2026-10-17
+
+- **The data criterion in full through the C interface**: `udeep_levels_criterion` gives the count of stored
+  levels, the widest, where the first starts, the worst ratio and where it was taken, the fraction of the range
+  over the limit, the limit and the verdict, as the reference's `data_steps` and `rounding_to_noise` do, for an
+  8-bit gain map or a 16-bit PQ file. The tests reproduce all 32 golden levels cases through it in every output,
+  from Python and from the C host; the WebAssembly binding has it as `criterion`, so the module now reproduces
+  every output of every golden case, where the levels cases were compared in two.
+
 ### 2026-10-14
 
 - **Where white is in a PQ file, settled** (profile 9.1.1): a PQ or HLG file places white at BT.2408's reference

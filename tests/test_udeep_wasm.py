@@ -32,7 +32,7 @@ TARGET = "wasm32-unknown-unknown"
 REACHED = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "mask_isolated",
            "digest_data", "digest_pixels", "xmp", "caption", "iso21496"}
 NOT_IN_THE_INTERFACE: set[str] = set()
-IN_PART = {"levels"}                     # compared in the two numbers the interface returns
+IN_PART: set[str] = set()               # a kind the interface would give only some outputs of; none now
 
 
 def target_installed() -> bool:
@@ -211,6 +211,10 @@ def test_the_check_fails_when_it_has_reproduced_nothing_or_meets_an_unknown_kind
      "rolloff_0.8_2.0"),
     ("check(x[name](record, at, nodes, scaledBy, samples, NOISE[model], parameter ?? 0, out, out + 8, ...rest));",
      "check(x[name](record, at, nodes, scaledBy, samples, NOISE[model], (parameter ?? 0) * 2, out, out + 8, ...rest));",
+     "levels_linear_grey"),
+    ("NOISE[model], parameter ?? 0, pq16 ? 1 : 0,", "NOISE[model], (parameter ?? 0) * 2, pq16 ? 1 : 0,",
+     "levels_linear_grey"),
+    ("failingFraction: number(40), limit: number(48),", "failingFraction: number(48), limit: number(40),",
      "levels_linear_grey"),
 ])
 def test_a_change_to_the_binding_fails_the_golden_check(wasm, tmp_path, old, new, caught_in):

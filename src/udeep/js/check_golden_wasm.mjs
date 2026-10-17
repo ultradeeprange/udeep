@@ -4,9 +4,8 @@
 // Everything that is compared is worked out inside the module: this file only reads the vectors, calls the
 // binding and compares, each case to its own tolerance (or exactly). What it can reach is what the core's C
 // interface offers, which is every kind of case. A kind given no function there would be listed by name as not
-// reachable (NOT_IN_THE_INTERFACE; none is), and checked by the core's own tests (core/tests/golden.rs). A levels
-// case is compared in the two numbers the interface returns, the widest level and the worst ratio, and is counted
-// apart for that reason.
+// reachable (NOT_IN_THE_INTERFACE; none is), and checked by the core's own tests (core/tests/golden.rs). A kind the
+// interface gave only some outputs of would be compared in those and counted apart (IN_PART; none is).
 //
 // It fails, with exit status 1, when a case is out; when it reproduced no case at all; and when it meets a kind
 // of case it has never heard of. It prints how many cases it reproduced, for the test that runs it to hold it to
@@ -18,7 +17,7 @@ import './udeepwasm.js';
 const { load, makeTable } = globalThis.UDeepWasm;
 
 const NOT_IN_THE_INTERFACE = [];
-const IN_PART = { levels: ['max_data_step', 'rounding_to_noise'] };   // the outputs the interface returns
+const IN_PART = {};                      // kind -> the outputs the interface returns, for a kind it gives in part
 
 const golden = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const tablesDir = process.argv[3];
@@ -45,8 +44,11 @@ const KINDS = {
     return { knee_position: core.kneePosition(m), position: list(core.position(m, x)), light: list(y),
       sdr_light: list(core.sdrLight(m, x)), value_of_light: list(core.valueOfLight(m, y)),
       colours: triples(core.colours(y, tableOf(c))) }; },
-  levels: (a, c) => { const found = core.levels(a.mapping, tableOf(c), a.mapping.reference_headroom, a.samples, a.noise);
-    return { max_data_step: found.maxDataStep, rounding_to_noise: found.roundingToNoise }; },
+  levels: (a, c) => { const args = [a.mapping, tableOf(c), a.mapping.reference_headroom, a.samples, a.noise];
+    const f = core.criterion(...args), short = core.levels(...args);       // the short form must say the same
+    if (short.maxDataStep !== f.maxDataStep || short.roundingToNoise !== f.roundingToNoise) throw new Error('levels and criterion differ');
+    return { count: f.count, max_data_step: f.maxDataStep, first_start: f.firstStart, rounding_to_noise: f.roundingToNoise,
+      failing_fraction: f.failingFraction, limit: f.limit, meets: f.meets, at: f.at }; },
   mask_isolated: a => { const width = a.above[0].length, height = a.above.length;
     const held = core.isolated(Uint8Array.from(a.above.join(''), ch => Number(ch === '1')), height, width);
     return a.above.map((_, row) => list(held.subarray(row * width, (row + 1) * width)).join('')); },

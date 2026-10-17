@@ -44,6 +44,13 @@ TEXTS = ("data_unit", "knee_rule", "noise_model", "record", "derived_mask", "pre
          "data_digest", "data_source", "data_unit_code", "sdr_digest")
 
 
+class CCriterion(ctypes.Structure):
+    """udeep_criterion, field for field as in core/include/udeep_core.h: 64 bytes on every machine."""
+    _fields_ = [("count", ctypes.c_uint64), ("max_data_step", ctypes.c_double), ("first_start", ctypes.c_double),
+                ("rounding_to_noise", ctypes.c_double), ("at", ctypes.c_double), ("failing_fraction", ctypes.c_double),
+                ("limit", ctypes.c_double), ("meets", ctypes.c_uint32), ("reserved", ctypes.c_uint32)]
+
+
 class CDeclaration(ctypes.Structure):
     """udeep_declaration, field for field as in core/include/udeep_core.h."""
     _fields_ = [("mapping", CMapping), ("max_data_step", ctypes.c_double), ("noise_parameter", ctypes.c_double),
@@ -104,6 +111,10 @@ def lib():
     dll.udeep_digest_bytes.restype = ctypes.c_int32
     dll.udeep_iso21496_block.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_char_p]
     dll.udeep_iso21496_block.restype = ctypes.c_int32
+    dll.udeep_levels_criterion.argtypes = [record, ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
+                                           ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, ctypes.c_uint32,
+                                           ctypes.POINTER(CCriterion)]
+    dll.udeep_levels_criterion.restype = ctypes.c_int32
     return dll
 
 
@@ -139,7 +150,7 @@ def test_the_library_exports_every_function_the_header_declares(lib):
     only a WebAssembly build has (tests/test_udeep_wasm.py holds that build to the whole header)."""
     header = re.sub(r"/\*.*?\*/", "", (CORE / "include" / "udeep_core.h").read_text(encoding="utf-8"), flags=re.DOTALL)
     declared = set(re.findall(r"\b(udeep_\w+)\(", header)) - {"udeep_buffer_alloc", "udeep_buffer_free"}
-    assert len(declared) == 33 and not [name for name in sorted(declared) if not hasattr(lib, name)]
+    assert len(declared) == 34 and not [name for name in sorted(declared) if not hasattr(lib, name)]
     assert not hasattr(lib, "udeep_buffer_alloc")               # memory is the host's own outside WebAssembly
 
 
@@ -566,6 +577,67 @@ def test_the_c_interface_gives_the_reference_levels_and_criterion(lib, case):
             assert ratio == pytest.approx(min(against["worst"], 1e9), rel=1e-9)
 
 
+def c_criterion(lib, mapping: dict, table_file: str | None, scaled_by: float, samples: int, noise, pq16: int = 0):
+    """udeep_levels_criterion on a mapping record as the golden vectors give it: (status, the record)."""
+    if table_file is None:
+        pointer, nodes = None, 0
+    else:
+        flat = np.fromfile(ROOT / "src" / "udeep" / "tables" / table_file, dtype="<f4")
+        pointer, nodes = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), flat.size // 6
+    out = CCriterion()
+    status = lib.udeep_levels_criterion(ctypes.byref(record(mapping)), pointer, nodes, scaled_by, samples,
+                                        NOISE_MODEL[noise[0]], 0.0 if noise[1] is None else noise[1], pq16,
+                                        ctypes.byref(out))
+    return status, out
+
+
+def test_the_criterion_in_full_through_the_c_interface_reproduces_every_golden_levels_case(lib):
+    """Every output of a levels case: the count, the widest level, where the first starts, the worst ratio and
+    where it was taken, the failing fraction, the limit and the verdict."""
+    cases = golden_cases("levels")
+    assert len(cases) == 32
+    for name, c in cases.items():
+        a = c["args"]
+        status, out = c_criterion(lib, a["mapping"], (c["tables"] or [None])[0], a["mapping"]["reference_headroom"],
+                                  a["samples"], a["noise"])
+        assert status == 0, name
+        got = {"count": out.count, "max_data_step": out.max_data_step, "first_start": out.first_start,
+               "rounding_to_noise": out.rounding_to_noise, "failing_fraction": out.failing_fraction,
+               "limit": out.limit, "meets": bool(out.meets), "at": out.at}
+        got = {k: got[k] for k in c["out"]}                         # `at` only where the case states it
+        problems = golden.agree(got, c["out"], c, name)
+        assert not problems, problems[:5]
+
+
+def test_the_criterion_in_full_agrees_with_the_two_short_forms_and_the_reference(lib):
+    from udeep import Mapping, metadata
+    m = Mapping.from_stretch({"kind": "linear", "lo": 0.0, "hi": 4095.0}, 1000.0, 4.0, "grey")
+    record_ = dataclasses.asdict(m)
+    noise = ("constant", 3.0)
+    status, full = c_criterion(lib, record_, None, 203.0, 1 << 18, noise, pq16=1)
+    assert status == 0 and ctypes.sizeof(CCriterion) == 64
+    step, ratio, count = ctypes.c_double(), ctypes.c_double(), ctypes.c_size_t()
+    assert lib.udeep_levels_pq16(ctypes.byref(record(record_)), None, ctypes.c_size_t(0), ctypes.c_double(203.0),
+                                 ctypes.c_size_t(1 << 18), ctypes.c_uint32(1), ctypes.c_double(3.0), ctypes.byref(step),
+                                 ctypes.byref(ratio), ctypes.byref(count)) == 0
+    assert (full.count, full.max_data_step, full.rounding_to_noise) == (count.value, step.value, ratio.value)
+    steps = metadata.data_steps_pq16(m, samples=1 << 18)
+    reference = metadata.rounding_to_noise(m, noise, steps=steps)
+    assert abs(full.count - len(steps[1])) <= max(2, len(steps[1]) // 2000)
+    assert full.first_start == pytest.approx(float(steps[0][0]), abs=1e-9)
+    assert full.failing_fraction == pytest.approx(reference["failing_fraction"], abs=1e-3)
+    assert (full.limit, bool(full.meets)) == (reference["limit"], reference["meets"]) == (0.1, True)
+    status, unknown = c_criterion(lib, record_, None, 4.0, 4096, ("unknown", None))
+    assert status == 0 and unknown.count > 0 and unknown.meets == 0
+    assert all(math.isnan(v) for v in (unknown.rounding_to_noise, unknown.at, unknown.failing_fraction, unknown.limit))
+    out = CCriterion()
+    call = lambda model, parameter, pq16, scaled_by=4.0: lib.udeep_levels_criterion(
+        ctypes.byref(record(record_)), None, 0, scaled_by, 4096, model, parameter, pq16, ctypes.byref(out))
+    assert (call(9, 1.0, 0), call(1, 0.0, 0), call(1, 1.0, 2), call(1, 1.0, 1, scaled_by=-1.0)) == (11, 11, 11, 11)
+    assert lib.udeep_levels_criterion(ctypes.byref(record(record_)), None, 0, 4.0, 4096, 0, 0.0, 0, None) == 1
+    assert lib.udeep_levels_criterion(None, None, 0, 4.0, 4096, 0, 0.0, 0, ctypes.byref(out)) == 1
+
+
 def test_the_levels_function_refuses_what_it_cannot_use(lib):
     from udeep import Mapping
     m = Mapping.from_stretch({"kind": "linear", "lo": 0.0, "hi": 100.0}, 50.0, 4.0, "grey")
@@ -876,6 +948,13 @@ def test_a_c_host_compiled_against_the_header_gets_the_golden_results(lib, tmp_p
     iso = golden_cases("iso21496")["iso21496_block"]
     assert lines["iso"] == "0 " + iso["out"]
     assert lines["digest"] == "0 sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    levels = golden_cases("levels")["levels_linear_grey"]
+    status, size, count, *rest = lines["criterion"].split()
+    assert (status, size) == ("0", "64") and levels["args"]["noise"] == ["constant", 8.6]
+    got = dict(zip(("max_data_step", "first_start", "rounding_to_noise", "failing_fraction", "limit"), map(float, rest[:5]),
+                   strict=True))
+    got.update(count=int(count), meets=rest[5] == "1")
+    assert not golden.agree({k: got[k] for k in levels["out"]}, levels["out"], levels, "criterion")
     least = declarations()["least"]
     assert lines["description"] == "0 " + metadata.description(least).decode("utf-8")
     assert lines["caption"] == "0 " + metadata.caption(least)

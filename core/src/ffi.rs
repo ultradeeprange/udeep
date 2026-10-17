@@ -555,8 +555,46 @@ pub unsafe extern "C" fn udeep_levels(
     }
 }
 
-/// What [`udeep_levels`] and [`udeep_levels_pq16`] share. `scaled_by` is the headroom the 8-bit file is written
-/// for, or the white level in cd/m^2 of the 16-bit one.
+/// The levels of a file of this mapping and the noise they are judged against: what [`udeep_levels`],
+/// [`udeep_levels_pq16`] and [`udeep_levels_criterion`] share. `scaled_by` is the headroom the 8-bit file is written for,
+/// or the white level in cd/m^2 of the 16-bit one.
+#[allow(clippy::too_many_arguments)]
+unsafe fn found_levels(
+    mapping: *const Mapping,
+    table: *const f32,
+    nodes: usize,
+    scaled_by: f64,
+    samples: usize,
+    noise_model: u32,
+    noise_parameter: f64,
+    pq16: bool,
+) -> Result<(record::Levels, Option<record::Noise>), Error> {
+    let m = unsafe { mapping.as_ref() }.ok_or(Error::NullPointer)?;
+    m.validate()?;
+    let lookup = if table.is_null() {
+        None
+    } else {
+        Some(Table::new(unsafe { std::slice::from_raw_parts(table, nodes.saturating_mul(6)) }, m.reference_headroom)?)
+    };
+    let noise = match noise_model {
+        0 => None,
+        1 => Some(record::Noise::Constant(noise_parameter)),
+        2 => Some(record::Noise::Poisson(noise_parameter)),
+        3 => Some(record::Noise::Relative(noise_parameter)),
+        4 => Some(record::Noise::Tolerance(noise_parameter)),
+        _ => return Err(Error::BadDeclaration),
+    };
+    if noise.is_some() && !(noise_parameter.is_finite() && noise_parameter > 0.0) {
+        return Err(Error::BadDeclaration);
+    }
+    let levels = if pq16 {
+        record::levels_pq16(m, lookup.as_ref(), scaled_by, samples)
+    } else {
+        record::levels(m, lookup.as_ref(), scaled_by, samples)
+    };
+    Ok((levels, noise))
+}
+
 #[allow(clippy::too_many_arguments)]
 unsafe fn levels_of(
     mapping: *const Mapping,
@@ -571,37 +609,14 @@ unsafe fn levels_of(
     count: *mut usize,
     pq16: bool,
 ) -> i32 {
-    let Some(m) = (unsafe { mapping.as_ref() }) else { return Error::NullPointer as i32 };
-    if max_data_step.is_null() || rounding_to_noise.is_null() {
+    if mapping.is_null() || max_data_step.is_null() || rounding_to_noise.is_null() {
         return Error::NullPointer as i32;
     }
-    if let Err(e) = m.validate() {
-        return e as i32;
-    }
-    let lookup = if table.is_null() {
-        None
-    } else {
-        match Table::new(unsafe { std::slice::from_raw_parts(table, nodes.saturating_mul(6)) }, m.reference_headroom) {
-            Ok(t) => Some(t),
+    let (levels, noise) =
+        match unsafe { found_levels(mapping, table, nodes, scaled_by, samples, noise_model, noise_parameter, pq16) } {
+            Ok(found) => found,
             Err(e) => return e as i32,
-        }
-    };
-    let noise = match noise_model {
-        0 => None,
-        1 => Some(record::Noise::Constant(noise_parameter)),
-        2 => Some(record::Noise::Poisson(noise_parameter)),
-        3 => Some(record::Noise::Relative(noise_parameter)),
-        4 => Some(record::Noise::Tolerance(noise_parameter)),
-        _ => return Error::BadDeclaration as i32,
-    };
-    if noise.is_some() && !(noise_parameter.is_finite() && noise_parameter > 0.0) {
-        return Error::BadDeclaration as i32;
-    }
-    let levels = if pq16 {
-        record::levels_pq16(m, lookup.as_ref(), scaled_by, samples)
-    } else {
-        record::levels(m, lookup.as_ref(), scaled_by, samples)
-    };
+        };
     let ratio = noise.map_or(f64::NAN, |n| record::rounding_to_noise(&levels, n).worst.min(record::UNBOUNDED));
     unsafe {
         max_data_step.write(levels.max_data_step());
@@ -610,6 +625,82 @@ unsafe fn levels_of(
             count.write(levels.width.len());
         }
     }
+    OK
+}
+
+/// The stored levels of a file and the data criterion on them, in full (`udeep_criterion` in the header). The
+/// numbers the criterion gives are NaN, and `meets` 0, when the noise is unknown.
+#[derive(Clone, Copy, Debug)]
+#[repr(C)]
+pub struct CCriterion {
+    /// How many stored levels there are.
+    pub count: u64,
+    /// The widest, in data units: `udeep:MaxDataStep`.
+    pub max_data_step: f64,
+    /// Where the first level starts, in data units.
+    pub first_start: f64,
+    /// The worst ratio of rounding error to uncertainty, at most 1e9: `udeep:RoundingToNoise`.
+    pub rounding_to_noise: f64,
+    /// The data value where the uncertainty was taken for the worst ratio.
+    pub at: f64,
+    /// The fraction of the declared range over the limit.
+    pub failing_fraction: f64,
+    /// The ratio a data record must not exceed: 0.1 for a noise model, 1 for a tolerance.
+    pub limit: f64,
+    /// 1 if no level exceeds the limit, else 0.
+    pub meets: u32,
+    pub reserved: u32,
+}
+
+/// The levels and the data criterion in full, as the reference's `data_steps` and `rounding_to_noise` give them:
+/// [`udeep_levels`] (`pq16` = 0, `scaled_by` the headroom the 8-bit file is written for) or [`udeep_levels_pq16`]
+/// (`pq16` = 1, `scaled_by` the white level in cd/m^2), with everything the criterion finds. The arguments and
+/// the errors are theirs.
+///
+/// # Safety
+/// As [`udeep_levels`]; `out` must point to a writable `udeep_criterion`.
+#[allow(clippy::too_many_arguments)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_levels_criterion(
+    mapping: *const Mapping,
+    table: *const f32,
+    nodes: usize,
+    scaled_by: f64,
+    samples: usize,
+    noise_model: u32,
+    noise_parameter: f64,
+    pq16: u32,
+    out: *mut CCriterion,
+) -> i32 {
+    if mapping.is_null() || out.is_null() {
+        return Error::NullPointer as i32;
+    }
+    if pq16 == 1 && !(scaled_by.is_finite() && scaled_by > 0.0) {
+        return Error::BadDeclaration as i32;
+    }
+    if pq16 > 1 {
+        return Error::BadDeclaration as i32;
+    }
+    let found =
+        unsafe { found_levels(mapping, table, nodes, scaled_by, samples, noise_model, noise_parameter, pq16 == 1) };
+    let (levels, noise) = match found {
+        Ok(found) => found,
+        Err(e) => return e as i32,
+    };
+    let criterion = noise.map(|n| record::rounding_to_noise(&levels, n));
+    let number = |f: fn(&record::Criterion) -> f64| criterion.as_ref().map_or(f64::NAN, f);
+    let result = CCriterion {
+        count: levels.width.len() as u64,
+        max_data_step: levels.max_data_step(),
+        first_start: levels.start.first().copied().unwrap_or(f64::NAN),
+        rounding_to_noise: number(|c| c.worst.min(record::UNBOUNDED)),
+        at: number(|c| c.at),
+        failing_fraction: number(|c| c.failing_fraction),
+        limit: number(|c| c.limit),
+        meets: u32::from(criterion.as_ref().is_some_and(|c| c.meets)),
+        reserved: 0,
+    };
+    unsafe { out.write(result) };
     OK
 }
 

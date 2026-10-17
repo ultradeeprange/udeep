@@ -87,6 +87,13 @@ int main(void) {
     }
     printf("\n");
     printf("digest %d %s\n", (int)udeep_digest_bytes((const uint8_t *)"abc", 3, digest), digest);
+    {
+        udeep_criterion found;
+        int32_t status = udeep_levels_criterion(&m, NULL, 0, m.reference_headroom, 4097, 1, 8.6, 0, &found);
+        printf("criterion %d %zu %llu %.17g %.17g %.17g %.17g %.17g %u\n", (int)status, sizeof found,
+               (unsigned long long)found.count, found.max_data_step, found.first_start, found.rounding_to_noise,
+               found.failing_fraction, found.limit, (unsigned int)found.meets);
+    }
 
     /* the least a declaration can say: the reference's Declaration(data_unit="K", stretch="linear",
      * range_low=0, range_high=100, knee=50, knee_rule="preset", reference_headroom=2, max_data_step=0.4) */

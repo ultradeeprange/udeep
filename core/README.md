@@ -132,6 +132,11 @@ What a file declares goes through the same interface, so a host needs no second 
     udeep_caption(&d, &text, &text_length);            /* the caption paragraph (profile 8.2) */
     udeep_bytes_free(xmp, xmp_length);                 /* text comes back in memory the library owns */
 
+`udeep_levels` and `udeep_levels_pq16` give the two numbers a file states. `udeep_levels_criterion` gives the
+levels and the data criterion in full, as the reference's `data_steps` and `rounding_to_noise` do: the count, the
+widest level, where the first starts, the worst ratio and where it was taken, the fraction of the range over the
+limit, the limit and the verdict, in one record of fixed layout (`udeep_criterion`, 64 bytes on every machine).
+
 A declaration the profile would refuse comes back as `UDEEP_ERROR_BAD_DECLARATION`, or as the mapping record's
 own code. For drawing there are `udeep_srgb_encode` / `udeep_srgb_decode`, `udeep_value_at` (position to
 data value, for colour-bar ticks) and `udeep_mask_isolated` (the `isolated-3x3` rule of the Highlight preset).
@@ -178,8 +183,7 @@ names, copies numbers in and out, and turns an error code into an `Error` carryi
 
 `../tests/test_udeep_wasm.py` builds the module and, in node:
 
-- runs `check_golden_wasm.mjs`, which reproduces all 90 golden cases through the binding (the levels cases in the
-  two numbers the interface returns, the widest level and the worst ratio);
+- runs `check_golden_wasm.mjs`, which reproduces all 90 golden cases through the binding, every output of each;
 - checks that the module exports exactly the functions of the header, that a call asking for threads runs and
   gives the plain loop's bits, that what the core refuses comes back as an error with its code, and that 1,200
   damaged files (`../tests/test_malformed.py`'s damage), and a PNG and a JPEG whose headers claim vast images,

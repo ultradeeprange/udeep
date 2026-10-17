@@ -38,7 +38,7 @@
   const DEFAULTS = { noise_model: 'unknown', record: 'rendering' };  // as the reference's Declaration has them
   const VERSION = '0.3', IMAGE_STATE = 'data-referred';              // the library's own: a record carries neither
   const ABOVE_KNEE = 'hermite; exit=1';
-  const MAPPING_BYTES = 64, DECLARATION_BYTES = 200, DIGEST_LENGTH = 71, ISO21496_LENGTH = 61, REF_WHITE_NITS = 203.0;
+  const MAPPING_BYTES = 64, DECLARATION_BYTES = 200, DIGEST_LENGTH = 71, ISO21496_LENGTH = 61, CRITERION_BYTES = 64, REF_WHITE_NITS = 203.0;
 
   // An ArrayBuffer, a Uint8Array or a node Buffer (which is a Uint8Array), as a Uint8Array over the same memory.
   function asBytes(buffer, what) {
@@ -288,6 +288,22 @@
         levelsOf('udeep_levels', m, table, scaledBy, samples, noise, false),
       levelsPq16: (m, table = null, whiteNits = REF_WHITE_NITS, samples = 1048576, noise = null) =>
         levelsOf('udeep_levels_pq16', m, table, whiteNits, samples, noise, true),
+      // The same levels and the data criterion in full, as the reference's data_steps and rounding_to_noise give
+      // them: the count, the widest level, where the first starts, the worst ratio and where it was taken, the
+      // fraction over the limit, the limit, and whether the file meets it. `pq16` for a 16-bit PQ file, whose
+      // `scaledBy` is then its white level in cd/m^2. The criterion's numbers are NaN when the noise is unknown.
+      criterion: (m, table = null, scaledBy = m.reference_headroom, samples = 65536, noise = null, { pq16 = false } = {}) =>
+        scoped(take => {
+          const [model, parameter] = noise ?? ['unknown', null];
+          if (NOISE[model] === undefined) throw new Error(`unknown noise model: ${model}`);
+          const record = putMapping(take, m), [at, nodes] = putTable(take, table), out = take(CRITERION_BYTES);
+          check(x.udeep_levels_criterion(record, at, nodes, scaledBy, samples, NOISE[model], parameter ?? 0, pq16 ? 1 : 0,
+            out));
+          const v = view(), number = offset => v.getFloat64(out + offset, true);
+          return { count: Number(v.getBigUint64(out, true)), maxDataStep: number(8), firstStart: number(16),
+            roundingToNoise: number(24), at: number(32), failingFraction: number(40), limit: number(48),
+            meets: v.getUint32(out + 56, true) === 1 };
+        }),
 
       // What a file declares, as the rdf:Description element it carries, and the caption generated from it.
       description: d => scoped(take => text.decode(owned(take, (data, length) => x.udeep_description(putDeclaration(take, d), data, length)))),
