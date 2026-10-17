@@ -1,0 +1,8 @@
+# Valgrind, for the C host of tests/test_udeep_rust.py: the JPEG decoder library's few hundred bytes left in its
+# worker threads at exit (see lsan.supp).
+{
+   jpeg-decoder worker threads at exit
+   Memcheck:Leak
+   ...
+   fun:*jpeg_decoder*
+}

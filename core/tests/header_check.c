@@ -116,6 +116,31 @@ int main(void) {
     owned("description", udeep_description, &d);
     owned("caption", udeep_caption, &d);
 
+    /* the two image files: written into memory the library owns, measured, read back into the host's own, freed */
+    {
+        enum { W = 8, H = 6, N = W * H * 3 };
+        double sdr[N], hdr[N], light[N] = {0}; /* zeroed: printed even if a step before the read failed */
+        float shown[N] = {0};
+        uint8_t *file = NULL;
+        size_t length = 0, width = 0, height = 0;
+        int32_t made, sized, read;
+        for (i = 0; i < N; i++) {
+            sdr[i] = (double)(i % 17) / 17.0;
+            hdr[i] = i % 5 == 0 ? 3.0 * sdr[i] : sdr[i];
+        }
+        made = udeep_png_pq(hdr, W, H, 203.0, NULL, 0, &file, &length);
+        sized = made == 0 ? udeep_png_pq_size(file, length, &width, &height) : -1;
+        read = sized == 0 ? udeep_png_pq_read(file, length, 203.0, light, N) : -1;
+        printf("png %d %d %d %zu %zu %.6f\n", (int)made, (int)sized, (int)read, width, height, light[3 * 5]);
+        udeep_bytes_free(file, length);
+        file = NULL;
+        made = udeep_gainmap_jpeg(sdr, hdr, W, H, 4.0, 95, 100, NULL, 0, &file, &length);
+        sized = made == 0 ? udeep_gainmap_size(file, length, &width, &height) : -1;
+        read = sized == 0 ? udeep_gainmap_read(file, length, 4.0, shown, N, 0) : -1;
+        printf("jpeg %d %d %d %zu %zu\n", (int)made, (int)sized, (int)read, width, height);
+        udeep_bytes_free(file, length);
+    }
+
     free(x);
     free(out);
     return 0;

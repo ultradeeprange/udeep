@@ -875,38 +875,58 @@ def test_rust_refuses_a_gain_map_it_cannot_hold_and_never_writes_one_over(lib, t
 
 # ---- a C host: the header read by a C compiler
 
-def c_build(source: Path, out: Path) -> list[str] | None:
-    """The command lines that compile `source` against the header, with warnings as errors, and link it to the built
-    library: MSVC (through vcvars64) on Windows, `cc` elsewhere. None when there is no C compiler here."""
+# How the C host is built for each check: the flags a C compiler is given, MSVC's and then cc's.
+C_CHECKS = {
+    "plain": (["/W4", "/WX"], ["-std=c99", "-Wall", "-Wextra", "-pedantic", "-Werror"]),
+    # out-of-bounds access, use after free, double free; and, with cc, undefined behaviour and leaks
+    "sanitizers": (["/W4", "/WX", "/fsanitize=address", "/Zi"],
+                   ["-std=c99", "-Wall", "-Wextra", "-Werror", "-g", "-fno-omit-frame-pointer",
+                    "-fsanitize=address,undefined", "-fno-sanitize-recover=all"]),
+    # the compiler's own static analysis, with its findings as errors: compiled, not linked
+    "analysis": (["/W4", "/WX", "/analyze", "/c"], ["-std=c99", "-Wall", "-Wextra", "-Werror", "-fanalyzer", "-c"]),
+}
+
+
+def vcvars() -> Path | None:
+    """vcvars64.bat of a Visual Studio install, or None. Every install is looked at, previews and ones the
+    installer counts as incomplete too: on some machines there are only those."""
+    vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / \
+        "Installer" / "vswhere.exe"
+    if not vswhere.is_file():
+        return None
+    found = subprocess.run([str(vswhere), "-all", "-prerelease", "-products", "*", "-property", "installationPath"],
+                           capture_output=True, text=True, check=False)
+    scripts = [Path(line.strip()) / "VC" / "Auxiliary" / "Build" / "vcvars64.bat" for line in found.stdout.splitlines()
+               if line.strip()]
+    return next((v for v in scripts if v.is_file()), None)
+
+
+def c_build(source: Path, out: Path, check: str = "plain") -> list[str] | None:
+    """The command line that compiles `source` against the header for `check` (C_CHECKS) and links it to the built
+    library: MSVC (through vcvars64) on Windows, `cc` elsewhere. None when there is no C compiler here. On Windows
+    the batch file also prints the compiler's folder (CL_DIR=...), where MSVC's sanitizer runtime is."""
     include, release = CORE / "include", CORE / "target" / "release"
+    msvc, cc_flags = C_CHECKS[check]
+    compile_only = "/c" in msvc
     if sys.platform == "win32":
-        vswhere = Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio" / \
-            "Installer" / "vswhere.exe"
-        if not vswhere.is_file():
+        script_vars = vcvars()
+        if script_vars is None:
             return None
-        # every install, previews and ones the installer counts as incomplete too: some machines have only those
-        found = subprocess.run([str(vswhere), "-all", "-prerelease", "-products", "*", "-property", "installationPath"],
-                               capture_output=True, text=True, check=False)
-        scripts = [Path(line.strip()) / "VC" / "Auxiliary" / "Build" / "vcvars64.bat" for line in found.stdout.splitlines()
-                   if line.strip()]
-        vcvars = next((v for v in scripts if v.is_file()), None)
-        if vcvars is None:
-            return None
+        link = "" if compile_only else f' "{release / "udeep_core.dll.lib"}" /Fe"{out}"'
         script = out.with_suffix(".bat")
-        script.write_text(f'@call "{vcvars}" >nul\r\n@cl /nologo /W4 /WX /I"{include}" "{source}" '
-                          f'"{release / "udeep_core.dll.lib"}" /Fe"{out}" /Fo"{out.parent}\\\\"\r\n', encoding="ascii")
+        script.write_text(f'@call "{script_vars}" >nul\r\n'
+                          f'@cl /nologo {" ".join(msvc)} /I"{include}" "{source}"{link} /Fo"{out.parent}\\\\" '
+                          f'/Fd"{out.parent}\\\\" || exit /b 1\r\n'
+                          '@for %%i in (cl.exe) do @echo CL_DIR=%%~dp$PATH:i\r\n', encoding="ascii")
         return ["cmd", "/d", "/c", str(script)]
     cc = shutil.which("cc")
     if cc is None:
         return None
-    return [cc, "-std=c99", "-Wall", "-Wextra", "-pedantic", "-Werror", f"-I{include}", str(source), f"-L{release}",
-            "-ludeep_core", "-lm", "-o", str(out)]
+    link = [] if compile_only else [f"-L{release}", "-ludeep_core", "-lm"]
+    return [cc, *cc_flags, f"-I{include}", str(source), *link, "-o", str(out.with_suffix(".o") if compile_only else out)]
 
 
-def test_a_c_host_compiled_against_the_header_gets_the_golden_results(lib, tmp_path):
-    """The header has been checked by reading it (field order, error codes); here a C compiler builds a program
-    against it and the program calls the library, so a declaration that does not match the library fails."""
-    from udeep import metadata
+def c_compiler_or_skip(tmp_path: Path) -> None:
     trivial = tmp_path / "trivial.c"
     trivial.write_text("int main(void) { return 0; }\n", encoding="ascii")
     probe = c_build(trivial, tmp_path / "trivial.exe")
@@ -914,23 +934,41 @@ def test_a_c_host_compiled_against_the_header_gets_the_golden_results(lib, tmp_p
         pytest.skip("no C compiler here")
     if subprocess.run(probe, capture_output=True, text=True, check=False).returncode != 0:
         pytest.skip("a C compiler is here but cannot build a program")
-    host = tmp_path / "header_check.exe"
-    built = subprocess.run(c_build(CORE / "tests" / "header_check.c", host), capture_output=True, text=True, check=False)
+
+
+def build_host(tmp_path: Path, check: str) -> tuple[Path, str]:
+    """The C host built for `check`: its path, and on Windows the compiler's folder (empty elsewhere)."""
+    c_compiler_or_skip(tmp_path)
+    host = tmp_path / f"header_check_{check}.exe"
+    built = subprocess.run(c_build(CORE / "tests" / "header_check.c", host, check), capture_output=True, text=True,
+                           check=False)
     assert built.returncode == 0, built.stdout + built.stderr
+    return host, next((line[7:].strip() for line in built.stdout.splitlines() if line.startswith("CL_DIR=")), "")
+
+
+def host_input() -> str:
     case = mapping_cases()["mapping_linear_grey"]
     m = case["args"]["mapping"]
     x = ["nan" if v is None else repr(v) for v in case["args"]["x"]]
-    stdin = " ".join([repr(m[k]) for k in ("range_low", "range_high", "knee", "reference_headroom", "stretch_width",
-                                           "stretch_offset")] + [m["above_knee"].partition("exit=")[2],
-                                                                 str(STRETCH[m["stretch"]]), str(len(x))] + x)
+    return " ".join([repr(m[k]) for k in ("range_low", "range_high", "knee", "reference_headroom", "stretch_width",
+                                          "stretch_offset")] + [m["above_knee"].partition("exit=")[2],
+                                                                str(STRETCH[m["stretch"]]), str(len(x))] + x)
+
+
+def run_host(command: list[str], extra_path: str = "") -> subprocess.CompletedProcess:
     env = dict(os.environ)
     release = str(CORE / "target" / "release")
     for name in ("PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):          # where the program finds the library
-        env[name] = release + os.pathsep + env.get(name, "")
+        env[name] = os.pathsep.join(p for p in (release, extra_path, env.get(name, "")) if p)
+    env["LSAN_OPTIONS"] = f"suppressions={CORE / 'tests' / 'lsan.supp'}"   # the JPEG decoder's, at exit
     # the program prints the library's UTF-8 as it is (the caption has a multiplication sign)
-    ran = subprocess.run([str(host)], input=stdin, capture_output=True, encoding="utf-8", check=False, env=env)
-    assert ran.returncode == 0, ran.stdout + ran.stderr
-    lines = {line.split(" ", 1)[0]: line.split(" ", 1)[1] for line in ran.stdout.splitlines()}
+    return subprocess.run(command, input=host_input(), capture_output=True, encoding="utf-8", check=False, env=env)
+
+
+def host_gets_the_golden_results(stdout: str) -> None:
+    from udeep import metadata
+    case = mapping_cases()["mapping_linear_grey"]
+    lines = {line.split(" ", 1)[0]: line.split(" ", 1)[1] for line in stdout.splitlines()}
     assert lines["sizes"].split() == [str(v) for v in (ctypes.sizeof(CMapping), CMapping.stretch.offset,
                                                        ctypes.sizeof(CDeclaration), ctypes.sizeof(CText))]
     assert lines["version"] == "300" and lines["validate"] == "0"
@@ -958,4 +996,43 @@ def test_a_c_host_compiled_against_the_header_gets_the_golden_results(lib, tmp_p
     least = declarations()["least"]
     assert lines["description"] == "0 " + metadata.description(least).decode("utf-8")
     assert lines["caption"] == "0 " + metadata.caption(least)
+    # the two files: written, measured, read back (8 x 6); pixel 5 of the PNG is 3 x 15/17 white in each channel
+    png = lines["png"].split()
+    assert png[:5] == ["0", "0", "0", "8", "6"] and abs(float(png[5]) - 3.0 * 15 / 17) < 1e-3
+    assert lines["jpeg"].split() == ["0", "0", "0", "8", "6"]
 
+
+def test_a_c_host_compiled_against_the_header_gets_the_golden_results(lib, tmp_path):
+    """The header has been checked by reading it (field order, error codes); here a C compiler builds a program
+    against it and the program calls the library, so a declaration that does not match the library fails."""
+    host, _ = build_host(tmp_path, "plain")
+    ran = run_host([str(host)])
+    assert ran.returncode == 0, ran.stdout + ran.stderr
+    host_gets_the_golden_results(ran.stdout)
+
+
+def test_the_c_host_runs_clean_under_the_sanitizers(lib, tmp_path):
+    """AddressSanitizer watches every access the host makes to memory, its own and the buffers the library hands
+    it; with cc, UndefinedBehaviorSanitizer and LeakSanitizer too, the last over the whole process, the library's
+    allocations included. Any finding ends the program with an error."""
+    host, cl_dir = build_host(tmp_path, "sanitizers")
+    ran = run_host([str(host)], cl_dir)                                   # MSVC's sanitizer runtime is beside cl
+    assert ran.returncode == 0 and "Sanitizer" not in ran.stderr, ran.stdout + ran.stderr
+    host_gets_the_golden_results(ran.stdout)
+
+
+def test_the_c_host_passes_the_compilers_static_analysis(lib, tmp_path):
+    """MSVC /analyze or GCC -fanalyzer: null dereferences, leaks on a path, buffers overrun, read before written."""
+    build_host(tmp_path, "analysis")
+
+
+@pytest.mark.skipif(shutil.which("valgrind") is None, reason="valgrind is not installed")
+def test_the_c_host_runs_clean_under_valgrind(lib, tmp_path):
+    """Valgrind checks the whole program, the library's own code too, which the sanitizers do not instrument: an
+    invalid access or a byte lost anywhere is an error."""
+    host, _ = build_host(tmp_path, "plain")
+    ran = run_host(["valgrind", "--quiet", "--error-exitcode=99", "--leak-check=full",
+                    "--errors-for-leak-kinds=definite,indirect",
+                    f"--suppressions={CORE / 'tests' / 'valgrind.supp'}", str(host)])
+    assert ran.returncode == 0, ran.stderr[-4000:]
+    host_gets_the_golden_results(ran.stdout)

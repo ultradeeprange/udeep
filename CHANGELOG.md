@@ -11,6 +11,11 @@ The version in the source is `0.3.0.dev0`, after the profile draft it implements
 
 ### 2026-10-17
 
+- **The C host checked for memory faults.** The C program built against the header also writes and reads both
+  image files now, and is built with sanitizers (AddressSanitizer; with `cc`, UndefinedBehaviorSanitizer and
+  LeakSanitizer too), under the compiler's static analysis (MSVC `/analyze`, GCC `-fanalyzer`) and run under
+  Valgrind on Linux (CI installs it). The analysis found an array in the test program that could be printed
+  before it was written; it is zeroed now. A read one past an array is caught by the sanitizer build.
 - **The C interface stress-tested** (`core/tests/ffi_stress.rs`, `core/tests/ffi_leaks.rs`): hostile records and
   numbers, null pointers, overflowing sizes, bad text, aliased buffers, 16 threads at once and damaged files,
   where every call must come back with a code; a counting allocator that finds no byte left allocated after

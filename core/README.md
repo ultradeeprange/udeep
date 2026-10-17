@@ -160,6 +160,20 @@ record and a declaration as a C host would, and what the library gives it is com
 and the reference. A record declared in another order than the library's fails it. The test is skipped where
 there is no C compiler; it has been run with MSVC 14.51 on Windows (2026-10-14).
 
+The same C host is built three more ways, for the faults a C host makes at the interface:
+
+- **with sanitizers**: AddressSanitizer (MSVC `/fsanitize=address`; with `cc`, UndefinedBehaviorSanitizer and
+  LeakSanitizer as well). Any read or write out of bounds, use after free or double free in the host, including
+  in the buffers the library hands it, ends the run with an error; a read one past an array is caught.
+- **under the compiler's static analysis** (MSVC `/analyze`, GCC `-fanalyzer`), with its findings as errors.
+- **under Valgrind** (Linux, where CI installs it): every access and every byte lost in the whole process, the
+  library's own code included, which the sanitizers do not instrument.
+
+The JPEG decoder library leaves a few hundred bytes in its worker threads at exit; `tests/lsan.supp` and
+`tests/valgrind.supp` set that one aside. Run so far: the sanitizer and analysis builds with MSVC 14.51, and
+GCC 15.2's analyzer on the source (in WSL); LeakSanitizer, UndefinedBehaviorSanitizer and Valgrind will first run
+in CI.
+
 Two Rust tests hold the interface to what a careless or hostile host may do:
 
 - `tests/ffi_stress.rs`: 20,000 mapping records near a valid one, with NaNs, infinities, raw bit patterns and

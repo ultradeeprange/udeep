@@ -1,0 +1,4 @@
+# LeakSanitizer, for the C host of tests/test_udeep_rust.py. The JPEG decoder library (jpeg-decoder) leaves a few
+# hundred bytes in its worker threads at exit (CHANGELOG, 2026-10-14). It is not this library's, and it does not
+# grow: core/tests/ffi_leaks.rs counts 200 rounds of every function and finds nothing left.
+leak:jpeg_decoder
