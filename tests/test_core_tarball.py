@@ -14,7 +14,7 @@ spec.loader.exec_module(tool)
 
 
 def wheel(folder: Path, tag: str, library: str | None, content: bytes = b"\x7fELF the library") -> Path:
-    path = folder / f"udeep-0.3.0.dev0-py3-none-{tag}.whl"
+    path = folder / f"udeep-0.3.0-py3-none-{tag}.whl"
     with zipfile.ZipFile(path, "w") as z:
         z.writestr("udeep/__init__.py", "")
         if library:
@@ -30,7 +30,7 @@ def wheel(folder: Path, tag: str, library: str | None, content: bytes = b"\x7fEL
 ])
 def test_each_platforms_wheel_gives_an_archive_named_as_julia_names_the_platform(tag, library, platform, tmp_path):
     made = tool.pack(wheel(tmp_path, tag, library), tmp_path / "out")
-    assert made.name == f"udeep_core-0.3.0.dev0-{platform}.tar.gz"
+    assert made.name == f"udeep_core-0.3.0-{platform}.tar.gz"
     with tarfile.open(made) as tar:
         assert tar.getnames() == ["lib", f"lib/{library}"]
         member = tar.getmember(f"lib/{library}")

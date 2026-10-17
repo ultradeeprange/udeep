@@ -1,6 +1,6 @@
 name = "UDeepCore"
 uuid = "8bd290d2-044a-4568-a643-c8ac16ee5d37"
-version = "0.3.0-DEV"
+version = "0.3.0"
 authors = ["Mathew Newman"]
 
 [deps]

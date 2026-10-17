@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "udeep"
-version = "0.3.0.dev0"
+version = "0.3.0"
 description = "Ultra Deep Range scientific figures: the ordinary plot everywhere, extra range on HDR displays"
 readme = "README.md"
 license = "BSD-3-Clause"

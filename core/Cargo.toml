@@ -1,6 +1,6 @@
 [package]
 name = "udeep-core"
-version = "0.3.0-dev"
+version = "0.3.0"
 edition = "2024"
 license = "BSD-3-Clause"
 description = "The mapping from scientific data to light and colour of the UDeep Figure Profile: a small core with a C interface."

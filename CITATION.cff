@@ -11,7 +11,8 @@ authors:
   - family-names: Newman
     given-names: Mathew
     orcid: "https://orcid.org/0000-0003-1784-3250"
-version: 0.3.0.dev0
+version: 0.3.0
+date-released: "2026-10-17"
 license:
   - BSD-3-Clause
   - CC-BY-4.0

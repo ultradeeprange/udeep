@@ -4,10 +4,13 @@ What changed in the tools and the repository, newest first. Changes to what a fi
 the profile, and are listed with their dates in the profile itself: Annex D (from v0.2 to v0.3) and Annex E (since
 the first v0.3 draft) of [`profile/udeep-figure-profile-v0.3.md`](profile/udeep-figure-profile-v0.3.md).
 
-Nothing has been released yet: there is no tagged version and no package on PyPI, crates.io or the Julia registry.
-The version in the source is `0.3.0.dev0`, after the profile draft it implements.
+Versions are tagged in the repository, and each has a release on GitHub with its wheels and the core library
+for each platform. Nothing is on PyPI, crates.io or the Julia registry yet. The version follows the profile draft
+the code implements: 0.3 implements the v0.3 draft.
 
-## Unreleased
+## 0.3.0 (2026-10-17)
+
+The first tagged version: everything below, from the first public version on.
 
 ### 2026-10-17
 
