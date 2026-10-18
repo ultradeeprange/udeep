@@ -1,3 +1,5 @@
+<img src="docs/assets/logo.png" alt="UDeep logo: three bars, grey, white and amber, the amber one tallest" width="88" align="right">
+
 # UDeep
 
 [![tests](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml/badge.svg)](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml)
