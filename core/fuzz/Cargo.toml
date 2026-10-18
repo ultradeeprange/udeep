@@ -1,0 +1,47 @@
+[package]
+name = "udeep-core-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+# Coverage-guided fuzzing of the four readers that take files from anyone (cargo-fuzz, nightly):
+#     cargo +nightly fuzz run png_read      (from core/)
+# Runs of six minutes each found one fault, a JPEG claiming 65,535 x 65,535 pixels (CHANGELOG, 2026-10-14);
+# the damaged-file tests in core/tests/malformed.rs keep it fixed in every build.
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+udeep-core = { path = "..", features = ["jpeg", "png"] }
+
+[workspace]
+
+[[bin]]
+name = "png_read"
+path = "fuzz_targets/png_read.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "png_size"
+path = "fuzz_targets/png_size.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "gainmap_read"
+path = "fuzz_targets/gainmap_read.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "gainmap_size"
+path = "fuzz_targets/gainmap_size.rs"
+test = false
+doc = false
+bench = false

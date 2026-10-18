@@ -10,12 +10,15 @@ to its SDR figure, and do not show who made it.
 
 ## Reporting one
 
-Use GitHub's private reporting for this repository: **Security** tab, then **Report a vulnerability**. Please do
-not open a public issue for it. Give the function that misbehaves, what it did, and the smallest file that makes
+Use GitHub's private reporting for this repository:
+<https://github.com/ultradeeprange/udeep/security/advisories/new> (or the **Security** tab, then **Report a
+vulnerability**). Please do not open a public issue for it. Give the function that misbehaves, what it did, and the smallest file that makes
 it happen (attach it, or say how to make it from a valid file).
 
 A report is acknowledged within a week. This is a project kept by one person, so a fix can take longer; you will
-be told what is happening, and credited in the changelog unless you would rather not be.
+be told what is happening, and credited in the changelog unless you would rather not be. A fix is disclosed in a
+GitHub security advisory and in the changelog when it is published; the aim is to do that within 90 days of the
+report.
 
 ## What is in place
 

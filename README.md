@@ -2,7 +2,7 @@
 
 # UDeep
 
-[![tests](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml/badge.svg)](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml) [![coverage](https://codecov.io/gh/ultradeeprange/udeep/graph/badge.svg)](https://codecov.io/gh/ultradeeprange/udeep)
+[![tests](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml/badge.svg)](https://github.com/ultradeeprange/udeep/actions/workflows/tests.yml) [![coverage](https://codecov.io/gh/ultradeeprange/udeep/graph/badge.svg)](https://codecov.io/gh/ultradeeprange/udeep) [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/ultradeeprange/udeep/badge)](https://scorecard.dev/viewer/?uri=github.com/ultradeeprange/udeep)
 
 **Ultra Deep Range scientific figures: more range, more levels, and a record of how data became light.**
 
