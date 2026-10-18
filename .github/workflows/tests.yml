@@ -9,6 +9,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"        # Mondays: catches a new compiler, Python or Julia that breaks something
 
 permissions:
   contents: read

@@ -1,0 +1,20 @@
+# Weekly pull requests that bring dependencies up to date, grouped so there is at most one a week for each kind.
+# Security fixes come as they are published, whatever this schedule says. The actions are pinned to commits, and
+# Dependabot moves those pins too.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: {interval: weekly, day: monday}
+    groups:
+      actions: {patterns: ["*"]}
+  - package-ecosystem: cargo
+    directory: "/core"
+    schedule: {interval: weekly, day: monday}
+    groups:
+      crates: {patterns: ["*"]}
+  - package-ecosystem: pip
+    directory: "/"
+    schedule: {interval: weekly, day: monday}
+    groups:
+      python: {patterns: ["*"]}
