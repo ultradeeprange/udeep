@@ -182,6 +182,32 @@
     In both cases, community practice with working files came before the formal standard.</p>
 </div></section>
 
+<section id="formats"><div class="wrap">
+  <p class="eyebrow">Why a profile</p>
+  <h2>No existing format does all of it</h2>
+  <p>A scientific figure that can be checked has to do five things at once: open anywhere as an ordinary figure,
+    say exactly how its data became light, say how precisely it holds the data, name the data it was made from, and
+    be signed so that a change shows. Each format below does some of that. As far as I have found, none does all of
+    it. UDeep is therefore a profile on top of formats that already exist, adding only what none of them carries.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Format</th><th>Opens anywhere</th><th>Declares data to light</th><th>States its precision</th><th>Names its data</th><th>Signed</th></tr></thead>
+    <tbody>
+      <tr><td>Ordinary PNG or JPEG figure</td><td>yes</td><td>no</td><td>no (8 bits, unstated)</td><td>no</td><td>no</td></tr>
+      <tr><td>HDR photo formats (Ultra HDR JPEG, PQ AVIF)</td><td>yes</td><td>brightness only, with no data meaning</td><td>no</td><td>no</td><td>no</td></tr>
+      <tr><td>C2PA-signed image</td><td>yes</td><td>no</td><td>no</td><td>no</td><td>yes: who signed it, and that it is unchanged</td></tr>
+      <tr><td>PDF or SVG figure</td><td>yes</td><td>no</td><td>no</td><td>no</td><td>possible</td></tr>
+      <tr><td>Scientific data formats (FITS, HDF5, OME-TIFF)</td><td>specialist viewers</td><td>display settings, where kept, are not part of a standard figure</td><td>the data itself</td><td>it is the data</td><td>no</td></tr>
+      <tr><td>DICOM (medical)</td><td>medical viewers</td><td>yes, a window or lookup table</td><td>the data itself</td><td>it is the data</td><td>possible</td></tr>
+      <tr><td>UDeep</td><td>yes (gain-map JPEG, PNG)</td><td>yes, and invertible</td><td>yes, and checked</td><td>yes, by digest</td><td>C2PA, being tested</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">DICOM comes closest: it declares how stored values are shown. It stays inside medical viewers,
+    though, has no place in a paper or on a web page, and does not use the range of an HDR screen. The scientific
+    data formats hold the data faithfully but not the figure, and a reader of a paper never sees them. UDeep takes
+    the parts that exist (the gain-map JPEG, the 16-bit PNG, XMP metadata and C2PA) and adds the declared mapping,
+    its precision and the link to the data.</p>
+</div></section>
+
 <section id="iso"><div class="wrap">
   <p class="eyebrow">ISO</p>
   <h2>Where it fits in ISO</h2>
