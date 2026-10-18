@@ -334,7 +334,9 @@
     var value = H.valueAt(range, Number($("kneeSlider").value));
     if (Number.isFinite(value)) { $("knee").value = fmt(value); refresh(false); }
   });
-  $("dataset").addEventListener("change", function () { show(sets[$("dataset").value]()).then(report); });
+  // only the view's own datasets: a name inherited from Object (toString, constructor) is not one of them
+  function dataset(name) { return Object.prototype.hasOwnProperty.call(sets, name) ? name : "phantom"; }
+  $("dataset").addEventListener("change", function () { show(sets[dataset($("dataset").value)]()).then(report); });
   $("sdr").addEventListener("change", function () { state.sdrOnly = $("sdr").checked; draw(); });
   $("file").addEventListener("change", function () {
     var file = $("file").files[0];
@@ -373,7 +375,7 @@
   }
 
   // a link may name the data to open with: view/#chirp
-  var first = sets[location.hash.slice(1)] ? location.hash.slice(1) : "phantom";
+  var first = dataset(location.hash.slice(1));
   $("dataset").value = first;
   start().then(function () { return show(sets[first]()); }).then(report).catch(function (e) {
     say([["no", "The live view needs WebGPU, and it is not available here: " + e.message + ". " +
