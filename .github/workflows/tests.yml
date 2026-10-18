@@ -23,6 +23,9 @@ jobs:
   python:
     name: Python ${{ matrix.python }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write         # for the coverage upload (OIDC)
     strategy:
       fail-fast: false
       matrix:
@@ -56,12 +59,15 @@ jobs:
         with:
           files: coverage.xml
           flags: python
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true            # GitHub vouches for this run: no token is stored
           fail_ci_if_error: false
 
   rust:
     name: Rust core
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write         # for the coverage upload (OIDC)
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: rustup update stable
@@ -75,7 +81,7 @@ jobs:
         with:
           files: lcov.info
           flags: rust
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true            # GitHub vouches for this run: no token is stored
           fail_ci_if_error: false
       - name: Clippy
         run: cargo clippy --release --features jpeg,png --manifest-path core/Cargo.toml -- -D warnings
@@ -115,6 +121,9 @@ jobs:
   julia:
     name: Julia package
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write         # for the coverage upload (OIDC)
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: julia-actions/setup-julia@4c0cb0fce8556fdb04a90347310e5db8b1f98fb9 # v2
@@ -135,5 +144,5 @@ jobs:
         with:
           files: lcov.info
           flags: julia
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true            # GitHub vouches for this run: no token is stored
           fail_ci_if_error: false
