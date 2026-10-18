@@ -1,0 +1,12 @@
+# Codecov: coverage is reported, not enforced; the tests decide whether a change goes in.
+coverage:
+  status:
+    project: {default: {informational: true}}
+    patch: {default: {informational: true}}
+comment:
+  layout: "condensed_header, flags, condensed_files"
+  require_changes: true
+flags:
+  python: {paths: [src/udeep/]}
+  rust: {paths: [core/src/]}
+  julia: {paths: [julia/UDeepCore/]}

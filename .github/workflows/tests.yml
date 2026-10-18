@@ -28,7 +28,7 @@ jobs:
       matrix:
         include:
           - { os: ubuntu-latest, python: "3.11" }
-          - { os: ubuntu-latest, python: "3.13" }
+          - { os: ubuntu-latest, python: "3.13", coverage: true }
           - { os: windows-latest, python: "3.13" }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -44,12 +44,20 @@ jobs:
           rustup target add wasm32-unknown-unknown
           cargo build --release --features jpeg,png --manifest-path core/Cargo.toml
       - name: Install
-        run: python -m pip install -e ".[test]"
+        run: python -m pip install -e ".[test]" pytest-cov
       - name: Valgrind, for the memory check of the C host
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends valgrind
       - name: Test
-        run: python -m pytest -q -rs
+        run: python -m pytest -q -rs ${{ matrix.coverage && '--cov=udeep --cov-report=xml' || '' }}
+      - name: Coverage to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: coverage.xml
+          flags: python
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   rust:
     name: Rust core
@@ -57,8 +65,18 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: rustup update stable
-      - name: Test
-        run: cargo test --release --features jpeg,png --manifest-path core/Cargo.toml
+      - name: Test, with coverage
+        run: |
+          rustup component add llvm-tools-preview
+          cargo install cargo-llvm-cov --locked --version 0.9.1
+          cargo llvm-cov --release --features jpeg,png --manifest-path core/Cargo.toml --lcov --output-path lcov.info
+      - name: Coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: lcov.info
+          flags: rust
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
       - name: Clippy
         run: cargo clippy --release --features jpeg,png --manifest-path core/Cargo.toml -- -D warnings
       - name: Clippy, built as WebAssembly
@@ -107,5 +125,15 @@ jobs:
         run: |
           rustup update stable
           cargo build --release --features jpeg,png --manifest-path core/Cargo.toml
-      - name: Test
-        run: julia --project=julia/UDeepCore -e 'using Pkg; Pkg.test()'
+      - name: Test, with coverage
+        run: julia --project=julia/UDeepCore -e 'using Pkg; Pkg.test(coverage=true)'
+      - uses: julia-actions/julia-processcoverage@03114f09f119417c3242a9fb6e0b722676aedf38 # v1.2.2
+        with:
+          directories: julia/UDeepCore/src,julia/UDeepCore/ext
+      - name: Coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: lcov.info
+          flags: julia
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
