@@ -1,0 +1,40 @@
+name: scorecard
+
+# OpenSSF Scorecard: grades the repository's security practices (pinned actions, branch protection, dependency
+# updates, token permissions, signed releases and others). The results go to the repository's Security tab and to
+# the public Scorecard service, which serves the badge in the README.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 5 * * 1"        # Mondays, so a change in the checks themselves shows up too
+  branch_protection_rule:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write    # to put the results in the Security tab
+      id-token: write           # to publish them to the Scorecard service, for the badge
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: scorecard
+          path: results.sarif
+          retention-days: 5
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: results.sarif
