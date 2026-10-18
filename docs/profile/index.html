@@ -72,6 +72,19 @@
       --good: #2c7a27; --bad: #b0452f;
     --plate: #ffffff; }
   :root[data-theme="dark"] { color-scheme: dark; }
+  /* tables, the same on every page: a panel, readable headings, and a mark before each verdict */
+  .scroll:has(> table) { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 16px; }
+  .scroll > table th { color: var(--ink); }
+  .scroll > table td:first-child { font-weight: 600; color: var(--ink); }
+  td.yes, td.y, td.done { color: var(--yes); } td.no, td.n { color: var(--no); } td.part, td.p, td.next { color: var(--warm); }
+  td.later { color: var(--muted); }
+  td.yes::before, td.y::before, td.done::before { content: "\2713\00a0"; font-weight: 700; }
+  td.no::before, td.n::before { content: "\2717\00a0"; font-weight: 700; }
+  td.part::before, td.p::before { content: "\25D0\00a0"; }
+  td.next::before { content: "\2192\00a0"; }
+  td.later::before { content: "\25CB\00a0"; }
+  tr.ours td { background: var(--raise, var(--panel)); border-top: 2px solid var(--warm); border-bottom: 2px solid var(--warm); }
+  tr.ours td:first-child { color: var(--warm); }
   picture { display: block; }
   .plate.themed { background: var(--plate); }
 </style>
