@@ -7,7 +7,7 @@ use std::{collections::BTreeMap, fs, path::PathBuf};
 use serde_json::{Value, json};
 use udeep_core::{
     Declaration, Error, Levels, Mapping, Noise, Stretch, Table, UNBOUNDED, caption, colours, declaration::exit_slope,
-    description, digest_data, digest_pixels, float_text, format_g, iso21496_block, isolated, levels, par, pq_encode,
+    description, digest_data, digest_pixels, float_text, format_g, iso21496_block, isolated, levels, levels_pq16, par, pq_encode,
     rounding_to_noise, scale, sha256, srgb_oetf, tone,
 };
 
@@ -160,11 +160,16 @@ fn compute(case: &Value) -> Option<Value> {
                 rows.iter().flat_map(|r| r.as_array().unwrap()).flat_map(numbers).map(|v| v as u8).collect();
             json!(digest_pixels(shape[0], shape[1], &rgb))
         }
-        "levels" => {
+        "levels" | "levels_pq16" => {
             let m = mapping(&a["mapping"]);
             let values = case["tables"].as_array().unwrap().first().map(|f| table(f.as_str().unwrap()));
             let t = values.as_ref().map(|v| Table::new(v, m.reference_headroom).unwrap());
-            let found = levels(&m, t.as_ref(), m.reference_headroom, a["samples"].as_u64().unwrap() as usize);
+            let samples = a["samples"].as_u64().unwrap() as usize;
+            let found = if case["kind"] == "levels_pq16" {
+                levels_pq16(&m, t.as_ref(), number(&a["white_nits"]), samples)
+            } else {
+                levels(&m, t.as_ref(), m.reference_headroom, samples)
+            };
             let parameter = number(&a["noise"][1]);
             let noise = match a["noise"][0].as_str().unwrap() {
                 "constant" => Noise::Constant(parameter),
@@ -278,6 +283,7 @@ fn the_golden_file_holds_the_cases_this_test_was_written_for() {
         ("digest_pixels", 2),
         ("iso21496", 1),
         ("levels", 32),
+        ("levels_pq16", 8),
         ("mapping", 8),
         ("mask_isolated", 1),
         ("pq_encode", 1),

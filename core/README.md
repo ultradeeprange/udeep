@@ -38,7 +38,7 @@ the difference between two JPEG encoders. It draws nothing.
 
 ## Build and test
 
-    cargo test                      # all 90 golden cases, each to its own stated tolerance
+    cargo test                      # all 98 golden cases, each to its own stated tolerance
     cargo test --features jpeg,png      # the same, and the gain-map JPEG writer's own test
     cargo build --release           # target/release/udeep_core.dll (.so, .dylib)
     cargo build --release --features jpeg,png     # the same, with the gain-map JPEG writer
@@ -217,7 +217,7 @@ names, copies numbers in and out, and turns an error code into an `Error` carryi
 
 `../tests/test_udeep_wasm.py` builds the module and, in node:
 
-- runs `check_golden_wasm.mjs`, which reproduces all 90 golden cases through the binding, every output of each;
+- runs `check_golden_wasm.mjs`, which reproduces all 98 golden cases through the binding, every output of each;
 - checks that the module exports exactly the functions of the header, that a call asking for threads runs and
   gives the plain loop's bits, that what the core refuses comes back as an error with its code, and that 1,200
   damaged files (`../tests/test_malformed.py`'s damage), and a PNG and a JPEG whose headers claim vast images,

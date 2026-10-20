@@ -29,7 +29,7 @@ NODE, CARGO, RUSTC = shutil.which("node"), shutil.which("cargo"), shutil.which("
 TARGET = "wasm32-unknown-unknown"
 
 # What the C interface reaches: every kind. A kind given no function there would go in NOT_IN_THE_INTERFACE.
-REACHED = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "mask_isolated",
+REACHED = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "levels_pq16", "mask_isolated",
            "digest_data", "digest_pixels", "xmp", "caption", "iso21496"}
 NOT_IN_THE_INTERFACE: set[str] = set()
 IN_PART: set[str] = set()               # a kind the interface would give only some outputs of; none now

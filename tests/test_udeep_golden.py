@@ -4,9 +4,9 @@ import json
 
 from udeep import golden
 
-KINDS = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "mask_isolated", "digest_data",
+KINDS = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "levels_pq16", "mask_isolated", "digest_data",
          "digest_pixels", "xmp", "caption", "iso21496"}
-COUNTS = {"scale": 3, "tone": 11, "pq_encode": 1, "srgb_oetf": 1, "cmap": 2, "table": 24, "mapping": 8, "levels": 32,
+COUNTS = {"scale": 3, "tone": 11, "pq_encode": 1, "srgb_oetf": 1, "cmap": 2, "table": 24, "mapping": 8, "levels": 32, "levels_pq16": 8,
           "mask_isolated": 1, "digest_data": 1, "digest_pixels": 2, "xmp": 2, "caption": 1, "iso21496": 1}
 
 
@@ -24,7 +24,7 @@ def cases_of(kind: str) -> dict:
 
 def test_the_contract_has_the_cases_it_is_said_to_have():
     cases = committed()["cases"]
-    assert {kind: len(cases_of(kind)) for kind in KINDS} == COUNTS and len(cases) == sum(COUNTS.values()) == 90
+    assert {kind: len(cases_of(kind)) for kind in KINDS} == COUNTS and len(cases) == sum(COUNTS.values()) == 98
 
 
 def test_the_data_criterion_is_pinned_for_every_noise_model():
@@ -106,3 +106,14 @@ def test_the_comparison_is_not_vacuous():
     exact = cases["digest_data"]
     assert golden.agree(exact["out"][:-1] + "0", exact["out"], exact, "digest_data") or exact["out"].endswith("0")
     assert golden.agree(None, 1.0, cases["pq_encode"], "nan")                # a NaN where a number is expected
+
+
+def test_the_sixteen_bit_cases_are_grey_and_hold_the_levels_not_the_samples():
+    """Grey, so that the PQ path is pinned without a float32 table; and sampled finer than the levels, so that the
+    count is the file's levels and not the number of samples."""
+    for name, c in cases_of("levels_pq16").items():
+        a, out = c["args"], c["out"]
+        assert a["mapping"]["colour_map"] == "grey" and a["white_nits"] == golden.WHITE_NITS == 203.0, name
+        assert 10_000 < out["count"] < a["samples"] / 4, name
+    eight, sixteen = cases_of("levels")["levels_linear_grey"]["out"], cases_of("levels_pq16")["levels_pq16_linear_grey"]["out"]
+    assert sixteen["count"] > 50 * eight["count"] and sixteen["max_data_step"] < eight["max_data_step"] / 50

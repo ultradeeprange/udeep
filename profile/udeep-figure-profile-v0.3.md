@@ -463,9 +463,9 @@ read 1.048 ×. So a writer's check holds exactly only on the decoder it was made
 2026-10-11 the reference package writes and reads with the Rust core's decoder wherever that library is present, so
 that its own files are read by the decoder that checked them.
 
-The conformance suite is the reference implementation's golden vectors (`golden.json`, format 2): 90 cases of
-14 kinds. They cover the stages, the colour-map tables, mapping records run forwards and backwards, stored levels
-and the data criterion under each noise model, the mask rule, the digests, the metadata's serialised form, the
+The conformance suite is the reference implementation's golden vectors (`golden.json`, format 2): 98 cases of
+15 kinds. They cover the stages, the colour-map tables, mapping records run forwards and backwards, stored levels
+and the data criterion under each noise model for an 8-bit gain map and for a 16-bit PQ PNG, the mask rule, the digests, the metadata's serialised form, the
 generated caption and the ISO 21496-1 block's bytes. Every case states how closely a result must agree. Four
 classes are in use:
 
@@ -473,16 +473,22 @@ classes are in use:
 |---|---|---|
 | 10⁻¹², relative and absolute | float64 arithmetic: the scale, the tone curve, the PQ and sRGB encodings, and mapping records with the `grey` map | 19 |
 | 2 × 10⁻⁶, relative and absolute | anything through a float32 colour-map table: the map lookups, and mapping records with a colour map | 7 |
-| 10⁻⁹, relative and absolute | stored levels and the data criterion, which are found by sampling the declared range; whether the criterion is met is compared exactly | 32 |
+| 10⁻⁹, relative and absolute | stored levels and the data criterion, which are found by sampling the declared range; whether the criterion is met is compared exactly | 40 |
 | exact | text, bytes and yes-or-no results: the tables' digests, both digests of §8.6, the metadata text, the caption, the mask rule and the ISO 21496-1 block | 32 |
 
-A case's own statement governs; this table reports what the file holds on 2026-10-14.
+A case's own statement governs; this table reports what the file holds on 2026-10-21.
 
-Implementations, on 2026-10-14. The Python reference generates the suite and reproduces all 90 cases. The
+*Added 2026-10-21.* The eight 16-bit cases (`levels_pq16`) use the grey forms of the mapping records, with white
+at 203 cd/m² (9.1.1), sampled finer than the levels so that the count is the file's levels. Grey keeps them to the
+PQ path itself: sixteen-bit codes are fine enough that a colour table read in other float32 arithmetic would move
+codes near a rounding tie. Each case was checked, when it was made, to keep every code under a relative change of
+10⁻¹² in the light.
+
+Implementations, on 2026-10-21. The Python reference generates the suite and reproduces all 98 cases. The
 JavaScript port reproduces 55: every case of the 11 kinds it implements. It does not compute stored levels and
-does not write the metadata or the caption. The Rust core implements all 14 kinds; it reproduces all 90 cases.
-A WebAssembly build of the same core, with its JavaScript binding, reproduces the 50 cases its C interface
-reaches. A Julia binding calls the Rust core and takes the mapping and digest cases from the same file.
+does not write the metadata or the caption. The Rust core implements all 15 kinds; it reproduces all 98 cases,
+and so does a WebAssembly build of the same core through its C interface and JavaScript binding. A Julia binding
+calls the Rust core and takes the mapping, digest and levels cases from the same file.
 
 *Independent decoders, 2026-10-14.* Google's reference library for gain maps, libultrahdr (v2.0.2, commit
 66821e0), decoded six of the reference writers' gain-map JPEGs (four from the gallery, two from the worked

@@ -58,6 +58,16 @@ end
               (step, nothing)
     end
 
+    @testset "$name" for (name, case) in sort!([n => c for (n, c) in GOLDEN["cases"] if c["kind"] == "levels_pq16"]; by = first)
+        a = case["args"]
+        m = mapping(a["mapping"])                                                        # grey: no table
+        noise = (Symbol(a["noise"][1]), a["noise"][2])
+        step, ratio, count = levels_pq16(m, nothing; white_nits = a["white_nits"], noise, samples = a["samples"])
+        @test count == case["out"]["count"]
+        @test agrees(step, case["out"]["max_data_step"], case)
+        @test agrees(ratio, case["out"]["rounding_to_noise"], case)
+    end
+
     @testset "the declaration and the caption" begin
         for name in ("xmp_description", "xmp_description_floats")
             case = GOLDEN["cases"][name]

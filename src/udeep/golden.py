@@ -10,8 +10,14 @@ arithmetic are involved.
 
 Kinds: scale, tone, pq_encode, srgb_oetf, cmap (a table lookup), table (a shipped table's digest), mapping (a
 parameter record: position, light, fair SDR light, the inverse, colours), levels (stored levels and the data
-criterion), mask_isolated, digest_data, digest_pixels, xmp (a declaration's serialised form), caption, iso21496
+criterion, for the 8-bit gain-map path), levels_pq16 (the same for a 16-bit PQ PNG), mask_isolated, digest_data, digest_pixels, xmp (a declaration's serialised form), caption, iso21496
 (the gain-map metadata block's bytes).
+
+A levels_pq16 case is a levels case for a 16-bit PQ PNG with white at `white_nits` (203 cd/m2, profile 9.1.1): one
+code for each colour, no split at the knee. Its mappings are the grey forms of the mapping records. Sixteen-bit codes
+are fine enough that a float32 colour table, which ports may interpolate in other arithmetic, would move codes that
+sit near a rounding tie; with grey the case pins the PQ path itself, and the colours are pinned by the mapping cases.
+Each case is checked, when it is made, to keep every code under a relative change of 1e-12 in the light.
 
 A levels case gives the noise as [model, parameter]. Its `rounding_to_noise` is the worst ratio as a file states
 it, no larger than 1e9: the ratio is unbounded where the noise reaches zero, and JSON has no infinity. `at`, the
@@ -36,6 +42,7 @@ from udeep.metadata import (
     Declaration,
     caption,
     data_steps,
+    data_steps_pq16,
     description,
     digest_data,
     digest_pixels,
@@ -50,6 +57,8 @@ TIGHT = {"rel": 1e-12, "abs": 1e-12}          # float64 arithmetic against the f
 TABLE = {"rel": 2e-6, "abs": 2e-6}            # through a float32 table, or float32 arithmetic (D8)
 LEVELS = {"rel": 1e-9, "abs": 1e-9}           # counts of stored levels and their widths
 UNBOUNDED = 1e9                               # what a file states for a ratio with no bound (udeep.mpl.declaration)
+WHITE_NITS = 203.0                            # where a PQ file has its white (profile 9.1.1)
+PQ16_SAMPLES = 262145                         # finer than the levels, so the count is the levels, not the samples
 NOISE = {"poisson": 0.004, "relative": 0.05, "tolerance": 0.003}    # the models beside constant; see _noise_cases
 
 
@@ -95,7 +104,25 @@ def _mapping_cases() -> dict:
             cases[f"levels_{name}{suffix}"] = {
                 "kind": "levels", "args": {"mapping": dataclasses.asdict(m), "samples": 4097, "noise": list(noise)},
                 "out": _levels(m, steps, noise), "tol": LEVELS, "tables": cases[f"mapping_{name}"]["tables"]}
+        grey = dataclasses.replace(m, colour_map="grey", colour_map_table=None)
+        if not _pq16_settled(grey):
+            raise ValueError(f"levels_pq16_{name}: a code sits on a rounding tie; change PQ16_SAMPLES")
+        noise = ("constant", 0.01 * span)
+        cases[f"levels_pq16_{name}"] = {
+            "kind": "levels_pq16", "args": {"mapping": dataclasses.asdict(grey), "samples": PQ16_SAMPLES,
+                                             "white_nits": WHITE_NITS, "noise": list(noise)},
+            "out": _levels(grey, data_steps_pq16(grey, WHITE_NITS, samples=PQ16_SAMPLES), noise), "tol": LEVELS,
+            "tables": []}
     return cases
+
+
+def _pq16_settled(m: Mapping) -> bool:
+    """Whether every sampled code stays the same when the light moves by a relative 1e-12, far more than two
+    float64 implementations differ by: then another port finds the same codes, and the same levels."""
+    from udeep.export import pq16_codes
+    light = m.colours(m.light_at(np.linspace(0.0, 1.0, PQ16_SAMPLES)))
+    codes = pq16_codes(light, WHITE_NITS)
+    return all(np.array_equal(pq16_codes(light * f, WHITE_NITS), codes) for f in (1.0 + 1e-12, 1.0 - 1e-12))
 
 
 def _noise_cases(m: Mapping) -> list[tuple[str, tuple]]:

@@ -609,6 +609,22 @@ def test_the_criterion_in_full_through_the_c_interface_reproduces_every_golden_l
         assert not problems, problems[:5]
 
 
+def test_the_criterion_in_full_through_the_c_interface_reproduces_every_golden_sixteen_bit_case(lib):
+    """The same for a 16-bit PQ PNG: pq16 set, and the white level where an 8-bit case gives the headroom."""
+    cases = golden_cases("levels_pq16")
+    assert len(cases) == 8
+    for name, c in cases.items():
+        a = c["args"]
+        status, out = c_criterion(lib, a["mapping"], None, a["white_nits"], a["samples"], a["noise"], pq16=1)
+        assert status == 0, name
+        got = {"count": out.count, "max_data_step": out.max_data_step, "first_start": out.first_start,
+               "rounding_to_noise": out.rounding_to_noise, "failing_fraction": out.failing_fraction,
+               "limit": out.limit, "meets": bool(out.meets), "at": out.at}
+        got = {k: got[k] for k in c["out"]}
+        problems = golden.agree(got, c["out"], c, name)
+        assert not problems, problems[:5]
+
+
 def test_the_criterion_in_full_agrees_with_the_two_short_forms_and_the_reference(lib):
     from udeep import Mapping, metadata
     m = Mapping.from_stretch({"kind": "linear", "lo": 0.0, "hi": 4095.0}, 1000.0, 4.0, "grey")

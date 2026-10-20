@@ -10,6 +10,14 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ## Unreleased
 
+### 2026-10-21
+
+- **The 16-bit PQ PNG in the golden vectors**: eight `levels_pq16` cases, one for each mapping record in its grey
+  form, with white at 203 cd/m², give the count of stored levels, the widest, where the first starts and the data
+  criterion for a 16-bit file. The suite is now 98 cases of 15 kinds. Python, the Rust core, the core through its C
+  interface and as WebAssembly, and Julia reproduce them all; the plain JavaScript port, which computes no levels,
+  lists the kind as not its own.
+
 ### 2026-10-20
 
 - **Graded verdicts in the validator.** Besides each check, a report now gives four levels, each on its own:

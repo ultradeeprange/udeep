@@ -130,7 +130,7 @@ Two modes use the same tone curve:
 | `docs/view/` | a live view in the browser (WebGPU): data drawn through the reference shader, above white on an HDR screen |
 | `julia/UDeepCore/` | a Julia binding to the core, with a Makie extension that saves HDR figures (CairoMakie) |
 | `src/udeep/shaders/mapping.wgsl` | the mapping as a WebGPU shader; `udeep.gpu` runs it (needs `pip install wgpu`) |
-| `src/udeep/golden.json` | the contract: 90 reference cases of 14 kinds, each with its stated tolerance. Python reproduces all of them; the JavaScript port the 55 it implements; the Rust core all 90; the core built as WebAssembly, called through its C interface, all 90 as well |
+| `src/udeep/golden.json` | the contract: 98 reference cases of 15 kinds, each with its stated tolerance, the 16-bit PQ PNG's levels among them. Python reproduces all of them; the JavaScript port the 55 it implements; the Rust core all 98; the core built as WebAssembly, called through its C interface, all 98 as well |
 | `tests/` | pytest suite (`pip install -e ".[test]" && pytest`) |
 | `examples/` | four worked examples on synthetic data, with their figures (`examples/README.md`) |
 | `profile/` | the UDeep Figure Profile |

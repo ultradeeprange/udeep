@@ -49,6 +49,11 @@ const KINDS = {
     if (short.maxDataStep !== f.maxDataStep || short.roundingToNoise !== f.roundingToNoise) throw new Error('levels and criterion differ');
     return { count: f.count, max_data_step: f.maxDataStep, first_start: f.firstStart, rounding_to_noise: f.roundingToNoise,
       failing_fraction: f.failingFraction, limit: f.limit, meets: f.meets, at: f.at }; },
+  levels_pq16: (a, c) => { const args = [a.mapping, tableOf(c), a.white_nits, a.samples, a.noise];
+    const f = core.criterion(...args, { pq16: true }), short = core.levelsPq16(...args);   // the short form agrees
+    if (short.maxDataStep !== f.maxDataStep || short.count !== f.count) throw new Error('levelsPq16 and criterion differ');
+    return { count: f.count, max_data_step: f.maxDataStep, first_start: f.firstStart, rounding_to_noise: f.roundingToNoise,
+      failing_fraction: f.failingFraction, limit: f.limit, meets: f.meets, at: f.at }; },
   mask_isolated: a => { const width = a.above[0].length, height = a.above.length;
     const held = core.isolated(Uint8Array.from(a.above.join(''), ch => Number(ch === '1')), height, width);
     return a.above.map((_, row) => list(held.subarray(row * width, (row + 1) * width)).join('')); },

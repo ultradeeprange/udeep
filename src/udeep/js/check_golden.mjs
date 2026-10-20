@@ -12,7 +12,7 @@ import './udeepcore.js';
 const { cmap, makeTable, pqEncode, scale, tone, srgbOetf, position, light, valueOfLight, kneePosition, colours,
   sha256, digestData, digestPixels, isolated, iso21496Metadata } = globalThis.UDeepCore;
 
-const NOT_IN_THIS_PORT = ['levels', 'xmp', 'caption'];           // the levels, the declaration's text, the caption
+const NOT_IN_THIS_PORT = ['levels', 'levels_pq16', 'xmp', 'caption'];           // the levels, the declaration's text, the caption
 
 const golden = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const tablesDir = process.argv[3];

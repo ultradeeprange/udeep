@@ -1116,8 +1116,13 @@ tight where an implementation in float64 must agree with the reference, looser w
 arithmetic are involved.</p>
 <p>Kinds: scale, tone, pq_encode, srgb_oetf, cmap (a table lookup), table (a shipped table&#x27;s digest), mapping (a
 parameter record: position, light, fair SDR light, the inverse, colours), levels (stored levels and the data
-criterion), mask_isolated, digest_data, digest_pixels, xmp (a declaration&#x27;s serialised form), caption, iso21496
+criterion, for the 8-bit gain-map path), levels_pq16 (the same for a 16-bit PQ PNG), mask_isolated, digest_data, digest_pixels, xmp (a declaration&#x27;s serialised form), caption, iso21496
 (the gain-map metadata block&#x27;s bytes).</p>
+<p>A levels_pq16 case is a levels case for a 16-bit PQ PNG with white at <code>white_nits</code> (203 cd/m2, profile 9.1.1): one
+code for each colour, no split at the knee. Its mappings are the grey forms of the mapping records. Sixteen-bit codes
+are fine enough that a float32 colour table, which ports may interpolate in other arithmetic, would move codes that
+sit near a rounding tie; with grey the case pins the PQ path itself, and the colours are pinned by the mapping cases.
+Each case is checked, when it is made, to keep every code under a relative change of 1e-12 in the light.</p>
 <p>A levels case gives the noise as [model, parameter]. Its <code>rounding_to_noise</code> is the worst ratio as a file states
 it, no larger than 1e9: the ratio is unbounded where the noise reaches zero, and JSON has no infinity. <code>at</code>, the
 data value where the worst ratio was taken, is given for poisson and relative noise, and only where one level is
