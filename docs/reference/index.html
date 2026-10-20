@@ -113,7 +113,7 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      98 public functions and classes in 17 Python modules, and the 33 names the Julia
+      99 public functions and classes in 17 Python modules, and the 33 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -732,10 +732,13 @@ checked becomes a failed check that says what it was.</p>
 <h3 id="validate.Check"><span class="kind">class</span>Check</h3>
 <p>One check made on one file: the conformance point it belongs to, its name, how it came out, and what was
 found, in words.</p>
+<h3 id="validate.Level"><span class="kind">class</span>Level</h3>
+<p>One graded verdict: a level of assurance, how it came out (&quot;pass&quot;, &quot;partly&quot;, &quot;fail&quot; or &quot;unverified&quot;), and
+what that rests on, in words.</p>
 <h3 id="validate.Report"><span class="kind">class</span>Report</h3>
 <p>What <code>validate</code> found for one file: the checks in the order they were made, and the declaration the file
-carries, if one could be read. As text (<code>str(report)</code>) it is a line that says whether the file conforms, and
-then a line for each check.</p>
+carries, if one could be read. As text (<code>str(report)</code>) it is a line that says whether the file conforms, then
+a line for each check, then the graded verdicts (<code>levels</code>) and what was still trusted (<code>still_trusted</code>).</p>
 <div class="member">
 <h4 id="validate.Report.ok">ok <span class="kind">property</span></h4>
 <pre class="sig">ok</pre>
@@ -747,6 +750,16 @@ that name.</p>
 <h4 id="validate.Report.add">add <span class="kind">method</span></h4>
 <pre class="sig">add(self, point: str, name: str, status: str, detail: str) -&gt; None</pre>
 <p>Record one check&#x27;s result.</p>
+<h4 id="validate.Report.levels">levels <span class="kind">property</span></h4>
+<pre class="sig">levels</pre>
+<p>The graded verdicts, each on its own: Declared, Consistent, Reproduced and Attributed. A level passes
+when every check it rests on passed; &quot;partly&quot; when some passed and the rest could not be made; &quot;fail&quot; when
+any failed; &quot;unverified&quot; when none could be made. Checks that do not apply to this kind of file are left
+out. Attributed is never passed here: this validator does not check signatures, and says so.</p>
+<h4 id="validate.Report.still_trusted">still_trusted <span class="kind">property</span></h4>
+<pre class="sig">still_trusted</pre>
+<p>What a reader of this report still has to take on trust: each level that did not pass, in words, and
+the one thing no file can show.</p>
 </div>
 <h3 id="validate.validate"><span class="kind">function</span>validate</h3>
 <pre class="sig">validate(

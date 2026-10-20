@@ -388,3 +388,47 @@ def test_a_figure_at_an_unregistered_headroom_carries_its_colour_map(tmp_path):
         r = hp.validate(fig, path)
         assert all(c.status == "pass" for c in r.checks), str(r)
         plt.close(fig)
+
+
+# ---- graded verdicts: each level on its own, and what was still trusted
+
+def levels(report):
+    return {v.name: v.status for v in report.levels}
+
+
+def test_the_file_alone_is_declared_and_consistent_and_the_rest_is_unverified(saved):
+    _fig, path = saved
+    r = validate(path)
+    assert levels(r) == {"Declared": "pass", "Consistent": "pass", "Reproduced": "unverified", "Attributed": "unverified"}
+    assert any("pixels are the declared mapping" in t for t in r.still_trusted)
+    assert r.still_trusted[-1].startswith("that the data is what was measured")          # always, whatever passed
+    text = str(r)
+    assert "  levels:" in text and "still trusted, not checked:" in text
+
+
+def test_with_its_figure_the_file_is_reproduced(saved):
+    fig, path = saved
+    r = hp.validate(fig, path)
+    assert levels(r)["Reproduced"] == "pass", str(r)
+    assert not any("pixels are the declared mapping" in t for t in r.still_trusted)
+
+
+def test_a_check_that_fails_fails_its_level_and_one_never_made_is_not_a_pass(saved):
+    _fig, path = saved
+    other = data().copy(); other[3, 4] += 10.0
+    r = validate(path, data=other)
+    assert levels(r)["Reproduced"] == "fail" and "data link" in next(v.detail for v in r.levels if v.name == "Reproduced")
+    tamper(path, "MaxDataStep", "0.001")
+    assert levels(validate(path))["Consistent"] == "fail"
+
+
+def test_a_c2pa_manifest_is_seen_and_said_not_to_be_checked(saved):
+    _fig, path = saved
+    raw = path.read_bytes()
+    box = b"jumb" + b"\x00" * 8 + b"c2pa"                              # the shape of a C2PA JUMBF label, nothing more
+    app11 = b"\xff\xeb" + (len(box) + 2).to_bytes(2, "big") + box
+    path.write_bytes(raw[:2] + app11 + raw[2:])
+    r = validate(path)
+    assert r.signature == "C2PA" and levels(r)["Attributed"] == "unverified"
+    assert "C2PA manifest, which this validator does not check" in str(r)
+    assert validate(path).ok                                          # the file reads as before

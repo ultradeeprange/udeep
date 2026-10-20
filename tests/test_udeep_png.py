@@ -339,3 +339,12 @@ def test_digest_sdr_is_taken_over_the_codes_the_writers_store():
     from udeep.export import srgb_oetf
     codes = np.round(srgb_oetf(np.nan_to_num(sdr)) * 255.0).astype(np.uint8)
     assert digest_sdr(sdr) == digest_pixels(codes)
+
+
+def test_a_png_data_record_with_its_data_and_its_sdr_figure_is_reproduced(tmp_path):
+    """The JPEG-only checks do not apply to a PNG and are left out of its levels, so it can be Reproduced."""
+    from udeep.validate import validate
+    path, data = frame_file(tmp_path)
+    r = validate(path, data=data, sdr=tmp_path / "frame_sdr.png")
+    assert {v.name: v.status for v in r.levels}["Reproduced"] == "pass", str(r)
+    assert {v.name: v.status for v in validate(path).levels}["Reproduced"] == "unverified"

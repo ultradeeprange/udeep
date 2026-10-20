@@ -77,15 +77,38 @@ class Check:
     detail: str
 
 
+@dataclass(frozen=True)
+class Level:
+    """One graded verdict: a level of assurance, how it came out ("pass", "partly", "fail" or "unverified"), and
+    what that rests on, in words."""
+
+    name: str
+    status: str
+    detail: str
+
+
+# The levels, in order, and the checks each rests on. Nothing is "fine" by default: a level none of whose checks
+# could be made is unverified, and says what it would need.
+LEVELS = (
+    ("Declared", ("metadata",), "the file says how its data became light"),
+    ("Consistent", ("metadata", "mapping", "headroom", "precision"),
+     "the declaration is complete and invertible, nothing exceeds the headroom, and the stated precision is right"),
+    ("Reproduced", ("data link", "data read back", "sdr link", "sdr base", "hdr rendering", "held pixels"),
+     "the file is what its data and its figure make"),
+)
+NOT_APPLICABLE = "applies to a gain-map JPEG"     # the opening of a check that does not apply to this kind of file
+
+
 @dataclass
 class Report:
     """What `validate` found for one file: the checks in the order they were made, and the declaration the file
-    carries, if one could be read. As text (`str(report)`) it is a line that says whether the file conforms, and
-    then a line for each check."""
+    carries, if one could be read. As text (`str(report)`) it is a line that says whether the file conforms, then
+    a line for each check, then the graded verdicts (`levels`) and what was still trusted (`still_trusted`)."""
 
     path: str
     checks: list[Check] = field(default_factory=list)
     declaration: Declaration | None = None
+    signature: str | None = None     # "C2PA" when the file carries a C2PA manifest (not checked here), else None
 
     @property
     def ok(self) -> bool:
@@ -101,10 +124,55 @@ class Report:
         """Record one check's result."""
         self.checks.append(Check(point, name, status, detail))
 
+    @property
+    def levels(self) -> list[Level]:
+        """The graded verdicts, each on its own: Declared, Consistent, Reproduced and Attributed. A level passes
+        when every check it rests on passed; "partly" when some passed and the rest could not be made; "fail" when
+        any failed; "unverified" when none could be made. Checks that do not apply to this kind of file are left
+        out. Attributed is never passed here: this validator does not check signatures, and says so."""
+        out = []
+        for name, wanted, meaning in LEVELS:
+            found = [c for c in self.checks if c.name in wanted and not c.detail.startswith(NOT_APPLICABLE)]
+            if name == "Declared":
+                status = "pass" if self.declaration is not None else "fail"
+                detail = meaning if status == "pass" else "the file carries no declaration that can be read"
+            elif any(c.status == "fail" for c in found):
+                status = "fail"
+                detail = "failed: " + ", ".join(c.name for c in found if c.status == "fail")
+            elif found and all(c.status == "pass" for c in found):
+                status, detail = "pass", meaning
+            elif any(c.status == "pass" for c in found):
+                status = "partly"
+                detail = ("checked: " + ", ".join(c.name for c in found if c.status == "pass") + "; not checked: "
+                          + ", ".join(c.name for c in found if c.status != "pass"))
+            else:
+                status = "unverified"
+                detail = "not checked: " + (", ".join(c.name for c in found) or "nothing to check it with")
+            out.append(Level(name, status, detail))
+        out.append(Level("Attributed", "unverified",
+                         "the file carries a C2PA manifest, which this validator does not check" if self.signature
+                         else "the file carries no signature, so who made it, and whether it changed since, are not shown"))
+        return out
+
+    @property
+    def still_trusted(self) -> list[str]:
+        """What a reader of this report still has to take on trust: each level that did not pass, in words, and
+        the one thing no file can show."""
+        reasons = {
+            "Declared": "how the file's data became light: it does not say",
+            "Consistent": "that the declaration is complete and its stated precision right",
+            "Reproduced": "that the pixels are the declared mapping of the data named (supply the data, or the figure)",
+            "Attributed": "who made the file, and that it has not been changed since",
+        }
+        out = [reasons[level.name] for level in self.levels if level.status != "pass"]
+        return out + ["that the data is what was measured: no file can show that"]
+
     def __str__(self) -> str:
         lines = [f"{self.path}: {'conforms' if self.ok else 'DOES NOT CONFORM'}"
                  + ("" if all(c.status != "skipped" for c in self.checks) else " (as far as checked)")]
         lines += [f"  [{c.status:^7}] {c.point} {c.name}: {c.detail}" for c in self.checks]
+        lines += ["  levels:"] + [f"    {v.name:<11} {v.status:<10} {v.detail}" for v in self.levels]
+        lines += ["  still trusted, not checked:"] + [f"    - {t}" for t in self.still_trusted]
         return "\n".join(lines)
 
 
@@ -452,6 +520,14 @@ def _validate_png(report: Report, path, raw: bytes, data, data_digest: str | Non
     return report
 
 
+def _signature(raw: bytes) -> str | None:
+    """Whether the file carries a C2PA manifest: a JUMBF box labelled c2pa, which a JPEG keeps in APP11 segments and
+    a PNG in a caBX chunk. Whether the manifest is valid is not checked here."""
+    if raw[:8] == PNG_SIGNATURE:
+        return "C2PA" if b"caBX" in raw else None
+    return "C2PA" if b"\xff\xeb" in raw and b"jumb" in raw and b"c2pa" in raw else None
+
+
 def validate(path, expected: tuple | None = None, data=None, sdr=None, data_digest: str | None = None,
              sdr_digest: str | None = None) -> Report:
     """Check the gain-map JPEG, or the 16-bit PQ PNG, at `path`. `expected` is (sdr, hdr): the fair SDR figure and the HDR figure as
@@ -468,6 +544,7 @@ def validate(path, expected: tuple | None = None, data=None, sdr=None, data_dige
     except OSError as err:
         report.add("1", "metadata", "fail", f"the file cannot be read: {_why(err)}")
         return report
+    report.signature = _signature(raw)
     if raw[:8] == PNG_SIGNATURE:
         return _validate_png(report, path, raw, data, data_digest, sdr, sdr_digest)
     found = _guarded(report, (("1", "metadata"),), "the metadata", _metadata, path, raw)

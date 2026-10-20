@@ -8,6 +8,22 @@ Versions are tagged in the repository, and each has a release on GitHub with its
 for each platform. Nothing is on PyPI, crates.io or the Julia registry yet. The version follows the profile draft
 the code implements: 0.3 implements the v0.3 draft.
 
+## Unreleased
+
+### 2026-10-20
+
+- **Graded verdicts in the validator.** Besides each check, a report now gives four levels, each on its own:
+  *Declared* (the file says how its data became light), *Consistent* (the declaration is complete and invertible,
+  nothing exceeds the headroom, the stated precision is right), *Reproduced* (the file is what its data and its
+  figure make) and *Attributed* (who made it, and that it is unchanged). A level passes only when every check it
+  rests on passed; one whose checks could not be made is *unverified*, never a pass; one with some checks made is
+  *partly*. The report ends with what was still taken on trust, which always includes that the data is what was
+  measured. The validator does not check signatures: a file that carries a C2PA manifest is reported as carrying
+  one, and Attributed stays unverified. `Report.levels`, `Report.still_trusted`, `Report.signature`.
+- **Repository and organisation:** branch rules on `main` (seven required checks), Dependabot, secret scanning,
+  CodeQL, OpenSSF Scorecard, coverage on Codecov, fuzz targets for the four file readers in `core/fuzz/`,
+  CODEOWNERS, and an organisation profile.
+
 ## 0.3.0 (2026-10-17)
 
 The first tagged version: everything below, from the first public version on.
