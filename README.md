@@ -151,9 +151,9 @@ give stays "not recorded".
 
 ## Taking part
 
-[`CONTRIBUTING.md`](CONTRIBUTING.md) says what help is most useful and how to work on the code. Questions go in
-[Discussions](https://github.com/ultradeeprange/udeep/discussions); what has changed is in
-[`CHANGELOG.md`](CHANGELOG.md).
+[`CONTRIBUTING.md`](CONTRIBUTING.md) says what help is most useful and how to work on the code. Short answers to
+the usual doubts are on the [questions page](https://ultradeeprange.github.io/udeep/questions/); ask anything else in the
+[Q&A discussions](https://github.com/ultradeeprange/udeep/discussions/categories/q-a). What has changed is in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Citing
 

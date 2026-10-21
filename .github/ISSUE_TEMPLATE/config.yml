@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Ask a question
-    url: https://github.com/ultradeeprange/udeep/discussions
-    about: Questions and ideas that are not a fault, a device report or a comment on the profile.
+    url: https://github.com/ultradeeprange/udeep/discussions/new?category=q-a
+    about: Questions that are not a fault, a device report or a comment on the profile. The usual ones are answered at https://ultradeeprange.github.io/udeep/questions/
   - name: Run the device checks
     url: https://ultradeeprange.github.io/udeep/check/
     about: The test pages a device report is about. Open them on the screen you are reporting.

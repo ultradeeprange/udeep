@@ -15,7 +15,8 @@ useful help is not always code.
 3. **Try it on your own data** and report what did not work, or what the figure hid that it should have shown.
 4. **Code.** See below.
 
-Questions that are not faults belong in [Discussions](https://github.com/ultradeeprange/udeep/discussions).
+Questions that are not faults belong in the [Q&A discussions](https://github.com/ultradeeprange/udeep/discussions/categories/q-a); the
+[questions page](https://ultradeeprange.github.io/udeep/questions/) answers the usual ones.
 
 ## How evidence is kept
 
