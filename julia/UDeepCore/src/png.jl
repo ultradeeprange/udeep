@@ -93,3 +93,30 @@ function read_png_pq(file::AbstractVector{UInt8}; white_nits::Real = REF_WHITE_N
                 bytes, length(bytes), white_nits, values, length(values)))
     return permutedims(reshape(values, 3, Int(width[]), Int(height[])), (3, 2, 1))     # from row order
 end
+
+"""
+    read_png_data(file, m; cmap = "grey", table = colour_table(cmap, m.reference_headroom), white_nits = 203,
+                  samples = 1048576)
+
+A 16-bit PQ PNG, given as its bytes, read back as data: `height x width`, the data value each pixel stands for
+under the mapping `m` and colour map the file declares, whatever its colours, as the Python reference's
+`udeep.read_png_data` does it. Each pixel comes back to within half of the file's `MaxDataStep`; a pixel that is no
+colour of this mapping is `NaN`. A value outside the declared range was stored at the range's end, and comes back
+there. Throws for a PNG of another kind, or a mapping whose colours cannot be read back.
+"""
+function read_png_data(file::AbstractVector{UInt8}, m::Mapping; cmap::AbstractString = "grey",
+                       table::Union{Nothing, Vector{Float32}} = colour_table(cmap, m.reference_headroom),
+                       white_nits::Real = REF_WHITE_NITS, samples::Integer = 1 << 20)
+    bytes = convert(Vector{UInt8}, file)
+    width, height = Ref(Csize_t(0)), Ref(Csize_t(0))
+    check(ccall(png_symbol(:udeep_png_pq_size), Int32, (Ptr{UInt8}, Csize_t, Ref{Csize_t}, Ref{Csize_t}),
+                bytes, length(bytes), width, height))
+    values = Vector{Float64}(undef, Int(width[]) * Int(height[]))
+    pointer_, nodes = table === nothing ? (Ptr{Float32}(C_NULL), 0) : (pointer(table), length(table) ÷ 6)
+    GC.@preserve table check(ccall(png_symbol(:udeep_png_pq_values), Int32,
+                                   (Ptr{UInt8}, Csize_t, Ref{Mapping}, Ptr{Float32}, Csize_t, Float64, Csize_t,
+                                    Ptr{Float64}, Csize_t),
+                                   bytes, length(bytes), m, pointer_, nodes, white_nits, samples, values,
+                                   length(values)))
+    return permutedims(reshape(values, Int(width[]), Int(height[])))                    # from row order
+end

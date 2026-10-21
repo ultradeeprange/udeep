@@ -17,14 +17,16 @@ values in row order (the last index fastest), so a Julia array is walked that wa
 module UDeepCore
 
 using Artifacts
+using Base64: base64encode
 using Libdl
 using SHA: sha256
 
 # `position` is not exported: Base has a function of that name (for streams). Call it as UDeepCore.position.
 export Mapping, light, light!, sdr_light, value, colours, digest_data, digest_pixels, digest_sdr, core_version
-export value_at, srgb_encode, srgb_decode, isolated, colour_table, hdr_view, HdrView, levels, Declaration
+export value_at, srgb_encode, srgb_decode, isolated, colour_table, colour_table_text, hdr_view, HdrView, levels, Declaration
 export description, caption, gainmap_jpeg, gainmap_from_renders, hdrimage!, hdrcolorbar!, save_hdr, hdr_declaration, hdr_caption, hdr_theme
-export levels_pq16, png_pq, read_png_pq, xmp_packet
+export hdr_inline, HdrFigure
+export levels_pq16, png_pq, read_png_pq, read_png_data, xmp_packet
 
 const STRETCHES = (linear = 0x00000000, log = 0x00000001, asinh = 0x00000002, proportional = 0x00000003)
 const ERRORS = Dict(

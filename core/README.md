@@ -144,6 +144,13 @@ limit, the limit and the verdict, in one record of fixed layout (`udeep_criterio
 A declaration the profile would refuse comes back as `UDEEP_ERROR_BAD_DECLARATION`, or as the mapping record's
 own code. For drawing there are `udeep_srgb_encode` / `udeep_srgb_decode`, `udeep_value_at` (position to
 data value, for colour-bar ticks) and `udeep_mask_isolated` (the `isolated-3x3` rule of the Highlight preset).
+`udeep_colour_table` makes a registered map's table at a reference headroom with no published table, by the
+generator the published tables were made with (ported from the Python reference, in `src/cmap.rs`); the file
+must then carry it. `tests/cmap.rs` makes all 24 published tables again with it: on Windows, versions 1 and 3 bit
+for bit, version 2 to within 6e-13 of white, in the values almost zero that profile 6.10 describes.
+`udeep_png_pq_values` reads a 16-bit PQ PNG back as data, whatever its colour map, given the mapping and table the
+file declares (`udeep_values_pq16` does the same from the codes): each pixel to within half of `MaxDataStep`,
+agreeing with the reference's `values_pq16` to 1e-9 of the range.
 
 The stages of the mapping are there on their own too, with the bytes a file is checked by: `udeep_scale` (a bare
 scale), `udeep_tone` (the tone curve), `udeep_pq_encode`, `udeep_digest_bytes` (the digest of any bytes, such as a
@@ -211,8 +218,8 @@ Two things differ from a native build, and the header says so:
   native program; the binding refuses a buffer that a 32-bit size cannot describe before it asks for one.
 
 The binding is `../src/udeep/js/udeepwasm.js`, a plain script like the port: `await UDeepWasm.load(bytes)` gives
-functions over typed arrays (`light(mapping, values)`, `colours(light, table)`, `description(declaration)`,
-`pngPq(...)`, `readGainmap(...)` and the rest), takes mapping records and declarations under the metadata's own
+functions over typed arrays (`light(mapping, values)`, `colours(light, table)`, `colourTable(name, headroom)`,
+`description(declaration)`, `pngPq(...)`, `readGainmap(...)` and the rest), takes mapping records and declarations under the metadata's own
 names, copies numbers in and out, and turns an error code into an `Error` carrying it.
 
 `../tests/test_udeep_wasm.py` builds the module and, in node:

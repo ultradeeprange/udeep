@@ -167,11 +167,46 @@ fn a_sixteen_bit_file_holds_a_twelve_bit_frame_to_within_its_noise() {
     assert!(own.windows(2).all(|pair| pair[0] != pair[1]));
 }
 
+/// Values from the bottom of the range, where PQ codes change faster than the sampling, to the top, and past both
+/// ends; for grey and for the published `fire/3` and `ice/3` tables at 4x.
+#[test]
+fn a_data_record_comes_back_as_data_whatever_its_colour_map() {
+    let mapping = Mapping::new(Stretch::Linear, 0.0, 4095.0, 2048.0, 4.0);
+    let mut data: Vec<f64> = (0..600).map(|i| f64::from(i) * 0.005).collect(); // 0 to 3, near black
+    data.extend((0..2000).map(|i| f64::from(i * 7919 % 4096) + f64::from(i % 10) / 10.0));
+    data.extend([-50.0, 0.0, 4095.0, 5000.0]);
+    let tables = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/udeep/tables");
+    for name in [None, Some("fire-3-h4.f32"), Some("ice-3-h4.f32")] {
+        let numbers: Option<Vec<f32>> = name.map(|file| {
+            let bytes = std::fs::read(tables.join(file)).unwrap();
+            bytes.as_chunks::<4>().0.iter().map(|&b| f32::from_le_bytes(b)).collect()
+        });
+        let table = numbers.as_deref().map(|n| udeep_core::Table::new(n, 4.0).unwrap());
+        let rgb: Vec<f64> = data.iter().flat_map(|&x| udeep_core::colours(mapping.light(x), table.as_ref())).collect();
+        let file = write_png_pq(&rgb, data.len(), 1, WHITE, b"").unwrap();
+        let (codes, _, _) = read_png_pq_codes(&file).unwrap();
+        let back = udeep_core::record::values_pq16(&mapping, table.as_ref(), WHITE, 1 << 20, &codes).unwrap();
+        let half = levels_pq16(&mapping, table.as_ref(), WHITE, 1 << 20).max_data_step() / 2.0;
+        for (&x, &v) in data.iter().zip(&back) {
+            let held = x.clamp(0.0, 4095.0); // a value outside the range was stored at its end
+            assert!((v - held).abs() <= half * 1.0001, "{name:?}: {x} came back as {v}, half a step is {half}");
+        }
+    }
+    // codes that are not whole pixels, and a pixel no data value is given
+    assert_eq!(
+        udeep_core::record::values_pq16(&mapping, None, WHITE, 1 << 16, &[1, 2]),
+        Err(udeep_core::Error::BadImage)
+    );
+    let far = udeep_core::record::values_pq16(&mapping, None, WHITE, 1 << 16, &[65535, 0, 0]).unwrap();
+    assert!(far[0].is_nan());
+}
+
 #[test]
 fn a_declaration_is_written_with_white_at_203_and_no_other() {
     // profile 9.1.1: the file cannot say what its white was, so a file that carries a declaration has it at 203
     let rgb = picture(5, 4);
-    let declared = br#"<x:xmpmeta><rdf:Description xmlns:udeep="https://ultradeeprange.github.io/udeep/ns/0.3/"/></x:xmpmeta>"#;
+    let declared =
+        br#"<x:xmpmeta><rdf:Description xmlns:udeep="https://ultradeeprange.github.io/udeep/ns/0.3/"/></x:xmpmeta>"#;
     assert_eq!(write_png_pq(&rgb, 5, 4, 240.0, declared), Err(PngError::White));
     assert!(write_png_pq(&rgb, 5, 4, WHITE, declared).is_ok());
     // without a declaration, any white: a file for one's own screen, read back with the same value

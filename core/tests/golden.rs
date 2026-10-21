@@ -7,8 +7,8 @@ use std::{collections::BTreeMap, fs, path::PathBuf};
 use serde_json::{Value, json};
 use udeep_core::{
     Declaration, Error, Levels, Mapping, Noise, Stretch, Table, UNBOUNDED, caption, colours, declaration::exit_slope,
-    description, digest_data, digest_pixels, float_text, format_g, iso21496_block, isolated, levels, levels_pq16, par, pq_encode,
-    rounding_to_noise, scale, sha256, srgb_oetf, tone,
+    description, digest_data, digest_pixels, float_text, format_g, iso21496_block, isolated, levels, levels_pq16, par,
+    pq_encode, rounding_to_noise, scale, sha256, srgb_oetf, tone,
 };
 
 fn root() -> PathBuf {

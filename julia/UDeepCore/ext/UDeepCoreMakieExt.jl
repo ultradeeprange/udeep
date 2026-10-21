@@ -217,6 +217,7 @@ function declaration_of(ls, head::Float64)
                        derived_masked = sum(layer.declare.derived_masked for layer in declared),
                        record = "rendering",                     # an 8-bit gain-map JPEG is always a rendering (7.3.3)
                        preset = String(d.mode), colour_map = UDeepCore.colour_map_name(first_.cmap),
+                       colour_map_table = UDeepCore.colour_table_text(first_.cmap, head),
                        data_digest = UDeepCore.combined_digest([layer.declare.data_digest for layer in declared]),
                        data_source = isempty(sources) ? nothing : join(sources, "; "),
                        data_unit_code = d.unit_code === nothing ? nothing : String(d.unit_code))
@@ -232,10 +233,22 @@ hdr_caption(fig::Figure) = caption(hdr_declaration(fig))
 with_sdr_digest(d::Declaration, digest::String) =
     Declaration(; (name => getfield(d, name) for name in fieldnames(Declaration))..., sdr_digest = digest)
 
-function save_hdr(path::AbstractString, fig::Figure; quality::Integer = 95, gain_quality::Integer = 100,
-                  px_per_unit::Real = 2, metadata::Bool = true)
+function save_hdr(path::AbstractString, fig::Figure; kw...)
+    file, _ = hdr_file(fig; kw...)
+    write(path, file)
+    return nothing
+end
+
+function UDeepCore.hdr_inline(fig::Figure; caption::Bool = true, kw...)
+    file, declared = hdr_file(fig; kw...)
+    return HdrFigure(file, caption && declared !== nothing ? UDeepCore.caption(declared) : "")
+end
+
+"The gain-map JPEG of the figure, as bytes, and the declaration it carries (`nothing` without metadata)."
+function hdr_file(fig::Figure; quality::Integer = 95, gain_quality::Integer = 100, px_per_unit::Real = 2,
+                  metadata::Bool = true)
     base_codes, scaled, black, white, head, ls = renders(fig, px_per_unit)
-    extra = ""
+    extra, declared = "", nothing
     if metadata
         declared = with_sdr_digest(declaration_of(ls, head), digest_pixels(base_codes))
         extra = description(declared)
@@ -255,8 +268,7 @@ function save_hdr(path::AbstractString, fig::Figure; quality::Integer = 95, gain
                             "covered, and a pixel is lifted only where an image alone determines it (profile " *
                             "6.11). Draw the image opaque and uncovered, or save an ordinary figure with `save`"))
     end
-    write(path, file)
-    return nothing
+    return file, declared
 end
 
 end # module

@@ -75,6 +75,25 @@ def test_the_julia_figure_declares_what_was_drawn(written):
     assert (written / "caption.txt").read_text(encoding="utf-8") == caption(d)
 
 
+def test_at_a_headroom_with_no_published_table_the_julia_figure_carries_its_own(written):
+    """figure-h3.jpg: the same figure at headroom 3. The Rust core made the table; the reference reads it from the
+    file, finds it within the version-3 floor of the one it makes itself, and accepts the file."""
+    import importlib
+    cm = importlib.import_module("udeep.cmap")           # the package also exports a function called cmap
+    report = validate(written / "figure-h3.jpg", data=pattern(), sdr=written / "figure-h3.png")
+    assert report.ok, str(report)
+    d = read_metadata(written / "figure-h3.jpg")
+    assert (d.reference_headroom, d.colour_map) == (3.0, "fire/3") and d.colour_map_table.startswith("257;")
+    carried = cm.Table.from_text(d.colour_map, d.reference_headroom, d.colour_map_table)
+    made = cm.generate("fire", 3.0, cm.EMBED_NODES)
+    difference = np.concatenate([carried.below, carried.above]) - np.concatenate([made.below, made.above])
+    assert carried.nodes == cm.EMBED_NODES and np.max(np.abs(difference)) <= 1e-7
+    from udeep import Mapping
+    from udeep.metadata import max_data_step
+    m = Mapping.from_stretch({"kind": "linear", "lo": 0.0, "hi": 100.0}, 50.0, 3.0, "fire")
+    assert d.max_data_step == pytest.approx(max_data_step(m), rel=1e-9)
+
+
 def test_the_julia_figure_lifts_the_images_and_nothing_else(written):
     png = np.asarray(Image.open(written / "figure.png").convert("RGB"))
     sdr, hdr = read_gainmap_jpeg(written / "figure.jpg", 1.0), read_gainmap_jpeg(written / "figure.jpg", 4.0)

@@ -18,3 +18,9 @@ updates:
     schedule: {interval: weekly, day: monday}
     groups:
       python: {patterns: ["*"]}
+  # what CI installs, pinned with hashes: compiled from the .in files there (the command is at the top of each)
+  - package-ecosystem: pip
+    directory: "/.github/requirements"
+    schedule: {interval: weekly, day: monday}
+    groups:
+      ci-python: {patterns: ["*"]}

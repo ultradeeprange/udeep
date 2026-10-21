@@ -3,7 +3,8 @@
 #     julia --project=. figure.jl [output directory]
 #
 # It writes figure.jpg (the gain-map JPEG), figure.png (the ordinary SDR figure the file's digest refers to) and
-# caption.txt. The data is a made-up test pattern, not a measurement: a textured field below the knee, a block of
+# caption.txt; and the same figure at a reference headroom of 3 (figure-h3.jpg, figure-h3.png), for which no table
+# is published, so the core makes one and the file carries it (udeep:ColourMapTable). The data is a made-up test pattern, not a measurement: a textured field below the knee, a block of
 # structure above it, and a few single bright pixels that the Highlight preset holds at white.
 using CairoMakie
 using UDeepCore
@@ -22,9 +23,9 @@ function pattern()
     return data
 end
 
-function figure()
+function figure(headroom = 4.0)
     data = pattern()
-    m = Mapping(:linear, 0.0, 100.0, 50.0, 4.0)
+    m = Mapping(:linear, 0.0, 100.0, 50.0, headroom)
     fig = Figure(size = (640, 440))
     ax = Axis(fig[1, 1]; title = "Test pattern (synthetic)", xlabel = "x (pixel)", ylabel = "y (pixel)",
               aspect = DataAspect())
@@ -44,6 +45,9 @@ function main(directory)
     save_hdr(joinpath(directory, "figure.jpg"), fig; px_per_unit = PX_PER_UNIT)
     write(joinpath(directory, "caption.txt"), hdr_caption(fig))
     println(hdr_caption(fig))
+    other = figure(3.0)
+    save(joinpath(directory, "figure-h3.png"), other; px_per_unit = PX_PER_UNIT)
+    save_hdr(joinpath(directory, "figure-h3.jpg"), other; px_per_unit = PX_PER_UNIT)
 end
 
 main(isempty(ARGS) ? "." : ARGS[1])

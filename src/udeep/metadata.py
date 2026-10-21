@@ -386,6 +386,14 @@ def data_steps_pq16(mapping: Mapping, sdr_white_nits: float = REF_WHITE_NITS,
     return x[:-1], np.diff(x)
 
 
+REFINE_STEPS = 64          # how often values_pq16 may halve a gap between samples that skips a code
+
+
+def _skips(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Whether two colours' codes are more than one step apart in some channel, so that codes lie between them."""
+    return np.abs(a.astype(np.int64) - b.astype(np.int64)).max(axis=-1) > 1
+
+
 def _key(code: np.ndarray) -> np.ndarray:
     """Three 16-bit codes as one number, for looking them up."""
     code = code.astype(np.int64)
@@ -399,8 +407,10 @@ def values_pq16(mapping: Mapping, light, sdr_white_nits: float = REF_WHITE_NITS,
 
     Each stored level is a run of data values that share one code in all three channels (data_steps_pq16). A
     pixel is given the middle of the run whose code it holds, and so comes back to within half that run's width,
-    which is at most half of MaxDataStep. The ends of the runs are found to within a millionth of the sampling's
-    spacing. A writer that rounds a sum of three products in a different order can leave a rare code one step
+    which is at most half of MaxDataStep. Near black PQ codes change faster than any even sampling can follow:
+    there, where two neighbouring samples are more than one code apart in some channel, the gap between them is
+    halved, and halved again, until no piece of it skips a code (at most REFINE_STEPS times). The ends of the runs
+    are then found to within a millionth of the spacing around them. A writer that rounds a sum of three products in a different order can leave a rare code one step
     from the reference's (udeep.core); a pixel whose code is in no run takes the nearest run that is a step away
     in each channel at most, and a pixel with none so near is not a colour of this mapping and is NaN.
 
@@ -412,6 +422,25 @@ def values_pq16(mapping: Mapping, light, sdr_white_nits: float = REF_WHITE_NITS,
     code_at = lambda s: pq16_codes(mapping.colours(mapping.light_at(s)), sdr_white_nits)
     t = np.linspace(0.0, 1.0, max(int(samples), 2))
     code = code_at(t)
+    gap = np.flatnonzero(_skips(code[:-1], code[1:]))
+    lo, hi, low, high = t[gap], t[gap + 1], code[gap], code[gap + 1]
+    extra_t, extra_code = [], []
+    for _ in range(REFINE_STEPS):                         # breadth first: every piece that still skips, halved
+        mid = 0.5 * (lo + hi)
+        inside = (mid > lo) & (mid < hi)                  # a piece too small to halve in float64 stays as it is
+        lo, hi, low, high, mid = lo[inside], hi[inside], low[inside], high[inside], mid[inside]
+        if not mid.size:
+            break
+        between = code_at(mid)
+        extra_t.append(mid); extra_code.append(between)
+        left, right = _skips(low, between), _skips(between, high)
+        lo, hi = np.concatenate([lo[left], mid[right]]), np.concatenate([mid[left], hi[right]])
+        low, high = np.concatenate([low[left], between[right]]), np.concatenate([between[left], high[right]])
+    if extra_t:
+        more_t, more_code = np.concatenate(extra_t), np.concatenate(extra_code)
+        order = np.argsort(more_t)
+        at = np.searchsorted(t, more_t[order])
+        t, code = np.insert(t, at, more_t[order]), np.insert(code, at, more_code[order], axis=0)
     edges = np.flatnonzero(np.any(code[1:] != code[:-1], axis=1)) + 1
     lo, hi, before = t[edges - 1], t[edges], code[edges - 1]
     for _ in range(20):                                   # each change of code, to a millionth of a sample's spacing

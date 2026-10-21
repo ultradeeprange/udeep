@@ -13,7 +13,7 @@
 // A mapping record is an object with the fields a file declares, under the same names (udeep/mapping.py):
 // stretch, range_low, range_high, knee, reference_headroom, stretch_width, stretch_offset, above_knee. A
 // declaration is one with the fields of udeep/metadata.py's Declaration. A colour-map table is what makeTable
-// gives; null is grey. A call the core refuses throws an Error whose `code` is the UDEEP_ERROR_* number.
+// gives from a table's bytes, or colourTable makes at a headroom with no published table; null is grey. A call the core refuses throws an Error whose `code` is the UDEEP_ERROR_* number.
 //
 // There are no threads in a WebAssembly build: the core runs every loop in the caller's thread.
 // A plain script, like udeepcore.js: pages load it with <script src="udeepwasm.js"> and read
@@ -25,7 +25,7 @@
     4: 'the knee is not inside the declared range, or is too near one end of it',
     5: 'the headroom or the exit slope is out of range',
     6: 'the stretch width, or a proportional mapping, is not valid',
-    7: 'the colour-map table is not two segments of nodes x 3', 8: 'the image cannot be written or is not of this kind',
+    7: 'the colour-map table is not two segments of nodes x 3, or names no registered map', 8: 'the image cannot be written or is not of this kind',
     9: 'the image codec failed, or the gain map could not be kept within the headroom',
     10: 'a number in the mapping is not finite',
     11: 'the declaration is one the profile refuses (in a PQ file: one with white at other than 203 cd/m2)',
@@ -225,6 +225,14 @@
         check(x.udeep_colours(at, nodes, table ? table.headroom : 1, from, to, n));
         return doublesAt(to, 3 * n).slice();
       }),
+      // A registered map's table made at any reference headroom, by the generator the published tables were made
+      // with: for a headroom with no published table, which the file must then carry (udeep:ColourMapTable,
+      // profile 6.10). At 2, 4, 8 or 16 take the published table (makeTable) instead.
+      colourTable: (name, headroom, { version = 3, nodes = 257 } = {}) => scoped(take => {
+        const bytes = utf8.encode(String(name)), from = putBytes(take, bytes), out = take(24 * nodes);
+        check(x.udeep_colour_table(from, bytes.length, version, headroom, nodes, out));
+        return { values: new Float32Array(x.memory.buffer, out, 6 * nodes).slice(), nodes, headroom };
+      }),
       srgbEncode: signal('udeep_srgb_encode'),                     // linear light -> the sRGB signal, both in [0, 1]
       srgbDecode: signal('udeep_srgb_decode'),
 
@@ -305,6 +313,18 @@
             meets: v.getUint32(out + 56, true) === 1 };
         }),
 
+      // The data values that a 16-bit PQ file's codes stand for (3 a pixel, in a Uint16Array or an array), as
+      // readPngData gives them for a whole file.
+      valuesPq16: (m, table, codes, { whiteNits = REF_WHITE_NITS, samples = 1048576 } = {}) => scoped(take => {
+        const given = Uint16Array.from(codes);
+        if (given.length % 3 !== 0) throw new RangeError(`${given.length} codes are not whole pixels of three`);
+        const n = given.length / 3, record = putMapping(take, m), [at, nodes] = putTable(take, table);
+        const from = take(2 * given.length), to = take(8 * n);
+        new Uint16Array(x.memory.buffer, from, given.length).set(given);
+        check(x.udeep_values_pq16(record, at, nodes, whiteNits, samples, from, n, to));
+        return doublesAt(to, n).slice();
+      }),
+
       // What a file declares, as the rdf:Description element it carries, and the caption generated from it.
       description: d => scoped(take => text.decode(owned(take, (data, length) => x.udeep_description(putDeclaration(take, d), data, length)))),
       caption: d => scoped(take => text.decode(owned(take, (data, length) => x.udeep_caption(putDeclaration(take, d), data, length)))),
@@ -326,6 +346,19 @@
           const n = width * height * 3, from = putBytes(take, bytes), to = take(8 * n);
           check(x.udeep_png_pq_read(from, bytes.length, whiteNits, to, n));
           return { width, height, light: doublesAt(to, n).slice() };
+        });
+      },
+      // The same file read back as data: the data value each pixel stands for, under the mapping `m` and colour
+      // map `table` (null for grey) the file declares, whatever its colours. Within half of MaxDataStep; NaN for
+      // a pixel that is no colour of this mapping.
+      readPngData: (file, m, table = null, { whiteNits = REF_WHITE_NITS, samples = 1048576 } = {}) => {
+        feature('png');
+        const bytes = asBytes(file, 'the file'), [width, height] = sized('udeep_png_pq_size', bytes);
+        return scoped(take => {
+          const n = width * height, from = putBytes(take, bytes), record = putMapping(take, m);
+          const [at, nodes] = putTable(take, table), to = take(8 * n);
+          check(x.udeep_png_pq_values(from, bytes.length, record, at, nodes, whiteNits, samples, to, n));
+          return { width, height, values: doublesAt(to, n).slice() };
         });
       },
 

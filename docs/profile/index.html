@@ -865,7 +865,9 @@ they are reported as skipped.</p>
    <em>Added 2026-10-14.</em> For a 16-bit PQ PNG it works out the stored levels (<code>udeep.metadata.data_steps_pq16</code>),
    but does not yet compose the declaration itself: the caller does, as the repository's worked example
    <code>examples/detector_record.py</code> shows. It reads such a file back as data (<code>udeep.read_png_data</code>), whatever its
-   colour map; the Rust core and the Julia package read back only the light.
+   colour map. <em>Added 2026-10-21.</em> So does the Rust core (<code>udeep_png_pq_values</code>), and through it the Julia package
+   and the WebAssembly binding. Until that date the reference's reader gave no value for data in the lowest levels
+   of a range, which near black are narrower than its sampling; it now samples more finely where codes are skipped.
 4. Gain-map AVIF (9.1), the SVG media-query fallback (9.2.4) and metadata inside MP4 (9.3.3) are untested.
 5. Precision of colour maps and of gain-map JPEGs has not been analysed (Annex C).
 6. Device evidence comes from one phone and one monitor (Annex B). More devices are needed. Reports are kept as

@@ -12,6 +12,36 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ### 2026-10-21
 
+- **A data record read back as data by the Rust core**, whatever its colour map: `udeep_png_pq_values` (and
+  `udeep_values_pq16`, from the codes) in the C interface, `read_png_data(file, m; cmap)` in Julia, and
+  `readPngData` and `valuesPq16` in the WebAssembly binding. On files the reference wrote (grey, `fire` and
+  `ice`, at 3x, 4x and 8x) it gives the reference's values to 1e-9 of the range.
+- **Fixed: data near the bottom of a range read back as NaN.** Near black PQ codes change faster than the
+  million samples `values_pq16` takes: on a range of 0 to 4095, values from 0 to about 3 hold codes no sample
+  lands on, and those more than one code from a run the sampling found came back NaN (32 of 59 test values
+  from 0.05 to 2.95, with white at 1,000). A true data record of faint data then failed the validator's "data read back". The
+  reader now halves any gap between samples that skips a code until none does, so every value comes back to
+  within half of `MaxDataStep`. `data_steps_pq16`, `MaxDataStep` and the golden vectors do not change.
+- **CI installs only files it has checked.** Every package the workflows take from PyPI is pinned with its hash in
+  `.github/requirements` (compiled with `uv pip compile --universal --generate-hashes`; the command is at the top
+  of each file), and installed with `--require-hashes`. The package itself is then installed from the checkout with
+  `--no-deps`, and the source distribution is built and installed without an isolated build environment, so no
+  build step fetches anything unchecked. Dependabot keeps the pins current. This was the last unpinned dependency
+  the OpenSSF Scorecard reported.
+- **Julia colour maps at any headroom.** The generator that made the published colour-map tables is ported to the
+  Rust core (`core/src/cmap.rs`; `udeep_colour_table` in the C interface, `colourTable` in the WebAssembly
+  binding). At a reference headroom with no published table, Julia's `colour_table` has the core make one at 257
+  nodes a segment, and `save_hdr` declares it as `udeep:ColourMapTable`, as Python's files do
+  (`colour_table_text` gives the text). Headroom 1 takes the lower half of the published table for 2, as Python
+  does. The core makes all 24 published tables again: on Windows versions 1 and 3 bit for bit, and version 2 to
+  within 6e-13 of white, in the values almost zero that profile 6.10 describes. The reference validator accepts a
+  Julia figure at headroom 3, whose carried table is within 1e-7 of white of the one Python makes.
+- **Julia figures inline in a notebook**: `hdr_inline(fig)` gives Jupyter, Pluto or VS Code the gain-map JPEG that
+  `save_hdr` writes, byte for byte, with the caption generated from its declaration (`HdrFigure`; `write(path, f)`
+  keeps the file). The counterpart of Python's `hp.inline`. Not yet looked at on an HDR display.
+- **GLMakie and WGLMakie work too.** The same figure saved with CairoMakie, GLMakie and WGLMakie (Makie 0.24.16)
+  passes the reference validator each time, and the three files lift the same pixels to within 11 of 16,270
+  (the axis labels differ by a few pixels between backends). The README no longer says they are not covered.
 - **The 16-bit PQ PNG in the golden vectors**: eight `levels_pq16` cases, one for each mapping record in its grey
   form, with white at 203 cd/m², give the count of stored levels, the widest, where the first starts and the data
   criterion for a 16-bit file. The suite is now 98 cases of 15 kinds. Python, the Rust core, the core through its C

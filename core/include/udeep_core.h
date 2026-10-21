@@ -82,6 +82,15 @@ int32_t udeep_light_parallel(const udeep_mapping *mapping, const double *x, doub
 /* Light -> linear RGB (BT.709 primaries). table: 2 * nodes * 3 floats, the segment for light 0..1 then the one
  * for 1..headroom, or NULL for grey. rgb receives 3 * n values. */
 int32_t udeep_colours(const float *table, size_t nodes, double headroom, const double *light, double *rgb, size_t n);
+
+/* A registered map's table made at any reference headroom, by the generator the published tables were made with:
+ * name is name_length bytes, "fire" or "ice"; version 1, 2 or 3; out receives 2 * nodes * 3 floats, as
+ * udeep_colours takes them. For a headroom with no published table, which the file must then carry
+ * (udeep:ColourMapTable, profile 6.10); at headroom 2, 4, 8 or 16 take the published table instead. Refused: a name
+ * or version not registered, or nodes below 2 or above 65536 (UDEEP_ERROR_BAD_TABLE); headroom below 1 (UDEEP_ERROR_BAD_HEADROOM)
+ * or above the largest float, about 3.4e38, or infinite (UDEEP_ERROR_NOT_FINITE). */
+int32_t udeep_colour_table(const char *name, size_t name_length, uint32_t version, double headroom, size_t nodes,
+                           float *out);
 /* The same two on several threads (0: every available core), with identical results: see udeep_light_parallel.
  * light and rgb must not overlap. */
 int32_t udeep_sdr_light_parallel(const udeep_mapping *mapping, const double *x, double *out, size_t n,
@@ -201,6 +210,14 @@ int32_t udeep_levels_criterion(const udeep_mapping *mapping, const float *table,
                                size_t samples, uint32_t noise_model, double noise_parameter, uint32_t pq16,
                                udeep_criterion *out);
 
+/* The data values that the codes of a 16-bit PQ file stand for, whatever its colour map (the reference's
+ * values_pq16): codes holds 3 * n codes, a pixel's three channels in turn, and out receives n values. The levels
+ * are found as udeep_levels_pq16 finds them (samples about a million; at most UDEEP_MAX_SAMPLES), with white at
+ * white_nits. UDEEP_ERROR_BAD_DECLARATION: too many samples, a white level that is not a positive number, or two
+ * separate runs of data values that share one code, which would not say which value it stands for. */
+int32_t udeep_values_pq16(const udeep_mapping *mapping, const float *table, size_t nodes, double white_nits,
+                          size_t samples, const uint16_t *codes, size_t n, double *out);
+
 /* Release bytes returned by this library. */
 void udeep_bytes_free(uint8_t *data, size_t length);
 
@@ -266,6 +283,15 @@ int32_t udeep_png_pq(const double *rgb, size_t width, size_t height, double whit
  * BT.2020 PQ), or n is wrong. UDEEP_ERROR_CODEC: not a whole PNG, or a checksum fails. */
 int32_t udeep_png_pq_size(const uint8_t *file, size_t length, size_t *width, size_t *height);
 int32_t udeep_png_pq_read(const uint8_t *file, size_t length, double white_nits, double *out, size_t n);
+
+/* Reading one back as data: the data values its pixels stand for, height * width doubles, row by row (n must be
+ * exactly that many), under the mapping, colour-map table (NULL for grey) and white level the file declares, which
+ * the caller reads from its declaration. Each pixel is given the middle of the run of data values that share its
+ * code, so it comes back to within half of MaxDataStep; a code one step from any run's, in each channel at most,
+ * takes the nearest run, and a pixel with none so near is NaN. Errors as for udeep_png_pq_read, and as for
+ * udeep_values_pq16. */
+int32_t udeep_png_pq_values(const uint8_t *file, size_t length, const udeep_mapping *mapping, const float *table,
+                            size_t nodes, double white_nits, size_t samples, double *out, size_t n);
 
 #ifdef __cplusplus
 }

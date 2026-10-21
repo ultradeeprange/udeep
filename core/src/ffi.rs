@@ -130,6 +130,38 @@ pub unsafe extern "C" fn udeep_colours(
     OK
 }
 
+/// A registered map's colour-map table made at any reference headroom, by the generator the published tables were
+/// made with: `name` is `name_length` bytes, `fire` or `ice`; `version` 1, 2 or 3; `out` receives `2 * nodes * 3`
+/// `float`s, as [`udeep_colours`] takes a table. For a figure at a headroom with no published table, which the file
+/// must then carry (`udeep:ColourMapTable`, profile 6.10). A registered map at a registered headroom (2, 4, 8, 16)
+/// is taken from its published table, never from this. Refused as [`crate::cmap::generate`] refuses.
+///
+/// # Safety
+/// `name` must point to `name_length` readable bytes and `out` to `2 * nodes * 3` writable `float`s.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_colour_table(
+    name: *const u8,
+    name_length: usize,
+    version: u32,
+    headroom: f64,
+    nodes: usize,
+    out: *mut f32,
+) -> i32 {
+    if name.is_null() || out.is_null() {
+        return Error::NullPointer as i32;
+    }
+    let Ok(name) = std::str::from_utf8(unsafe { std::slice::from_raw_parts(name, name_length) }) else {
+        return Error::BadTable as i32;
+    };
+    match crate::cmap::generate(name, version, headroom, nodes) {
+        Ok(table) => {
+            unsafe { out.copy_from_nonoverlapping(table.as_ptr(), table.len()) };
+            OK
+        }
+        Err(e) => e as i32,
+    }
+}
+
 unsafe fn each_parallel(
     mapping: *const Mapping,
     x: *const f64,
@@ -854,6 +886,109 @@ pub unsafe extern "C" fn udeep_png_pq_read(
         }
         Err(PngError::Corrupt) => Error::Codec as i32,
         Ok(_) | Err(_) => Error::BadImage as i32,
+    }
+}
+
+/// The data values that the codes of a 16-bit PQ file stand for ([`record::values_pq16`]), whatever its colour map:
+/// the file's mapping, its colour-map table (null for grey) and its white level, as for [`udeep_levels_pq16`].
+/// `codes` holds `3 * n` codes, a pixel's three channels in turn; `out` receives `n` values, NaN for a pixel that
+/// is no colour of this mapping. Refused: more than [`MAX_SAMPLES`] samples, a white level that is not a positive
+/// number, or two runs of data values that share one code (`UDEEP_ERROR_BAD_DECLARATION`); `3 * n` too large for a
+/// `size_t` (`UDEEP_ERROR_BAD_IMAGE`); and the mapping record's own codes.
+///
+/// # Safety
+/// `mapping` must point to a readable record, `table` (if not null) to `2 * nodes * 3` readable `float`s, `codes`
+/// to `3 * n` readable `uint16_t`s and `out` to `n` writable `double`s.
+#[allow(clippy::too_many_arguments)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_values_pq16(
+    mapping: *const Mapping,
+    table: *const f32,
+    nodes: usize,
+    white_nits: f64,
+    samples: usize,
+    codes: *const u16,
+    n: usize,
+    out: *mut f64,
+) -> i32 {
+    let Some(count) = n.checked_mul(3) else { return Error::BadImage as i32 };
+    if n > 0 && (codes.is_null() || out.is_null()) {
+        return Error::NullPointer as i32;
+    }
+    let given = if n == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(codes, count) } };
+    match unsafe { values_of(mapping, table, nodes, white_nits, samples, given) } {
+        Ok(values) => {
+            if n > 0 {
+                unsafe { std::ptr::copy_nonoverlapping(values.as_ptr(), out, n) };
+            }
+            OK
+        }
+        Err(e) => e as i32,
+    }
+}
+
+unsafe fn values_of(
+    mapping: *const Mapping,
+    table: *const f32,
+    nodes: usize,
+    white_nits: f64,
+    samples: usize,
+    codes: &[u16],
+) -> Result<Vec<f64>, Error> {
+    let m = unsafe { mapping.as_ref() }.ok_or(Error::NullPointer)?;
+    m.validate()?;
+    if samples > MAX_SAMPLES || !(white_nits.is_finite() && white_nits > 0.0) {
+        return Err(Error::BadDeclaration);
+    }
+    let lookup = if table.is_null() {
+        None
+    } else {
+        Some(Table::new(unsafe { std::slice::from_raw_parts(table, nodes.saturating_mul(6)) }, m.reference_headroom)?)
+    };
+    if codes.is_empty() {
+        return Ok(Vec::new()); // no pixels: the levels need not be found
+    }
+    record::values_pq16(m, lookup.as_ref(), white_nits, samples, codes)
+}
+
+/// A 16-bit PQ PNG read back as data: its codes ([`udeep_png_pq_read`] reads the same file as light) turned into the
+/// data values they stand for, as [`udeep_values_pq16`] does, under the mapping and colour map the file declares,
+/// which the caller reads from its declaration. `out` receives `height * width` values, row by row; `n` must be
+/// exactly that many. Errors as for [`udeep_png_pq_size`] and [`udeep_values_pq16`], and
+/// `UDEEP_ERROR_BAD_IMAGE` if `n` is wrong.
+///
+/// # Safety
+/// `file` must point to `length` readable bytes, `mapping` to a readable record, `table` (if not null) to
+/// `2 * nodes * 3` readable `float`s and `out` to `n` writable `double`s.
+#[cfg(feature = "png")]
+#[allow(clippy::too_many_arguments)]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_png_pq_values(
+    file: *const u8,
+    length: usize,
+    mapping: *const Mapping,
+    table: *const f32,
+    nodes: usize,
+    white_nits: f64,
+    samples: usize,
+    out: *mut f64,
+    n: usize,
+) -> i32 {
+    use crate::png::PngError;
+    if file.is_null() || out.is_null() {
+        return Error::NullPointer as i32;
+    }
+    let codes = match crate::png::read_png_pq_codes(unsafe { std::slice::from_raw_parts(file, length) }) {
+        Ok((codes, width, height)) if width.checked_mul(height) == Some(n) => codes,
+        Err(PngError::Corrupt) => return Error::Codec as i32,
+        Ok(_) | Err(_) => return Error::BadImage as i32,
+    };
+    match unsafe { values_of(mapping, table, nodes, white_nits, samples, &codes) } {
+        Ok(values) => {
+            unsafe { std::ptr::copy_nonoverlapping(values.as_ptr(), out, n) };
+            OK
+        }
+        Err(e) => e as i32,
     }
 }
 

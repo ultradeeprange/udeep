@@ -8,6 +8,7 @@ when it meets a kind of case it has never heard of, and when the binding hands t
 Skipped without node, cargo, or the wasm32-unknown-unknown target (rustup target add wasm32-unknown-unknown).
 """
 import collections
+import importlib
 import dataclasses
 import json
 import re
@@ -116,6 +117,22 @@ console.log(JSON.stringify({ imports: WebAssembly.Module.imports(module).length,
     declared = set(re.findall(r"\b(udeep_\w+)\(", re.sub(r"/\*.*?\*/", "", header, flags=re.DOTALL)))
     assert out["imports"] == 0 and out["version"] == 300 and out["has"] == {"jpeg": True, "png": True}
     assert set(out["functions"]) == declared and {"udeep_buffer_alloc", "udeep_buffer_free"} <= declared
+
+
+def test_the_module_makes_a_table_at_any_headroom_as_the_reference_does(wasm, tmp_path):
+    """colourTable: the core's generator, through the binding, against the reference's generate."""
+    cm = importlib.import_module("udeep.cmap")      # the package also exports a function called cmap
+    out = run_js(wasm, tmp_path, """
+const fire = core.colourTable('fire', 3), ice = core.colourTable('ice', 6, { version: 2 });
+console.log(JSON.stringify({ fire: Array.from(fire.values), ice: Array.from(ice.values), nodes: fire.nodes,
+  headroom: ice.headroom, unknown: thrown(() => core.colourTable('viridis', 3)),
+  low: thrown(() => core.colourTable('fire', 0.5)) }));
+""")
+    assert out["nodes"] == cm.EMBED_NODES and out["headroom"] == 6
+    for key, (name, headroom, version) in {"fire": ("fire", 3.0, 3), "ice": ("ice", 6.0, 2)}.items():
+        reference = np.frombuffer(cm.generate(name, headroom, cm.EMBED_NODES, version).to_bytes(), dtype="<f4")
+        assert np.max(np.abs(np.array(out[key]) - reference)) <= 1e-7, key
+    assert out["unknown"] == ["Error", 7] and out["low"] == ["Error", 5]
 
 
 def test_buffers_are_zeroed_aligned_and_null_for_nothing(wasm, tmp_path):
@@ -397,6 +414,33 @@ def codes_in(path: Path) -> np.ndarray:
     rows = np.frombuffer(zlib.decompress(b"".join(parts)), dtype=np.uint8).reshape(size[1], 1 + size[0] * 6)
     assert not rows[:, 0].any()                                  # the writers leave the rows unfiltered
     return rows[:, 1:].copy().view(">u2").reshape(size[1], size[0], 3)
+
+
+def test_the_module_reads_a_data_record_back_as_the_reference_does(wasm, tmp_path):
+    """readPngData and valuesPq16 against the reference's values_pq16, on a fire/3 file the reference wrote."""
+    from udeep import Mapping
+    from udeep.export import write_png_pq
+    from udeep.metadata import read_png_pq, values_pq16
+    m = Mapping.from_stretch({"kind": "linear", "lo": 0.0, "hi": 4095.0}, 2048.0, 4.0, "fire")
+    rng = np.random.default_rng(8)
+    data = np.concatenate([np.arange(0.0, 3.0, 0.01), rng.uniform(0.0, 4095.0, 900)]).reshape(30, 40)
+    write_png_pq(m.colours(m.light(data)), tmp_path / "record.png")
+    np.concatenate([m.table.below, m.table.above]).astype("<f4").tofile(tmp_path / "table.bin")
+    reference = values_pq16(m, read_png_pq(tmp_path / "record.png"))
+    out = run_js(wasm, tmp_path, """
+const m = { stretch: 'linear', range_low: 0, range_high: 4095, knee: 2048, reference_headroom: 4, stretch_width: 1,
+  stretch_offset: 0, above_knee: 'hermite; exit=1' };
+const table = UDeepWasm.makeTable(readFileSync('table.bin'), 4);
+const read = core.readPngData(readFileSync('record.png'), m, table);
+save('values.bin', read.values);
+console.log(JSON.stringify({ size: [read.width, read.height],
+  one: Array.from(core.valuesPq16(m, table, [0, 0, 0, 65535, 0, 0]), v => Number.isNaN(v) ? null : v),
+  wrong: thrown(() => core.valuesPq16(m, table, [1, 2])) }));
+""")
+    back = np.fromfile(tmp_path / "values.bin", dtype="<f8").reshape(30, 40)
+    assert out["size"] == [40, 30] and np.abs(back - reference).max() <= 1e-9 * 4095.0
+    assert out["one"][0] == pytest.approx(0.0, abs=0.01) and out["one"][1] is None   # black, and no colour of fire
+    assert out["wrong"] == ["RangeError", None]
 
 
 def test_a_png_written_in_wasm_holds_the_reference_codes_and_each_reads_the_others_file(wasm, tmp_path):

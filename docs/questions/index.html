@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Questions · UDeep</title>
+<meta name="description" content="Short answers to what a doubtful scientist asks first about HDR figures: why, whether it is honest, whether it helps, and what happens on an ordinary screen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --tag: #8cc2e6; --warm: #e8b04a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  p { margin: 0; max-width: 70ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover, nav a[aria-current] { color: var(--ink); }
+  .intro { padding-block: 48px 30px; display: grid; gap: 16px; }
+
+  /* the questions, numbered down the left like a list of objections in a referee's report */
+  .asked { margin: 0; padding: 0; list-style: none; counter-reset: q; display: grid; gap: 6px; max-width: 70ch; }
+  .asked li { counter-increment: q; display: grid; grid-template-columns: 2.4em minmax(0, 1fr); }
+  .asked li::before { content: counter(q, decimal-leading-zero); font-family: var(--mono); font-size: 13px; color: var(--warm); padding-top: 3px; }
+  section { padding-block: 36px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; grid-template-columns: minmax(0, 3.2em) minmax(0, 1fr); gap: 0 12px; }
+  section .n { font-family: var(--mono); font-size: 13px; color: var(--warm); padding-top: 7px; }
+  section .body { display: grid; gap: 14px; }
+  .short { font-size: 18px; line-height: 1.5; }
+  .from { font-size: 14px; color: var(--muted); }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 560px) { section > .wrap { grid-template-columns: minmax(0, 1fr); } section .n { padding-top: 0; } }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/questions/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Questions · UDeep">
+<meta property="og:description" content="Short answers to what a doubtful scientist asks first about HDR figures: why, whether it is honest, whether it helps, and what happens on an ordinary screen.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/questions/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  /* tables, the same on every page: a panel, readable headings, and a mark before each verdict */
+  .scroll:has(> table) { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 16px; }
+  .scroll > table th { color: var(--ink); }
+  .scroll > table td:first-child { font-weight: 600; color: var(--ink); }
+  td.yes, td.y, td.done { color: var(--yes); } td.no, td.n { color: var(--no); } td.part, td.p, td.next { color: var(--warm); }
+  td.later { color: var(--muted); }
+  td.yes::before, td.y::before, td.done::before { content: "\2713\00a0"; font-weight: 700; }
+  td.no::before, td.n::before { content: "\2717\00a0"; font-weight: 700; }
+  td.part::before, td.p::before { content: "\25D0\00a0"; }
+  td.next::before { content: "\2192\00a0"; }
+  td.later::before { content: "\25CB\00a0"; }
+  tr.ours td { background: var(--raise, var(--panel)); border-top: 2px solid var(--warm); border-bottom: 2px solid var(--warm); }
+  tr.ours td:first-child { color: var(--warm); }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">U<b>Deep</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <p class="eyebrow">Questions · 21 October 2026</p>
+  <h1>What a doubtful scientist asks first</h1>
+  <p>Each answer is short and points to the evidence behind it. Where the honest answer is that nobody knows yet, it
+    says so.</p>
+  <ol class="asked">
+    <li><a href="#why">Why would a scientific figure need HDR?</a></li>
+    <li><a href="#stretch">Why not a log stretch or a better colour map?</a></li>
+    <li><a href="#pop">Isn't brighter than white just a way to make a figure pop?</a></li>
+    <li><a href="#helps">Has anyone shown that it helps?</a></li>
+    <li><a href="#screen">What if my screen, or my reader's, can't show HDR?</a></li>
+    <li><a href="#paper">Can I put it in a paper?</a></li>
+    <li><a href="#check">How do I know a file used the mapping it says it did?</a></li>
+    <li><a href="#comfort">Will a bright figure be uncomfortable to look at?</a></li>
+  </ol>
+</div>
+
+<section id="why"><div class="wrap">
+  <span class="n">01</span>
+  <div class="body">
+    <h2>Why would a scientific figure need HDR?</h2>
+    <p class="short">Because an ordinary figure stops at white, and most data doesn't.</p>
+    <p>A detector or a CT scanner records 12 to 16 bits, and an 8-bit figure has 256 levels. So the figure has to
+      choose: set white for the faint part and clip the bright part flat, or fit the whole range in and lose the faint
+      contrast. Radiologists switch between a soft-tissue window and a bone window for exactly this reason. An HDR
+      screen can show light above the figure's white, so one file can keep the ordinary figure as it is and show what
+      lies above it.</p>
+    <p>It isn't always worth it. In the real-data gallery it helped most where the range above white was large (a
+      gravitational-wave signal peaking at 327 times the mean noise power) and added little where it was under 4 times
+      (the M87 black hole), where an ordinary figure scaled to the peak shows the same structure.</p>
+    <p class="from">More: <a href="../gallery/index.html">the six real datasets</a>, and
+      <a href="../evidence/index.html#realdata">what they taught</a>.</p>
+  </div>
+</div></section>
+
+<section id="stretch"><div class="wrap">
+  <span class="n">02</span>
+  <div class="body">
+    <h2>Why not a log stretch or a better colour map?</h2>
+    <p class="short">Use one when it is enough. It is the comparison HDR has to beat.</p>
+    <p>A stretch fits the whole range into the same levels, so each part of the range gets fewer of them than it
+      would on its own, and the faint part no longer looks the way it did. HDR keeps the ordinary figure below the
+      knee and adds the rest above white, so neither range is traded for the other. Whether that is better in practice
+      is the open question below. The planned study compares HDR with the whole range compressed into SDR, because
+      that is the best SDR alternative, as well as with the ordinary clipped figure.</p>
+    <p>The colour maps are a separate matter. UDeep's two maps are built in Jzazbz, a perceptually uniform colour
+      space that extends to HDR, and their lightness rises at every point for normal vision and for simulated
+      protanopia, deuteranopia and tritanopia. Grey works too.</p>
+    <p class="from">More: <a href="../about/index.html#study">the planned study</a>, and
+      <a href="../evidence/index.html#measured">the colour-vision check</a>.</p>
+  </div>
+</div></section>
+
+<section id="pop"><div class="wrap">
+  <span class="n">03</span>
+  <div class="body">
+    <h2>Isn't brighter than white just a way to make a figure pop?</h2>
+    <p class="short">It can be, and the profile is written to stop that.</p>
+    <p>The mapping from data to brightness is one curve for the whole image, written into the file: no local tone
+      mapping and no automatic boost. Below the knee the HDR figure is identical to the ordinary figure clipped at the
+      same white, so nothing you could read before has changed. Above the knee the curve keeps rising to the top of
+      the declared range, so every brightness maps back to one data value. Saturated or clipped pixels are never lifted
+      above white.</p>
+    <p>The knee has to mean something: a physical threshold, a false-alarm level, or a domain preset such as a CT
+      window. A knee set from a percentile is marked exploratory. And a side-by-side is only fair if the SDR part is the
+      same in both: in the model tests, choosing a different white point or stretch was 2 to 7 times more visible than
+      anything HDR added.</p>
+    <p class="from">More: <a href="../index.html#idea">the idea in four rules</a>, and
+      <a href="../profile/index.html#6-layer-2-the-mapping">section 6 of the profile</a>.</p>
+  </div>
+</div></section>
+
+<section id="helps"><div class="wrap">
+  <span class="n">04</span>
+  <div class="body">
+    <h2>Has anyone shown that it helps?</h2>
+    <p class="short">No. Nobody has shown that HDR helps people read scientific figures.</p>
+    <p>What exists so far are model predictions (ColorVideoVDP, with the display modelled), which show a small visible
+      gain for sparse bright features, and a stronger result for a second range above white that rests on one CT
+      slice. No observers were tested. In medical imaging, more grey levels helped in one pilot study
+      and made no difference to accuracy in a larger one, more luminance alone did not help, and a prototype HDR display
+      gave small gains on difficult cases.</p>
+    <p>Asking people which figure they prefer would not settle it. In Park and Montag's study of tone mapping for
+      scientific images, what observers preferred and what they judged useful correlated weakly (R² = 0.31). A
+      task-based study has been designed, with its predictions to be registered in advance and a null result to be
+      published too. It has not been run.</p>
+    <p class="from">More: <a href="../evidence/index.html#people">the observer studies</a>,
+      <a href="../evidence/index.html#measured">the model results</a>, and
+      <a href="../about/index.html#study">the planned study</a>.</p>
+  </div>
+</div></section>
+
+<section id="screen"><div class="wrap">
+  <span class="n">05</span>
+  <div class="body">
+    <h2>What if my screen, or my reader's, can't show HDR?</h2>
+    <p class="short">Then they see the ordinary figure, which is the point.</p>
+    <p>A gain-map JPEG is an ordinary JPEG with a second image inside it. A viewer that knows nothing of HDR shows the
+      SDR figure, and an HDR viewer applies the gain up to its own headroom (ISO 21496-1). The SDR version is the
+      figure of record, and every conclusion has to be readable from it.</p>
+    <p>If you aren't sure what your screen is doing, the device check has a white band with squares at 2, 4 and 8
+      times its white. If you can see the squares, you are seeing HDR. If the band is plain white, you are seeing the
+      SDR version, as intended.</p>
+    <p class="from">More: <a href="../check/pattern/index.html">does my screen show HDR?</a>, and
+      <a href="../evidence/index.html#devices">what has been tested</a>.</p>
+  </div>
+</div></section>
+
+<section id="paper"><div class="wrap">
+  <span class="n">06</span>
+  <div class="body">
+    <h2>Can I put it in a paper?</h2>
+    <p class="short">Not as HDR yet. The paper carries the SDR figure, and that is complete by design.</p>
+    <p>PDF has no portable HDR: it can hold HDR only as private data that conforming viewers must ignore, and the PDF
+      Association has chosen JPEG XL for HDR in future. The HDR version can go in the supplementary material, where the
+      same file shows the ordinary figure to anyone without an HDR screen. Journals' image-integrity rules ask for
+      processing that is global and declared, which is what the profile requires.</p>
+    <p class="from">More: <a href="../profile/index.html#94-publication">section 9.4 of the profile</a>, and
+      <a href="../evidence/index.html#standards">the standards</a>.</p>
+  </div>
+</div></section>
+
+<section id="check"><div class="wrap">
+  <span class="n">07</span>
+  <div class="body">
+    <h2>How do I know a file used the mapping it says it did?</h2>
+    <p class="short">Check it. The validator reads what the file declares and tests it.</p>
+    <p><code>python -m udeep.validate figure.jpg</code> reads the declaration, checks that it is complete and
+      invertible and that nothing goes past the headroom, and, given the data and the SDR figure, checks that the file
+      belongs with them and that its pixels are what that data and that figure make. Its report says how far it got:
+      declared, consistent, or reproduced.</p>
+    <p>It can't tell you who made the file. The digests in a file link it to an array and to an SDR figure, but anyone
+      who changes the data can work out new digests and write them in, so they are links, not signatures. Where that
+      matters, publish the digest somewhere your readers already trust, such as the data repository's record of the
+      dataset.</p>
+    <p class="from">More: <a href="../profile/index.html#10-conformance-and-open-issues">conformance, section 10</a>,
+      and <a href="../profile/index.html#16-security-considerations-informative">security, section 16</a>.</p>
+  </div>
+</div></section>
+
+<section id="comfort"><div class="wrap">
+  <span class="n">08</span>
+  <div class="body">
+    <h2>Will a bright figure be uncomfortable to look at?</h2>
+    <p class="short">Possibly. Nobody has a number for it.</p>
+    <p>Guidelines limit flashing to three flashes a second, but we found none that limits steady brightness or the
+      size of a bright area. HDR production keeps levels above white for small highlights. The profile forbids flashing
+      above white, requires that switching between HDR and SDR is started by the viewer, and asks pages to offer a
+      limit. Every page on this site has a "Limit HDR" control.</p>
+    <p class="from">More: <a href="../evidence/index.html#comfort">comfort and accessibility</a>, and
+      <a href="../profile/index.html#14-comfort-and-accessibility">section 14 of the profile</a>.</p>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · Mathew Newman · text under CC BY 4.0. A question that isn't here? Ask it on the
+  <a href="https://github.com/ultradeeprange/udeep/issues">issue tracker</a>.</p></div></footer>
+</body>
+</html>

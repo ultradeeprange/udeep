@@ -324,6 +324,20 @@ def test_a_code_a_step_off_takes_the_nearest_level_and_one_far_off_is_no_value(t
     assert np.array_equal(np.round(back[others]), data[others])
 
 
+@pytest.mark.parametrize("cmap", ["grey", "fire", "ice"])
+def test_values_just_above_the_bottom_of_the_range_come_back_too(cmap):
+    """Near black PQ codes change faster than the million samples can follow: a value of 0.3 on a range of 0 to
+    4095 holds a code no sample lands on. Before 21 October 2026 such pixels came back NaN, two or more codes from
+    any run the sampling found, and a true data record of faint data failed the validator."""
+    from udeep import Mapping
+    from udeep.metadata import values_pq16
+    m = Mapping.from_stretch(STRETCH, 2048.0, 4.0, cmap)
+    x = np.concatenate([np.arange(0.0, 3.0, 0.001), np.random.default_rng(5).uniform(0.0, 4095.0, 5000)])
+    back = values_pq16(m, m.colours(m.light(x)))
+    assert not np.isnan(back).any()
+    assert np.abs(back - x).max() <= data_steps_pq16(m)[1].max() / 2 * 1.0001
+
+
 def test_read_png_data_refuses_a_file_without_a_declaration(tmp_path):
     from udeep import read_png_data
     write_png_pq(np.ones((4, 5, 3)), tmp_path / "bare.png")

@@ -174,6 +174,9 @@ fn null_pointers_are_refused_and_empty_calls_are_not_errors() {
         assert_eq!(udeep_colours(null(), 0, 4.0, null(), out.as_mut_ptr(), 4), NULL);
         assert_eq!(udeep_colours(null(), 0, 4.0, null(), null_mut(), 0), OK);
         assert_eq!(udeep_colours_parallel(null(), 0, 4.0, x.as_ptr(), null_mut(), 1, 4), NULL);
+        let mut table = [0.0f32; 18];
+        assert_eq!(udeep_colour_table(null(), 4, 3, 3.0, 3, table.as_mut_ptr()), NULL);
+        assert_eq!(udeep_colour_table(b"fire".as_ptr(), 4, 3, 3.0, 3, null_mut()), NULL);
         assert_eq!(udeep_srgb_encode(null(), out.as_mut_ptr(), 4), NULL);
         assert_eq!(udeep_srgb_decode(null(), null_mut(), 0), OK);
         assert_eq!(udeep_pq_encode(x.as_ptr(), null_mut(), 4), NULL);
@@ -193,6 +196,13 @@ fn null_pointers_are_refused_and_empty_calls_are_not_errors() {
         assert_eq!(udeep_levels(null(), null(), 0, 4.0, 10, 0, 0.0, &mut step, &mut ratio), NULL);
         assert_eq!(udeep_levels(&m, null(), 0, 4.0, 10, 0, 0.0, null_mut(), &mut ratio), NULL);
         assert_eq!(udeep_levels_criterion(&m, null(), 0, 4.0, 10, 0, 0.0, 0, null_mut()), NULL);
+        let codes = [0u16; 6];
+        assert_eq!(udeep_values_pq16(null(), null(), 0, 203.0, 10, codes.as_ptr(), 2, out.as_mut_ptr()), NULL);
+        assert_eq!(udeep_values_pq16(&m, null(), 0, 203.0, 10, null(), 2, out.as_mut_ptr()), NULL);
+        assert_eq!(udeep_values_pq16(&m, null(), 0, 203.0, 10, codes.as_ptr(), 2, null_mut()), NULL);
+        assert_eq!(udeep_values_pq16(&m, null(), 0, 203.0, 10, null(), 0, null_mut()), OK);
+        assert_eq!(udeep_values_pq16(&m, null(), 0, 0.0, 10, codes.as_ptr(), 2, out.as_mut_ptr()), 11);
+        assert_eq!(udeep_values_pq16(&m, null(), 0, 203.0, usize::MAX, codes.as_ptr(), 2, out.as_mut_ptr()), 11);
         let (mut data, mut length) = (null_mut::<u8>(), 0usize);
         assert_eq!(udeep_description(null(), &mut data, &mut length), NULL);
         assert_eq!(udeep_caption(null(), &mut data, &mut length), NULL);
@@ -213,6 +223,34 @@ fn sizes_whose_product_overflows_are_refused() {
         assert_ne!(udeep_digest_pixels(big, 3, bytes.as_ptr(), digest.as_mut_ptr()), OK);
         assert_ne!(udeep_digest_data([big, 4].as_ptr(), 2, one.as_ptr(), digest.as_mut_ptr()), OK);
         assert_ne!(udeep_mask_isolated(bytes.as_ptr(), big, 4, out.as_mut_ptr()), OK);
+        let mut values = [0.0f64; 4];
+        let m = grey();
+        let codes = [0u16; 12];
+        assert_eq!(udeep_values_pq16(&m, null(), 0, 203.0, 16, codes.as_ptr(), big, values.as_mut_ptr()), 8);
+    }
+}
+
+/// A colour-map table asked of the generator: any name, version, headroom and node count a host might pass comes
+/// back as a code, and a table that is made is finite and inside its segment's range.
+#[test]
+fn any_table_asked_of_the_generator_comes_back_as_a_code_or_a_table() {
+    let mut s = Stream(11);
+    let mut table = [0.0f32; 18];
+    let names: [&[u8]; 5] = [b"fire", b"ice", b"grey", b"\xff\xfe", b""];
+    unsafe {
+        for &nodes in &[0usize, 1, usize::MAX, usize::MAX / 6 + 1, 1 << 17] {
+            assert_eq!(udeep_colour_table(b"fire".as_ptr(), 4, 3, 3.0, nodes, table.as_mut_ptr()), 7, "{nodes}");
+        }
+        for _ in 0..if cfg!(miri) { 6 } else { 200 } {
+            let name = names[s.below(5) as usize];
+            let (version, headroom) = (s.below(5) as u32, s.number());
+            let status = udeep_colour_table(name.as_ptr(), name.len(), version, headroom, 3, table.as_mut_ptr());
+            assert!([OK, 5, 7, 10].contains(&status), "{status}");
+            if status == OK {
+                assert!(table[..9].iter().all(|&v| (0.0..=1.0).contains(&v)), "{table:?}");
+                assert!(table[9..].iter().all(|&v| v >= 0.0 && f64::from(v) <= headroom * (1.0 + 1e-6)), "{table:?}");
+            }
+        }
     }
 }
 
@@ -493,6 +531,13 @@ fn the_image_functions_refuse_what_they_cannot_take() {
         assert_ne!(udeep_gainmap_read(jpeg.as_ptr(), jpeg.len(), f64::NAN, floats.as_mut_ptr(), floats.len(), 4), OK);
         assert_eq!(udeep_png_pq_read(png.as_ptr(), png.len(), 203.0, doubles.as_mut_ptr(), doubles.len()), OK);
         assert_ne!(udeep_png_pq_read(png.as_ptr(), png.len(), 203.0, doubles.as_mut_ptr(), doubles.len() + 1), OK);
+        let m = grey();
+        let values = |file: &[u8], room: &mut [f64]| {
+            udeep_png_pq_values(file.as_ptr(), file.len(), &m, null(), 0, 203.0, 4096, room.as_mut_ptr(), room.len())
+        };
+        assert_eq!(values(&png, &mut doubles[..w * h]), OK);
+        assert_eq!(values(&png, &mut doubles[..w * h - 1]), 8);
+        assert!([8, 9].contains(&values(&jpeg, &mut doubles[..w * h]))); // not a PNG at all
         let mut s = Stream(11);
         for round in 0..2_000 {
             let file = if round % 2 == 0 { &jpeg } else { &png };
@@ -514,6 +559,7 @@ fn the_image_functions_refuse_what_they_cannot_take() {
                 let mut room = vec![0f64; width * height * 3];
                 let code = udeep_png_pq_read(damaged.as_ptr(), damaged.len(), 203.0, room.as_mut_ptr(), room.len());
                 assert!((0..=11).contains(&code));
+                assert!((0..=11).contains(&values(&damaged, &mut room[..width * height])));
             }
         }
     }

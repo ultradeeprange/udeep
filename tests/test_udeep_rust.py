@@ -4,6 +4,7 @@ This exercises the interface a host application would use: the `udeep_mapping` r
 says, buffers in and out, error codes back. Skipped when cargo is not installed.
 """
 import ctypes
+import importlib
 import dataclasses
 import json
 import math
@@ -72,6 +73,15 @@ def lib():
     dll.udeep_colours.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double, doubles, doubles,
                                     ctypes.c_size_t]
     dll.udeep_colours.restype = ctypes.c_int32
+    dll.udeep_colour_table.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, ctypes.c_size_t,
+                                       ctypes.POINTER(ctypes.c_float)]
+    dll.udeep_colour_table.restype = ctypes.c_int32
+    dll.udeep_values_pq16.argtypes = [record, ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
+                                      ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint16), ctypes.c_size_t, doubles]
+    dll.udeep_values_pq16.restype = ctypes.c_int32
+    dll.udeep_png_pq_values.argtypes = [ctypes.c_char_p, ctypes.c_size_t, record, ctypes.POINTER(ctypes.c_float),
+                                        ctypes.c_size_t, ctypes.c_double, ctypes.c_size_t, doubles, ctypes.c_size_t]
+    dll.udeep_png_pq_values.restype = ctypes.c_int32
     dll.udeep_mapping_validate.argtypes = [record]
     dll.udeep_mapping_validate.restype = ctypes.c_int32
     dll.udeep_version.restype = ctypes.c_uint32
@@ -150,7 +160,7 @@ def test_the_library_exports_every_function_the_header_declares(lib):
     only a WebAssembly build has (tests/test_udeep_wasm.py holds that build to the whole header)."""
     header = re.sub(r"/\*.*?\*/", "", (CORE / "include" / "udeep_core.h").read_text(encoding="utf-8"), flags=re.DOTALL)
     declared = set(re.findall(r"\b(udeep_\w+)\(", header)) - {"udeep_buffer_alloc", "udeep_buffer_free"}
-    assert len(declared) == 34 and not [name for name in sorted(declared) if not hasattr(lib, name)]
+    assert len(declared) == 37 and not [name for name in sorted(declared) if not hasattr(lib, name)]
     assert not hasattr(lib, "udeep_buffer_alloc")               # memory is the host's own outside WebAssembly
 
 
@@ -174,6 +184,98 @@ def test_the_c_interface_reproduces_the_golden_mapping_cases(lib, name):
     got["colours"] = [[None if math.isnan(v) else v for v in row] for row in rgb.reshape(-1, 3).tolist()]
     problems = [p for key, value in got.items() for p in golden.agree(value, want[key], case, f"{name}.{key}")]
     assert not problems, problems[:5]
+
+
+def c_table(lib, name: str, headroom: float, nodes: int = 257, version: int = 3) -> tuple[int, np.ndarray]:
+    out = np.zeros(6 * nodes, dtype=np.float32)
+    status = lib.udeep_colour_table(name.encode(), len(name.encode()), version, headroom, nodes,
+                                    out.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
+    return status, out
+
+
+@pytest.mark.parametrize(("name", "headroom", "version"),
+                         [("fire", 3.0, 3), ("ice", 6.0, 3), ("fire", 1.5, 3), ("ice", 12.5, 3), ("fire", 1.0, 3),
+                          ("ice", 5.0, 2), ("fire", 5.0, 1)])
+def test_the_core_makes_a_table_at_any_headroom_as_the_reference_does(lib, name, headroom, version):
+    """The generator ported to the core, against the reference's generate, at headrooms with no published table
+    and at the node count a file carries: within the version-3 floor, 1e-7 of white (core/tests/cmap.rs holds the
+    port to every published table)."""
+    cm = importlib.import_module("udeep.cmap")      # the package also exports a function called cmap
+    status, made = c_table(lib, name, headroom, cm.EMBED_NODES, version)
+    assert status == 0
+    reference = np.frombuffer(cm.generate(name, headroom, cm.EMBED_NODES, version).to_bytes(), dtype="<f4")
+    assert np.max(np.abs(made.astype(np.float64) - reference)) <= 1e-7
+
+
+def test_the_core_refuses_a_table_for_what_is_not_a_registered_map(lib):
+    assert c_table(lib, "viridis", 3.0)[0] == 7 and c_table(lib, "fire", 3.0, version=4)[0] == 7
+    assert c_table(lib, "fire", 3.0, nodes=1)[0] == 7 and c_table(lib, "fire", 0.5)[0] == 5
+    assert c_table(lib, "fire", math.nan)[0] == 5 and c_table(lib, "fire", math.inf)[0] == 10
+    assert lib.udeep_colour_table(None, 0, 3, 3.0, 257, None) == 1
+
+
+@pytest.mark.parametrize(("cmap", "headroom"), [("grey", 4.0), ("fire", 4.0), ("ice", 8.0), ("fire", 3.0)])
+def test_the_core_reads_a_data_record_back_as_the_reference_does(lib, tmp_path, cmap, headroom):
+    """udeep_png_pq_values against the reference's values_pq16, on a file the reference wrote: no NaN in either,
+    and the same values to the last few bits of the bisection that finds each level's ends. The data runs from
+    just above the bottom of the range, where the levels are narrower than the sampling, past both ends."""
+    from udeep import Mapping, core
+    from udeep.export import write_png_pq
+    from udeep.metadata import data_steps_pq16, read_png_pq, values_pq16
+    was = core.enabled()
+    core.enable(False)
+    try:
+        m = Mapping.from_stretch({"kind": "linear", "lo": 0.0, "hi": 4095.0}, 2048.0, headroom, cmap)
+        rng = np.random.default_rng(3)
+        data = np.concatenate([np.arange(0.0, 3.0, 0.01), rng.uniform(-100.0, 4200.0, 1700)]).reshape(40, 50)
+        write_png_pq(m.colours(m.light(data)), tmp_path / "record.png")
+        reference = values_pq16(m, read_png_pq(tmp_path / "record.png"))
+    finally:
+        core.enable(was)
+    table = None if m.table is None else np.ascontiguousarray(np.concatenate([m.table.below, m.table.above]), "<f4")
+    pointer = None if table is None else table.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+    nodes = 0 if table is None else table.size // 6
+    c = record({"range_low": 0.0, "range_high": 4095.0, "knee": 2048.0, "reference_headroom": headroom,
+                "stretch_width": m.stretch_width, "stretch_offset": 0.0, "above_knee": "hermite; exit=1",
+                "stretch": "linear"})
+    file = (tmp_path / "record.png").read_bytes()
+    out = np.empty(data.size)
+    into = lambda a: a.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+    assert lib.udeep_png_pq_values(file, len(file), ctypes.byref(c), pointer, nodes, 203.0, 1 << 20, into(out),
+                                   data.size) == 0
+    back = out.reshape(data.shape)
+    assert not np.isnan(back).any() and not np.isnan(reference).any()
+    assert np.abs(back - reference).max() <= 1e-9 * 4095.0
+    assert np.abs(back - np.clip(data, 0.0, 4095.0)).max() <= data_steps_pq16(m)[1].max() / 2 * 1.0001
+    # the same from the codes alone, and what is refused
+    codes = codes_of(file)
+    again = np.empty(data.size)
+    assert lib.udeep_values_pq16(ctypes.byref(c), pointer, nodes, 203.0, 1 << 20,
+                                 codes.ctypes.data_as(ctypes.POINTER(ctypes.c_uint16)), data.size, into(again)) == 0
+    assert np.array_equal(again, out)
+    assert lib.udeep_png_pq_values(file, len(file), ctypes.byref(c), pointer, nodes, 203.0, 1 << 20, into(out),
+                                   data.size - 1) == 8
+    assert lib.udeep_png_pq_values(file, len(file), ctypes.byref(c), pointer, nodes, -1.0, 1 << 20, into(out),
+                                   data.size) == 11
+
+
+def codes_of(file: bytes) -> np.ndarray:
+    """A 16-bit RGB PNG's codes from its bytes, by a reader of this test's own (unfiltered rows, as both writers
+    leave them), flat."""
+    import struct
+    import zlib
+    at, idat, size = 8, b"", None
+    while at < len(file):
+        length, kind = struct.unpack(">I4s", file[at:at + 8])
+        body = file[at + 8:at + 8 + length]
+        if kind == b"IHDR":
+            size = struct.unpack(">II", body[:8])
+        elif kind == b"IDAT":
+            idat += body
+        at += 12 + length
+    rows = np.frombuffer(zlib.decompress(idat), np.uint8).reshape(size[1], size[0] * 6 + 1)
+    assert not rows[:, 0].any()
+    return np.ascontiguousarray(rows[:, 1:]).view(">u2").astype(np.uint16).reshape(-1)
 
 
 def test_input_and_output_may_be_the_same_buffer(lib):

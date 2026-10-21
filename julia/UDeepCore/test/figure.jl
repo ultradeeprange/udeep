@@ -98,7 +98,16 @@ end
         @test colour_table("fire/1", 4.0)[end - 2:end] != Float32[4, 4, 4]                # version 1 did not
         @test UDeepCore.colour_map_name("ice") == "ice/3" && UDeepCore.colour_map_name("ice/1") == "ice/1"
         @test_throws ArgumentError colour_table("fire/4", 4.0)
-        @test_throws ArgumentError colour_table("fire", 3.0)                              # not a registered headroom
+        # at a headroom with no published table the core makes one, at 257 nodes, which a file must carry
+        three = colour_table("fire", 3.0)
+        @test length(three) == 2 * 257 * 3 && three[1:3] == Float32[0, 0, 0] && three[end - 2:end] == Float32[3, 3, 3]
+        @test three[1:3:end ÷ 2][end] < 1 && colour_table("fire", 3.0) === three           # below white; made once
+        @test colour_table_text("fire", 3.0) == "257;" * UDeepCore.base64encode(reinterpret(UInt8, three))
+        @test colour_table_text("fire", 4.0) === colour_table_text("grey", 3.0) === colour_table_text("ice", 1.0) === nothing
+        # headroom 1, an SDR figure: the lower half of the published table for 2, and nothing above white
+        one, two = colour_table("ice", 1.0), colour_table("ice", 2.0)
+        @test one[1:end ÷ 2] == two[1:end ÷ 2] && all(one[end ÷ 2 + 1:end] .== repeat(two[end ÷ 2 - 2:end ÷ 2], 4097))
+        @test_throws ArgumentError colour_table("fire", 0.5)
         @test_throws ArgumentError colour_table("viridis", 4.0)
         m = Mapping(:linear, 0.0, 100.0, 50.0, 4.0)
         data = [20.0 + 25.0 * ((i * 7 + j * 13) % 10) / 10 for i in 1:40, j in 1:30]     # all below the knee
@@ -158,6 +167,16 @@ end
         colour = png_pq(hdr_view(data, m; mode = :extend, cmap = "fire").hdr; white_nits = 100.0)
         lit = hdr_view(data, m; mode = :extend, cmap = "fire").hdr
         @test maximum(abs.(read_png_pq(colour; white_nits = 100.0) .- lit)) < 3e-3    # measured 6e-4: a 16-bit step, through the matrix
+        # read back as data, whatever the colour map: from just above the bottom of the range, past both ends
+        x = vcat(collect(0.0:0.01:2.99), [mod(37.0 * i, 4096.0) + 0.25 for i in 1:200], [-50.0, 5000.0])
+        for cmap in ("grey", "fire", "ice")
+            table = colour_table(cmap, 4.0)
+            record = png_pq(reshape(colours(table, 4.0, light(m, x)), 1, length(x), 3))
+            back = read_png_data(record, m; cmap)
+            @test size(back) == (1, length(x)) && !any(isnan, back)
+            @test maximum(abs.(vec(back) .- clamp.(x, 0.0, 4095.0))) <= levels_pq16(m, table)[1] / 2 * 1.0001
+        end
+        @test_throws ArgumentError read_png_data(UInt8[1, 2, 3, 4, 5, 6, 7, 8, 9], m)
         @test_throws DimensionMismatch png_pq(zeros(4, 5, 2))
         @test_throws ArgumentError read_png_pq(UInt8[1, 2, 3, 4, 5, 6, 7, 8, 9])
         @test_throws ArgumentError levels_pq16(m, nothing; noise = (:constant, nothing))

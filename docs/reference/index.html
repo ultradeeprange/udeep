@@ -113,7 +113,7 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      99 public functions and classes in 17 Python modules, and the 33 names the Julia
+      99 public functions and classes in 17 Python modules, and the 37 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -674,8 +674,10 @@ result to rounding_to_noise as <code>steps</code> to see whether the file may be
 declared mapping turned back, through the file&#x27;s own codes, whatever the colour map.</p>
 <p>Each stored level is a run of data values that share one code in all three channels (data_steps_pq16). A
 pixel is given the middle of the run whose code it holds, and so comes back to within half that run&#x27;s width,
-which is at most half of MaxDataStep. The ends of the runs are found to within a millionth of the sampling&#x27;s
-spacing. A writer that rounds a sum of three products in a different order can leave a rare code one step
+which is at most half of MaxDataStep. Near black PQ codes change faster than any even sampling can follow:
+there, where two neighbouring samples are more than one code apart in some channel, the gap between them is
+halved, and halved again, until no piece of it skips a code (at most REFINE_STEPS times). The ends of the runs
+are then found to within a millionth of the spacing around them. A writer that rounds a sum of three products in a different order can leave a rare code one step
 from the reference&#x27;s (udeep.core); a pixel whose code is in no run takes the nearest run that is a step away
 in each channel at most, and a pixel with none so near is not a colour of this mapping and is NaN.</p>
 <p>ValueError when two separate runs share one code: that code would not say which data value it stands for. It
@@ -1196,12 +1198,19 @@ then declares the same value.</p>
 3 x 3 block of it. The Highlight preset holds these at white, so that noise cannot sparkle.</p>
 <h3 id="julia.colour_table"><span class="kind">function</span>colour_table</h3>
 <pre class="block">colour_table(name, headroom)</pre>
-<p>The registered colour-map table for <code>&quot;fire&quot;</code> or <code>&quot;ice&quot;</code> at a registered headroom (2, 4, 8 or 16), as the project
-ships it; <code>nothing</code> for <code>&quot;grey&quot;</code>, which needs none. The name alone is the map&#x27;s current version (2); <code>&quot;fire/1&quot;</code>
-names an older one, for reproducing a figure made with it. The tables are read from <code>ENV[&quot;UDEEP_TABLES&quot;]</code>, or else from
-<code>src/udeep/tables</code> of the repository this package sits in.</p>
-<p>A map at any other headroom needs a table made for that headroom. Only the Python reference makes tables, so this
-package refuses one rather than draw a map the file could not declare.</p>
+<p>The colour-map table for <code>&quot;fire&quot;</code> or <code>&quot;ice&quot;</code> at a reference headroom; <code>nothing</code> for <code>&quot;grey&quot;</code>, which needs none. The
+name alone is the map&#x27;s current version (3); <code>&quot;fire/1&quot;</code> names an older one, for reproducing a figure made with it.</p>
+<p>At a registered headroom (2, 4, 8 or 16) this is the published table, as the project ships it (profile 6.10), read
+from <code>ENV[&quot;UDEEP_TABLES&quot;]</code>, or else from <code>src/udeep/tables</code> of the repository this package sits in. At headroom 1,
+an SDR figure, it is the lower segment of the published table for 2. At any other headroom the Rust core makes the
+table, at $EMBED_NODES nodes a segment, by the generator the published tables were made with, and a file drawn with it
+must carry it: <code>colour_table_text</code> gives what it declares, and the figure writers declare it themselves.</p>
+<h3 id="julia.colour_table_text"><span class="kind">function</span>colour_table_text</h3>
+<pre class="block">colour_table_text(name, headroom)</pre>
+<p>What a file declares as <code>udeep:ColourMapTable</code> for a map at a reference headroom: the table of
+<code>colour_table</code> as the node count, <code>;</code>, and base64 of its numbers (little-endian float32), as the Python
+reference&#x27;s <code>Table.to_text</code> writes it. <code>nothing</code> where the file need not carry one: <code>&quot;grey&quot;</code>, or a registered map at
+headroom 1, 2, 4, 8 or 16.</p>
 <h3 id="julia.HdrView"><span class="kind">type</span>HdrView</h3>
 <p>The two renderings of an image, as linear RGB in multiples of SDR white (<code>size(data)..., 3</code>): <code>sdr</code> is the fair SDR
 plot (the same below the knee, white above it) and <code>hdr</code> the HDR plot. <code>light</code> is the HDR light before colour.</p>
@@ -1272,6 +1281,17 @@ carries the profile&#x27;s declared metadata unless <code>metadata = false</code
 <p>A pixel is lifted only where an HDR image alone determines it, so text, lines and anything translucent drawn over
 an image stay as they are in the ordinary figure. The SDR figure the file&#x27;s digest refers to is the figure as the
 backend renders it at <code>px_per_unit</code>. Keep <code>gain_quality</code> at 100 with a colour map (see <code>gainmap_jpeg</code>).</p>
+<h3 id="julia.HdrFigure"><span class="kind">type</span>HdrFigure</h3>
+<pre class="block">HdrFigure(data, caption)</pre>
+<p>A figure as its gain-map JPEG, for a notebook to show (<code>hdr_inline</code>): <code>data</code> is the file, byte for byte what
+<code>save_hdr</code> writes, and <code>caption</code> the caption generated from its declaration. Jupyter, Pluto and VS Code show
+it as an image. The file itself is what the page is given, so a browser that reads gain maps shows the images above
+white on an HDR display, and any other shows the ordinary figure. <code>write(path, f)</code> keeps the file.</p>
+<h3 id="julia.hdr_inline"><span class="kind">function</span>hdr_inline</h3>
+<pre class="block">hdr_inline(fig; caption = true, quality = 95, gain_quality = 100, px_per_unit = 2)</pre>
+<p>The figure as <code>save_hdr</code> writes it, to show in a notebook: end a cell with <code>hdr_inline(fig)</code>. With <code>caption</code>
+the caption generated from the file&#x27;s declaration is shown under it. Returns an <code>HdrFigure</code>; <code>write(path, f)</code>
+keeps the file. Needs a Makie backend loaded (CairoMakie).</p>
 <h3 id="julia.hdr_declaration"><span class="kind">function</span>hdr_declaration</h3>
 <p><code>hdr_declaration(fig)</code>: what the figure declares (<code>Declaration</code>), as <code>save_hdr</code> would write it, less the digest of the SDR figure.</p>
 <h3 id="julia.hdr_caption"><span class="kind">function</span>hdr_caption</h3>
@@ -1318,6 +1338,14 @@ the viewer; a file without a declaration may be written at any white, for one&#x
 <p>A 16-bit PQ PNG, given as its bytes, as light: <code>height x width x 3</code>, linear RGB in multiples of the white written
 at <code>white_nits</code>. It is what <code>png_pq</code> was given, to within the file&#x27;s 16-bit steps. For a grey figure any
 channel is the light, and <code>value</code> turns it back into data. Throws for a PNG of another kind.</p>
+<h3 id="julia.read_png_data"><span class="kind">function</span>read_png_data</h3>
+<pre class="block">read_png_data(file, m; cmap = &quot;grey&quot;, table = colour_table(cmap, m.reference_headroom), white_nits = 203,
+              samples = 1048576)</pre>
+<p>A 16-bit PQ PNG, given as its bytes, read back as data: <code>height x width</code>, the data value each pixel stands for
+under the mapping <code>m</code> and colour map the file declares, whatever its colours, as the Python reference&#x27;s
+<code>udeep.read_png_data</code> does it. Each pixel comes back to within half of the file&#x27;s <code>MaxDataStep</code>; a pixel that is no
+colour of this mapping is <code>NaN</code>. A value outside the declared range was stored at the range&#x27;s end, and comes back
+there. Throws for a PNG of another kind, or a mapping whose colours cannot be read back.</p>
   </article>
 </div></main>
 <footer><div class="wrap"><p>UDeep · code under BSD-3-Clause.</p></div></footer>

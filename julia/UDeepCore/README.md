@@ -6,8 +6,9 @@ It is a thin binding to the project's Rust core (`../../core`, through its C int
 implementation: the arithmetic lives in one place and is held to one set of golden vectors.
 
 **Status: a draft, and not yet installable on its own.** Until the project has a release, it needs the core
-library built from a checkout of this repository (see *Build and test*). Figures work with CairoMakie; GLMakie and
-WGLMakie are not covered.
+library built from a checkout of this repository (see *Build and test*). Figures work with CairoMakie, GLMakie and
+WGLMakie: on 21 October 2026 the same figure saved with each (Makie 0.24.16) passed the reference validator, and the
+three files lift the same pixels to within 11 of 16,270. The package's own tests use CairoMakie.
 
 What a release will change: the package looks for the core, in this order, at `ENV["UDEEP_CORE_LIB"]`, as an
 artifact installed with the package, and in the checkout it sits in. The artifact is the core library alone, one
@@ -30,11 +31,14 @@ plot = hdrimage!(ax, temperature, m; mode = :highlight, cmap = "fire",
 hdrcolorbar!(fig[1, 2], plot; label = "temperature (K)")
 save_hdr("figure.jpg", fig)                            # a gain-map JPEG that declares its mapping
 hdr_caption(fig)                                       # a caption paragraph written from the declaration
+hdr_inline(fig)                                        # in a notebook (Jupyter, Pluto, VS Code): the same file, shown
 ```
 
 The figure on screen and in `save("figure.png", fig)` is the ordinary SDR one. `save_hdr` writes a JPEG that any
 viewer shows as that same figure, and that an HDR display shows with the values above the knee brighter than
-white, up to the headroom. `examples/figure.jl` is a complete script.
+white, up to the headroom. `hdr_inline` gives a notebook that same file to show, with the caption under it; in a
+browser that reads gain maps, on an HDR display, the images show above white there too. `examples/figure.jl` is a
+complete script.
 
 Every exported name is listed, with its description, in the project's
 [reference](https://ultradeeprange.github.io/udeep/reference/#julia).
@@ -49,13 +53,13 @@ m = Mapping(:linear, 0.0, 4095.0, 1000.0, 4.0)
 view = hdr_view(counts, m; mode = :extend, cmap = "grey")
 step, ratio, n = levels_pq16(m, nothing; noise = (:constant, 3.0))    # the widest step, and it against the noise
 write("frame.png", png_pq(view.hdr; declaration = d))                  # d: a Declaration, record = "data-record" if ratio <= 0.1
-counts_again = value(m, read_png_pq(read("frame.png"))[:, :, 2])       # grey: any channel is the light
+counts_again = read_png_data(read("frame.png"), m)                    # the data back, height x width
 ```
 
 The declaration names the SDR figure that goes with the PNG, which holds none of its own (profile 9.1.2):
 `sdr_digest = digest_sdr(view.sdr)`. White is written at 203 cd/m², as the profile requires of a file with a
-declaration (9.1.1). Turning a colour map's colours back into values is done by the Python reference
-(`udeep.read_png_data`), not yet here.
+declaration (9.1.1). `read_png_data(file, m; cmap = "fire")` reads a colour map's colours back into values
+too, as the Python reference's `udeep.read_png_data` does: each pixel to within half of `MaxDataStep`.
 
 `levels(m, table, headroom; noise)` does the same for the 8-bit JPEG. The reference's validator checks either
 file: `python -m udeep.validate frame.png`.
@@ -90,15 +94,19 @@ machine and Julia version. The package's tests run all four.
   `ground` and `ink` take a page's own colours). Only the furniture changes: the data, the mapping, the lifted
   pixels and what the file declares are the same, so the two are versions of one figure (profile 8.7).
 
-What is not there yet: the colour maps `"fire"` and `"ice"` work at headrooms 2, 4, 8 and 16 only (`"grey"` at
-any), because only the Python reference makes tables; the knee must be given (no percentile fallback); the figure
-is saved whole, with no tight crop.
+- The colour maps `"fire"` and `"ice"` work at any reference headroom from 1. At 2, 4, 8 and 16 they are the
+  published tables; at any other the Rust core makes the table, by the generator the published ones were made with,
+  and the file carries it (`udeep:ColourMapTable`), as the Python reference's files do.
+
+What is not there yet: the knee must be given (no percentile fallback); the figure is saved whole, with no tight
+crop.
 
 ## Arrays
 
 ```julia
 y = light(m, hu)                                       # data -> light, in multiples of SDR white; any array shape
 rgb = colours(colour_table("fire", 4.0), 4.0, y)       # light -> linear RGB; `nothing` for grey
+colour_table_text("fire", 3.0)                         # what a file at headroom 3 must carry; `nothing` at 4
 hu_again = value(m, y)                                 # and back
 view = hdr_view(hu, m; mode = :extend)                 # the fair SDR and the HDR renderings of an image
 digest_data(hu)                                        # "sha256:..." as the Python reference computes it

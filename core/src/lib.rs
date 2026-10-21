@@ -11,7 +11,8 @@
 //!   mapped alone, in any order, on any number of threads (D1, D2, D4);
 //! * one record, [`Mapping`], holds the parameters a file declares, under the names the metadata uses (D3);
 //! * arithmetic is `f64`, as in the reference (D8);
-//! * a colour map is a table, [`Table`], interpolated linearly (D9);
+//! * a colour map is a table, [`Table`], interpolated linearly (D9); [`cmap`] makes a registered map's table
+//!   at a headroom that has no published one;
 //! * the library draws nothing and encodes no image formats (D5, D6), and depends on no other crate: its
 //!   SHA-256 ([`sha256`]) and its threads ([`par`]) are the standard library's or its own.
 //!
@@ -20,6 +21,7 @@
 // Range checks are written as `!(a > b)` on purpose: a NaN must fail them, and `a <= b` would let it through.
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 
+pub mod cmap;
 pub mod declaration;
 pub mod ffi;
 #[cfg(feature = "jpeg")]
@@ -63,7 +65,8 @@ pub enum Error {
     /// The asinh width is not positive, or a proportional mapping has an offset, a non-zero start, a top that is
     /// not `knee * reference_headroom`, or an exit slope other than 1.
     BadStretchParameter = 6,
-    /// A table does not hold two segments of `nodes` x 3 numbers, or has fewer than two nodes.
+    /// A table does not hold two segments of `nodes` x 3 numbers, or has fewer than two nodes; or a table is asked
+    /// of the generator for a map or version that is not registered.
     BadTable = 7,
     /// An image's size or values cannot be written: sizes that do not match, SDR outside 0..=1, an infinite HDR
     /// value, headroom not above 1.

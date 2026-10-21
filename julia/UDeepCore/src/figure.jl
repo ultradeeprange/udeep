@@ -9,6 +9,7 @@ const ISOLATED = "isolated-3x3"
 const NOISE_MODELS = (unknown = 0x00000000, constant = 0x00000001, poisson = 0x00000002, relative = 0x00000003,
                       tolerance = 0x00000004)
 const UNBOUNDED = 1e9
+const EMBED_NODES = 257                  # per segment, in a table made for a headroom with no published one
 const TABLES = Dict{Tuple{String, Float64}, Vector{Float32}}()
 
 function buffers(name::Symbol, x::AbstractArray{<:Real})
@@ -60,25 +61,49 @@ end
 """
     colour_table(name, headroom)
 
-The registered colour-map table for `"fire"` or `"ice"` at a registered headroom (2, 4, 8 or 16), as the project
-ships it; `nothing` for `"grey"`, which needs none. The name alone is the map's current version (2); `"fire/1"`
-names an older one, for reproducing a figure made with it. The tables are read from `ENV["UDEEP_TABLES"]`, or else from
-`src/udeep/tables` of the repository this package sits in.
+The colour-map table for `"fire"` or `"ice"` at a reference headroom; `nothing` for `"grey"`, which needs none. The
+name alone is the map's current version (3); `"fire/1"` names an older one, for reproducing a figure made with it.
 
-A map at any other headroom needs a table made for that headroom. Only the Python reference makes tables, so this
-package refuses one rather than draw a map the file could not declare.
+At a registered headroom (2, 4, 8 or 16) this is the published table, as the project ships it (profile 6.10), read
+from `ENV["UDEEP_TABLES"]`, or else from `src/udeep/tables` of the repository this package sits in. At headroom 1,
+an SDR figure, it is the lower segment of the published table for 2. At any other headroom the Rust core makes the
+table, at $EMBED_NODES nodes a segment, by the generator the published tables were made with, and a file drawn with it
+must carry it: [`colour_table_text`](@ref) gives what it declares, and the figure writers declare it themselves.
 """
 function colour_table(name::AbstractString, headroom::Real)
     name == "grey" && return nothing
     name, version = map_and_version(name)
-    Float64(headroom) in REGISTERED_HEADROOMS ||
-        throw(ArgumentError("the colour map \"$name\" is registered at headrooms $(Int.(REGISTERED_HEADROOMS)) only, " *
-                            "not $headroom: use one of those, or \"grey\", which works at any"))
-    return get!(TABLES, ("$name/$version", Float64(headroom))) do
-        file = joinpath(tables_path(), "$name-$version-h$(Int(headroom)).f32")
-        isfile(file) || error("the colour-map table $file is missing: set ENV[\"UDEEP_TABLES\"]")
-        collect(reinterpret(Float32, read(file)))
+    h = Float64(headroom)
+    h >= 1.0 || throw(ArgumentError("the reference headroom must be at least 1, not $headroom"))
+    return get!(TABLES, ("$name/$version", h)) do
+        if h in REGISTERED_HEADROOMS || h == 1.0
+            file = joinpath(tables_path(), "$name-$version-h$(Int(max(h, 2.0))).f32")
+            isfile(file) || error("the colour-map table $file is missing: set ENV[\"UDEEP_TABLES\"]")
+            t = collect(reinterpret(Float32, read(file)))
+            h == 1.0 || return t
+            below = t[1:length(t) ÷ 2]                   # nothing above white: the top of the lower segment, repeated
+            return vcat(below, repeat(below[end - 2:end], length(below) ÷ 3))
+        end
+        made = Vector{Float32}(undef, 6 * EMBED_NODES)
+        check(ccall(symbol(:udeep_colour_table), Int32, (Ptr{UInt8}, Csize_t, UInt32, Float64, Csize_t, Ptr{Float32}),
+                    name, sizeof(name), version, h, EMBED_NODES, made))
+        made
     end
+end
+
+"""
+    colour_table_text(name, headroom)
+
+What a file declares as `udeep:ColourMapTable` for a map at a reference headroom: the table of
+[`colour_table`](@ref) as the node count, `;`, and base64 of its numbers (little-endian float32), as the Python
+reference's `Table.to_text` writes it. `nothing` where the file need not carry one: `"grey"`, or a registered map at
+headroom 1, 2, 4, 8 or 16.
+"""
+function colour_table_text(name::AbstractString, headroom::Real)
+    h = Float64(headroom)
+    (name == "grey" || h == 1.0 || h in REGISTERED_HEADROOMS) && return nothing
+    table = colour_table(name, h)
+    return string(length(table) ÷ 6, ";", base64encode(reinterpret(UInt8, htol.(table))))
 end
 
 "`colour_map_name(name)`: what a file declares for a map: `\"grey\"`, or name/version such as `\"fire/3\"`."
@@ -351,6 +376,40 @@ an image stay as they are in the ordinary figure. The SDR figure the file's dige
 backend renders it at `px_per_unit`. Keep `gain_quality` at 100 with a colour map (see [`gainmap_jpeg`](@ref)).
 """
 function save_hdr end
+
+"""
+    HdrFigure(data, caption)
+
+A figure as its gain-map JPEG, for a notebook to show ([`hdr_inline`](@ref)): `data` is the file, byte for byte what
+[`save_hdr`](@ref) writes, and `caption` the caption generated from its declaration. Jupyter, Pluto and VS Code show
+it as an image. The file itself is what the page is given, so a browser that reads gain maps shows the images above
+white on an HDR display, and any other shows the ordinary figure. `write(path, f)` keeps the file.
+"""
+struct HdrFigure
+    data::Vector{UInt8}
+    caption::String
+end
+
+escape_html(s::AbstractString) =
+    replace(s, "&" => "&amp;", "<" => "&lt;", ">" => "&gt;", "\"" => "&quot;")
+
+function Base.show(io::IO, ::MIME"text/html", f::HdrFigure)
+    text = escape_html(f.caption)
+    print(io, "<figure style=\"margin: 0\"><img src=\"data:image/jpeg;base64,", base64encode(f.data), "\" alt=\"",
+          text, "\">", isempty(text) ? "" : "<figcaption>$text</figcaption>", "</figure>")
+end
+Base.show(io::IO, ::MIME"image/jpeg", f::HdrFigure) = write(io, f.data)
+Base.show(io::IO, f::HdrFigure) = print(io, "UDeep figure: a gain-map JPEG of ", length(f.data), " bytes")
+Base.write(io::IO, f::HdrFigure) = write(io, f.data)
+
+"""
+    hdr_inline(fig; caption = true, quality = 95, gain_quality = 100, px_per_unit = 2)
+
+The figure as [`save_hdr`](@ref) writes it, to show in a notebook: end a cell with `hdr_inline(fig)`. With `caption`
+the caption generated from the file's declaration is shown under it. Returns an [`HdrFigure`](@ref); `write(path, f)`
+keeps the file. Needs a Makie backend loaded (CairoMakie).
+"""
+function hdr_inline end
 
 "`hdr_declaration(fig)`: what the figure declares ([`Declaration`](@ref)), as `save_hdr` would write it, less the digest of the SDR figure."
 function hdr_declaration end

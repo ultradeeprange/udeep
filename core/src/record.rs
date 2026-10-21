@@ -108,6 +108,133 @@ pub fn levels_pq16(mapping: &Mapping, table: Option<&Table>, white_nits: f64, sa
     Levels { start: x[..x.len() - 1].to_vec(), width: x.windows(2).map(|w| w[1] - w[0]).collect() }
 }
 
+/// Halvings that find where a 16-bit code changes, between two samples: to a millionth of their spacing.
+const EDGE_STEPS: u32 = 20;
+/// How often [`values_pq16`] may halve a gap between samples that skips a code.
+pub const REFINE_STEPS: u32 = 64;
+
+/// Whether two colours' codes are more than one step apart in some channel, so that codes lie between them.
+fn skips(a: [u16; 3], b: [u16; 3]) -> bool {
+    (0..3).any(|k| a[k].abs_diff(b[k]) > 1)
+}
+
+/// A point of the sampled range, and the codes stored there.
+type Point = (f64, [u16; 3]);
+
+/// The pieces of the gap from `lo` to `hi`, in order: halved, and halved again, while a piece skips a code, at most
+/// [`REFINE_STEPS`] times and never below what `f64` can halve. Each piece goes to `piece` with the codes at its ends.
+fn pieces(
+    (lo, low): Point,
+    (hi, high): Point,
+    depth: u32,
+    code_at: &dyn Fn(f64) -> [u16; 3],
+    piece: &mut dyn FnMut(Point, Point),
+) {
+    let mid = 0.5 * (lo + hi);
+    if depth < REFINE_STEPS && skips(low, high) && mid > lo && mid < hi {
+        let between = code_at(mid);
+        pieces((lo, low), (mid, between), depth + 1, code_at, piece);
+        pieces((mid, between), (hi, high), depth + 1, code_at, piece);
+    } else {
+        piece((lo, low), (hi, high));
+    }
+}
+
+/// The data values that the codes of a 16-bit PQ file stand for, under its mapping and colour map: the declared
+/// mapping turned back through the file's own codes, as the reference's `udeep.metadata.values_pq16` does it.
+/// `codes` holds a pixel's three codes in turn, as [`crate::png::read_png_pq_codes`] gives them; the result has one
+/// value for each pixel.
+///
+/// Each stored level is a run of data values that share one code in all three channels ([`levels_pq16`]). A pixel
+/// is given the middle of the run whose code it holds, so it comes back to within half that run's width, which is
+/// at most half of `udeep:MaxDataStep`. Near black PQ codes change faster than any even sampling can follow: there,
+/// where two neighbouring samples are more than one code apart in some channel, the gap between them is halved, and
+/// halved again, until no piece of it skips a code (at most [`REFINE_STEPS`] times). The ends of the runs are then
+/// found to within a millionth of the spacing around them. A writer that rounds a sum of three products in another order can leave a rare code one step from this
+/// one's: a pixel whose code is in no run takes the nearest run that is a step away in each channel at most (fewest
+/// channels moved, the first in order of -1, 0, +1 on each channel), and a pixel with none so near is not a colour
+/// of this mapping and is NaN.
+///
+/// [`Error::BadDeclaration`] when two separate runs share one code, since that code would not say which value it
+/// stands for (the reference refuses it too; no registered map has done it), and [`Error::BadImage`] when `codes`
+/// is not whole pixels.
+pub fn values_pq16(
+    mapping: &Mapping,
+    table: Option<&Table>,
+    white_nits: f64,
+    samples: usize,
+    codes: &[u16],
+) -> Result<Vec<f64>, crate::Error> {
+    if !codes.len().is_multiple_of(3) {
+        return Err(crate::Error::BadImage);
+    }
+    let samples = samples.max(2);
+    let knee = mapping.knee_position();
+    let code_at = |t: f64| {
+        let light = crate::tone(t, knee, mapping.reference_headroom, mapping.exit_slope);
+        crate::pq16_codes(colours(light, table), white_nits)
+    };
+    let step = 1.0 / (samples - 1) as f64;
+    let position = |i: usize| if i == samples - 1 { 1.0 } else { i as f64 * step };
+    let first = code_at(0.0);
+    let (mut runs, mut ends) = (vec![first], vec![0.0]);
+    // a run ends between two neighbouring points whose codes differ: found by halving the space between them
+    let mut piece = |(mut lo, low): Point, (mut hi, high): Point| {
+        if low != high {
+            for _ in 0..EDGE_STEPS {
+                let mid = 0.5 * (lo + hi);
+                if code_at(mid) == low {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            ends.push(hi);
+            runs.push(high);
+        }
+    };
+    let mut before = (0.0, first);
+    for i in 1..samples {
+        let t = position(i);
+        let now = (t, code_at(t));
+        pieces(before, now, 0, &code_at, &mut piece);
+        before = now;
+    }
+    ends.push(1.0);
+    let x: Vec<f64> = ends.into_iter().map(|t| mapping.value_at(t)).collect();
+    let key = |c: [u16; 3]| u64::from(c[0]) << 32 | u64::from(c[1]) << 16 | u64::from(c[2]);
+    let mut run_of = std::collections::HashMap::with_capacity(runs.len());
+    for (i, &c) in runs.iter().enumerate() {
+        if run_of.insert(key(c), i).is_some() {
+            return Err(crate::Error::BadDeclaration);
+        }
+    }
+    let middle = |i: usize| 0.5 * (x[i] + x[i + 1]);
+    let steps: Vec<[i32; 3]> =
+        (0..27).map(|n| [n / 9 - 1, n / 3 % 3 - 1, n % 3 - 1]).filter(|s| *s != [0, 0, 0]).collect();
+    Ok(codes
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .map(|&pixel| {
+            if let Some(&i) = run_of.get(&key(pixel)) {
+                return middle(i);
+            }
+            let mut best: Option<(i32, usize)> = None; // channels moved, and the run
+            for s in &steps {
+                let moved = s.iter().map(|d| d.abs()).sum::<i32>();
+                let near = [0, 1, 2].map(|k| (i32::from(pixel[k]) + s[k]).clamp(0, 65535) as u16);
+                if let Some(&i) = run_of.get(&key(near))
+                    && best.is_none_or(|(fewest, _)| moved < fewest)
+                {
+                    best = Some((moved, i));
+                }
+            }
+            best.map_or(f64::NAN, |(_, i)| middle(i))
+        })
+        .collect())
+}
+
 /// The data's stated uncertainty (profile 5.2).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Noise {

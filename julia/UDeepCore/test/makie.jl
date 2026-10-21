@@ -68,6 +68,23 @@ declared_in(file) = String(copy(file))
         @test base_e == base                                                              # one SDR figure for both presets
     end
 
+    @testset "shown in a notebook: the file save_hdr writes" begin
+        fig, = scene()
+        path = joinpath(directory, "inline.jpg")
+        save_hdr(path, fig; px_per_unit = 1)
+        shown = hdr_inline(fig; px_per_unit = 1)
+        @test shown isa HdrFigure && shown.data == read(path)                             # byte for byte
+        @test shown.caption == hdr_caption(fig) && !isempty(shown.caption)
+        html = repr(MIME("text/html"), shown)
+        @test startswith(html, "<figure") && occursin("data:image/jpeg;base64,", html) && occursin("<figcaption>", html)
+        @test repr(MIME("image/jpeg"), shown) == shown.data && showable(MIME("image/jpeg"), shown)
+        @test isempty(hdr_inline(fig; px_per_unit = 1, caption = false).caption)
+        kept = joinpath(directory, "kept.jpg")
+        write(kept, shown)
+        @test read(kept) == shown.data
+        @test occursin("&lt;b&gt; &amp; &quot;", repr(MIME("text/html"), HdrFigure(UInt8[0xff, 0xd8], "<b> & \"")))
+    end
+
     @testset "the file and what it declares" begin
         fig, ax, plot, m = scene(; source = "doi:10.0000/example", unit_code = "K")
         path = joinpath(directory, "figure.jpg")
@@ -103,6 +120,21 @@ declared_in(file) = String(copy(file))
         @test_logs save_hdr(joinpath(directory, "coarse.jpg"), fig; px_per_unit = 1)       # and this one does not warn
     end
 
+    @testset "a headroom with no published table: the file carries its own" begin
+        fig = Figure(size = (420, 300))
+        m = Mapping(:linear, 0.0, 100.0, 50.0, 3.0)
+        plot = hdrimage!(Axis(fig[1, 1]), scene_data(), m; DECLARED...)
+        hdrcolorbar!(fig[1, 2], plot; label = "K")
+        path = joinpath(directory, "three.jpg")
+        save_hdr(path, fig; px_per_unit = 1)
+        d = hdr_declaration(fig)
+        @test d.colour_map == "fire/3" && d.colour_map_table == colour_table_text("fire", 3.0)
+        @test startswith(d.colour_map_table, "257;") && occursin("udeep:ColourMapTable", declared_in(read(path)))
+        @test (d.max_data_step, d.rounding_to_noise) == levels(m, colour_table("fire", 3.0), 3.0; noise = (:constant, 2.5))
+        _, ax4, _, m4 = scene(; bar = false)
+        @test hdr_declaration(ax4.parent).colour_map_table === nothing          # at 4 the published table is named
+    end
+
     @testset "the colour bar" begin
         fig, ax, plot, m = scene()
         bar = fig.content[2]
@@ -135,8 +167,6 @@ declared_in(file) = String(copy(file))
         heads, = scene(; bar = false)
         hdrimage!(Axis(heads[1, 2]), scene_data(), Mapping(:linear, 0.0, 100.0, 50.0, 2.0); DECLARED...)
         @test occursin("different headrooms", message(() -> save_hdr(path, heads; px_per_unit = 1)))
-        @test occursin("registered", message(() -> scene(; cmap = "fire", bar = false) |> first |> f ->
-            hdrimage!(Axis(f[2, 1]), scene_data(), Mapping(:linear, 0.0, 100.0, 50.0, 3.0))))
         @test !isfile(path) || !occursin("more than one", declared_in(read(path)))
     end
 
