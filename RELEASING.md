@@ -9,8 +9,8 @@ something is done by a person; the workflows build, check and wait.
    publisher*, with PyPI project name `udeep`, owner `ultradeeprange`, repository `udeep`, workflow `publish.yml`,
    environment `pypi`. PyPI then trusts that workflow, and only it, to create the project and upload to it. No
    token is stored anywhere.
-2. **GitHub.** In the repository's settings, *Environments → pypi*: add the owner as a required reviewer, so that
-   an upload waits for approval.
+2. **GitHub.** The repository's environment `pypi` has the owner as its required reviewer, so that an upload
+   waits for approval (set up on 22 October 2026; *Settings → Environments → pypi*).
 3. **Zenodo (optional).** To have each GitHub release archived with a DOI, switch on the repository in Zenodo's
    GitHub settings before publishing the release.
 
