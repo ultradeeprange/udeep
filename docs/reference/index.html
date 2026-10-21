@@ -109,11 +109,11 @@
   <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
 </div></header>
 <main><div class="wrap layout">
-  <nav class="toc" aria-label="Modules"><span class="label">Python</span><a href="#udeep">udeep</a><a href="#mpl">udeep.mpl</a><a href="#view">udeep.view</a><a href="#mapping">udeep.mapping</a><a href="#cmap">udeep.cmap</a><a href="#gainmap">udeep.gainmap</a><a href="#export">udeep.export</a><a href="#metadata">udeep.metadata</a><a href="#validate">udeep.validate</a><a href="#scale">udeep.scale</a><a href="#tone">udeep.tone</a><a href="#masks">udeep.masks</a><a href="#jnd">udeep.jnd</a><a href="#vision">udeep.vision</a><a href="#color">udeep.color</a><a href="#core">udeep.core</a><a href="#gpu">udeep.gpu</a><a href="#golden">udeep.golden</a><span class="label">Julia</span><a href="#julia">UDeepCore</a></nav>
+  <nav class="toc" aria-label="Modules"><span class="label">Python</span><a href="#udeep">udeep</a><a href="#mpl">udeep.mpl</a><a href="#view">udeep.view</a><a href="#mapping">udeep.mapping</a><a href="#cmap">udeep.cmap</a><a href="#gainmap">udeep.gainmap</a><a href="#export">udeep.export</a><a href="#metadata">udeep.metadata</a><a href="#validate">udeep.validate</a><a href="#selftest">udeep.selftest</a><a href="#scale">udeep.scale</a><a href="#tone">udeep.tone</a><a href="#masks">udeep.masks</a><a href="#jnd">udeep.jnd</a><a href="#vision">udeep.vision</a><a href="#color">udeep.color</a><a href="#core">udeep.core</a><a href="#gpu">udeep.gpu</a><a href="#golden">udeep.golden</a><span class="label">Julia</span><a href="#julia">UDeepCore</a></nav>
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      99 public functions and classes in 17 Python modules, and the 37 names the Julia
+      107 public functions and classes in 18 Python modules, and the 37 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -789,6 +789,42 @@ and <code>data</code> is also read back out of the file.</p>
 <code>--sdr FIGURE</code> also checks the SDR figure of record (an 8-bit image; for a 16-bit PNG, also the gain-map JPEG of
 the same figure). Returns the exit status: 0 if every file conforms, 1 if one does not, 2 for a command line it
 cannot use.</p>
+<h2 id="selftest">udeep.selftest</h2>
+<p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/selftest.py">src/udeep/selftest.py</a></p>
+<p>Does udeep work on this machine?</p>
+<pre class="block">python -m udeep.selftest                 one line for each step, then a verdict; exit status 1 if a step failed
+python -m udeep.selftest --json FILE     the same, also written to FILE
+python -m udeep.selftest --expect-core   fail unless the Rust core is in use (a platform wheel should carry it)
+python -m udeep.selftest --keep DIR      keep the files it writes, in DIR</pre>
+<p>It runs the README&#x27;s quick start on made-up data in a temporary folder: a figure with matplotlib, saved as the
+ordinary PNG and as an HDR gain-map JPEG, checked against the profile by the validator, as a library call and as
+the command line. Then a 16-bit PQ PNG data record, written and read back as data. Nothing is written outside the
+temporary folder and nothing is sent anywhere.</p>
+<h3 id="selftest.phantom"><span class="kind">function</span>phantom</h3>
+<pre class="sig">phantom(size: int=160) -&gt; np.ndarray</pre>
+<p>A synthetic CT slice in HU: air, a soft-tissue ellipse with 6 HU of noise, two faint lesions, a bone ring.</p>
+<h3 id="selftest.step_figure"><span class="kind">function</span>step_figure</h3>
+<pre class="sig">step_figure(folder: Path) -&gt; str</pre>
+<p>The README&#x27;s quick start, with the figure checked by the library call and by the command line.</p>
+<h3 id="selftest.step_record"><span class="kind">function</span>step_record</h3>
+<pre class="sig">step_record(folder: Path) -&gt; str</pre>
+<p>A 16-bit PQ PNG that holds the data, with the fire colour map, read back as data.</p>
+<h3 id="selftest.Skipped"><span class="kind">class</span>Skipped</h3>
+<p>A step that cannot run here, which is not a fault (matplotlib not installed).</p>
+<h3 id="selftest.Failed"><span class="kind">class</span>Failed</h3>
+<p>A step that ran and gave the wrong result.</p>
+<h3 id="selftest.describe_core"><span class="kind">function</span>describe_core</h3>
+<pre class="sig">describe_core() -&gt; str</pre>
+<p>Which implementation is in use, in words: the Rust core library, or the NumPy and Pillow code.</p>
+<h3 id="selftest.run"><span class="kind">function</span>run</h3>
+<pre class="sig">run(keep: Path | None=None, expect_core: bool=False) -&gt; dict</pre>
+<p>Run every step and return the result: the versions and platform, which implementation was used, and each
+step&#x27;s name, status (&quot;pass&quot;, &quot;fail&quot; or &quot;skipped&quot;), detail and time. <code>keep</code> keeps the files written there;
+<code>expect_core</code> makes it a failure that the Rust core is not in use.</p>
+<h3 id="selftest.main"><span class="kind">function</span>main</h3>
+<pre class="sig">main(argv: list[str] | None=None) -&gt; int</pre>
+<p>The command line, <code>python -m udeep.selftest</code>: prints the result and returns the exit status, 0 if every step
+passed and 1 if one failed.</p>
 <h2 id="scale">udeep.scale</h2>
 <p class="where"><a href="https://github.com/ultradeeprange/udeep/blob/main/src/udeep/scale.py">src/udeep/scale.py</a></p>
 <p>Data -&gt; normalised position t in [0, 1]. Element-wise; limits are passed in, never inferred.</p>

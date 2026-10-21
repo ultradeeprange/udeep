@@ -27,7 +27,7 @@ JULIA_FILES = ["UDeepCore.jl", "figure.jl", "png.jl"]
 JULIA_REPO = "https://github.com/ultradeeprange/udeep/blob/main/julia/UDeepCore"
 
 # in the order a reader meets them: making a figure, then the parts it is made of, then checking and support
-MODULES = ["mpl", "view", "mapping", "cmap", "gainmap", "export", "metadata", "validate", "scale", "tone", "masks",
+MODULES = ["mpl", "view", "mapping", "cmap", "gainmap", "export", "metadata", "validate", "selftest", "scale", "tone", "masks",
            "jnd", "vision", "color", "core", "gpu", "golden"]
 
 EXTRA = """

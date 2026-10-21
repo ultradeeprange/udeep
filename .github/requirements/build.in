@@ -1,8 +1,11 @@
 # What the source-distribution job installs: the build frontend and backend, to make the sdist without an isolated
-# environment, and the package's dependencies, for the environments it is installed into. Compiled, with every
+# environment, twine, to check the page PyPI will show, and the package's dependencies, for the environments it is
+# installed into. Compiled, with every
 # file's hash, to build.txt:
 #     uv pip compile --universal --python-version 3.11 --generate-hashes .github/requirements/build.in -o .github/requirements/build.txt
 build
 setuptools>=70.1
+twine
+readme-renderer[md]     # without its Markdown extra, twine check passes a Markdown README without rendering it
 numpy>=2.1
 pillow>=10

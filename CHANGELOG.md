@@ -10,6 +10,20 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ## Unreleased
 
+### 2026-10-22
+
+- **Ready for PyPI, and tested as a newcomer would meet it.** `python -m udeep.selftest` says whether udeep works on
+  the machine it runs on: the README's quick start on made-up data, the file checked against the profile, and a
+  16-bit data record read back. `tools/first_install.py` installs `udeep[mpl]` into a fresh environment, with the
+  pip that comes with Python and the dependencies from PyPI, and runs that self-test from an empty folder; it
+  needs nothing but Python, so it can be run on any machine. The `wheels` workflow does it on fresh machines
+  (Ubuntu 22.04 and 24.04, Windows, macOS on Apple silicon and Intel, Linux and Windows on ARM, and Debian, Ubuntu,
+  Fedora and Alpine containers, from Python 3.11 to 3.14) before it makes a draft release, and checks the page
+  PyPI will show. A `publish` workflow uploads a published release's packages to PyPI by trusted publishing,
+  after a person's approval (RELEASING.md). The README's links are now full addresses, so they work on PyPI, and
+  the package names its homepage, documentation, source, issues, questions and changelog. `udeep.__version__`
+  gives the installed version.
+
 ### 2026-10-21
 
 - **A questions page on the site**, with short answers to what a doubtful scientist asks first, and a way to ask

@@ -72,6 +72,8 @@ jobs:
         run: |
           python -m pip install --require-hashes -r .github/requirements/build.txt
           python -m build --sdist --no-isolation
+      - name: The package's page on PyPI will render (its README and metadata)
+        run: python -m twine check --strict dist/*
       - name: Install with no cargo, and check that the package falls back to NumPy and Pillow
         run: |
           python -m venv /tmp/pure
@@ -92,10 +94,109 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
+  # Each package installed as a newcomer would, on machines that have never seen it: a fresh environment, the pip
+  # that comes with that Python, the dependencies from PyPI, and nothing of this repository but the one script that
+  # does it (tools/first_install.py), which then runs `python -m udeep.selftest` from an empty folder. A platform
+  # with no wheel gets the source distribution, built there, with the core if Rust happens to be installed.
+  first-install:
+    name: First install, ${{ matrix.name }}
+    needs: [wheel, sdist]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Ubuntu 24.04, Python 3.11", os: ubuntu-24.04, python: "3.11", expect: "--expect-core" }
+          - { name: "Ubuntu 24.04, Python 3.14", os: ubuntu-24.04, python: "3.14", expect: "--expect-core" }
+          - { name: "Ubuntu 22.04, Python 3.12", os: ubuntu-22.04, python: "3.12", expect: "--expect-core" }
+          - { name: "Windows, Python 3.11", os: windows-latest, python: "3.11", expect: "--expect-core" }
+          - { name: "Windows, Python 3.14", os: windows-latest, python: "3.14", expect: "--expect-core" }
+          - { name: "macOS 14, Apple silicon, Python 3.13", os: macos-14, python: "3.13", expect: "--expect-core" }
+          - { name: "macOS 15, Apple silicon, Python 3.14", os: macos-15, python: "3.14", expect: "--expect-core" }
+          - { name: "macOS 15, Intel, Python 3.11", os: macos-15-intel, python: "3.11", expect: "--expect-core" }
+          - { name: "Linux on ARM, no wheel", os: ubuntu-24.04-arm, python: "3.13", expect: "" }
+          - { name: "Windows on ARM, no wheel", os: windows-11-arm, python: "3.13", expect: "" }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: tools/first_install.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: wheel-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: sdist
+          path: dist
+      - name: Install and run, as a newcomer would
+        shell: bash
+        run: python tools/first_install.py --find-links dist ${{ matrix.expect }} --json first-install.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: first-install-${{ matrix.os }}-${{ matrix.python }}
+          path: first-install.json
+          if-no-files-found: warn
+
+  # The same on Linux systems as their users have them, each in its own container: Debian with the Python
+  # project's image, Ubuntu and Fedora with the system's own Python, and Alpine, whose musl C library no wheel
+  # here is built for.
+  first-install-linux:
+    name: First install, ${{ matrix.name }}
+    needs: [wheel, sdist]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Debian 12, Python 3.12
+            image: python:3.12-slim-bookworm@sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70
+            setup: "true"
+            expect: "--expect-core"
+          - name: Ubuntu 24.04, its own Python
+            image: ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+            setup: "apt-get update -qq && apt-get install -y -qq python3 python3-venv > /dev/null"
+            expect: "--expect-core"
+          - name: Fedora 42, its own Python
+            image: fedora:42@sha256:99e203b80b1c3d8f7e161ec10a68fd02b081ef83a3963553e513c82846b97814
+            setup: "dnf install -y -q python3"
+            expect: "--expect-core"
+          - name: Alpine (musl), no wheel
+            image: python:3.13-alpine@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf52ea5da5bb8d929a
+            setup: "true"
+            expect: ""
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: tools/first_install.py
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: wheel-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: sdist
+          path: dist
+      - name: Install and run, as a newcomer would
+        env:
+          IMAGE: ${{ matrix.image }}
+          SETUP: ${{ matrix.setup }}
+          EXPECT: ${{ matrix.expect }}
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work -e SETUP -e EXPECT "$IMAGE" \
+            sh -c 'eval "$SETUP" && python3 tools/first_install.py --find-links dist $EXPECT --json first-install.json'
+
   release:
     name: Draft release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [wheel, sdist]
+    needs: [wheel, sdist, first-install, first-install-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write

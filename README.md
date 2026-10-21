@@ -1,4 +1,4 @@
-<img src="docs/assets/logo.png" alt="UDeep logo: three bars, grey, white and amber, the amber one tallest" width="88" align="right">
+<img src="https://ultradeeprange.github.io/udeep/assets/logo.png" alt="UDeep logo: three bars, grey, white and amber, the amber one tallest" width="88" align="right">
 
 # UDeep
 
@@ -22,13 +22,13 @@ the file how the data became brightness.
 - **Record.** No figure file says how it was made. The mapping from data to light is therefore written into the
   file, so that the figure could be inverted, reproduced and checked.
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/intro_range_dark_sdr.png"><img src="docs/assets/intro_range_sdr.png" alt="Two panels of a synthetic CT phantom. Left, the ordinary figure: the bone ring is flat white. Right, a simulation of an HDR display, all four times dimmer: the bone ring shows its texture." width="720"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="https://ultradeeprange.github.io/udeep/assets/intro_range_dark_sdr.png"><img src="https://ultradeeprange.github.io/udeep/assets/intro_range_sdr.png" alt="Two panels of a synthetic CT phantom. Left, the ordinary figure: the bone ring is flat white. Right, a simulation of an HDR display, all four times dimmer: the bone ring shows its texture." width="720"></picture>
 
 *Range. Synthetic CT phantom. The ordinary figure places 240 HU at white, so the bone above it is flat. An HDR
 display shows the same file with the bone brighter than white. The right-hand panel only simulates this, by
-dimming everything fourfold; the file itself is [`docs/assets/extend_hdr.jpg`](docs/assets/extend_hdr.jpg).*
+dimming everything fourfold; the file itself is [`docs/assets/extend_hdr.jpg`](https://ultradeeprange.github.io/udeep/assets/extend_hdr.jpg).*
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/intro_depth_dark_sdr.png"><img src="docs/assets/intro_depth_sdr.png" alt="Two panels of the same smooth synthetic field seen through a narrow window of its range. Stored in 8 bits it is seven flat bands; stored in 12 bits it is smooth." width="720"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="https://ultradeeprange.github.io/udeep/assets/intro_depth_dark_sdr.png"><img src="https://ultradeeprange.github.io/udeep/assets/intro_depth_sdr.png" alt="Two panels of the same smooth synthetic field seen through a narrow window of its range. Stored in 8 bits it is seven flat bands; stored in 12 bits it is smooth." width="720"></picture>
 
 *Depth. Synthetic, noise-free data. A window 2.6 % of the full range wide is stretched to fill the screen, as one
 would when looking for faint structure. Stored in 8 bits the window holds 7 levels; in 12 bits, 107. Whether the
@@ -36,9 +36,9 @@ coarser steps matter depends on the data's noise, which is the comparison the fi
 
 - **Site and demos:** <https://ultradeeprange.github.io/udeep/>, including device checks you can run on your
   own screen
-- **Profile (draft standard):** [`profile/udeep-figure-profile-v0.3.md`](profile/udeep-figure-profile-v0.3.md)
+- **Profile (draft standard):** [`profile/udeep-figure-profile-v0.3.md`](https://github.com/ultradeeprange/udeep/blob/main/profile/udeep-figure-profile-v0.3.md)
 - **Python reference:** <https://ultradeeprange.github.io/udeep/reference/>, every public function and class
-- **Worked examples:** [`examples/`](examples/): three on where to put white, and one on depth, in which a 16-bit
+- **Worked examples:** [`examples/`](https://github.com/ultradeeprange/udeep/tree/main/examples/): three on where to put white, and one on depth, in which a 16-bit
   file gives a detector frame back to the whole count; the same four in Julia
 
 > Status: research preview. The profile is a working draft, not endorsed by any standards body. Its
@@ -89,7 +89,8 @@ change; the data, its colours, the mapping and what the file declares do not, so
 files of one figure (profile 8.7). The project's site shows whichever suits the viewer's theme.
 
 That command builds the Rust core as it installs, if Rust (`cargo`) is on the machine, and installs without it if
-not. `python -c "import udeep.core as c; print(c.enabled())"` says which you have. Wheels that carry the core, for
+not. `python -m udeep.selftest` then says which you have, and checks that udeep works on your machine: it makes a
+figure from made-up data, checks the file against the profile, and reads a data record back. Wheels that carry the core, for
 Linux, Windows and macOS, are built by the repository's `wheels` workflow; there is no release of them yet.
 
 A 16-bit PQ PNG is written by `udeep.write_png_pq`, with white at 203 cd/m² as the profile requires, and read
@@ -145,25 +146,25 @@ Run the [device checks](https://ultradeeprange.github.io/udeep/check/) and
 asks for your device, system and browser versions, your brightness setting and room light, and what each check
 showed. It takes about two minutes.
 
-Each report is kept as a record in [`evidence/devices/`](evidence/), and [`evidence/README.md`](evidence/README.md)
+Each report is kept as a record in [`evidence/devices/`](https://github.com/ultradeeprange/udeep/tree/main/evidence/), and [`evidence/README.md`](https://github.com/ultradeeprange/udeep/blob/main/evidence/README.md)
 is the table made from them. A page of checks counts only if its controls behaved, and a value a report did not
 give stays "not recorded".
 
 ## Taking part
 
-[`CONTRIBUTING.md`](CONTRIBUTING.md) says what help is most useful and how to work on the code. Short answers to
+[`CONTRIBUTING.md`](https://github.com/ultradeeprange/udeep/blob/main/CONTRIBUTING.md) says what help is most useful and how to work on the code. Short answers to
 the usual doubts are on the [questions page](https://ultradeeprange.github.io/udeep/questions/); ask anything else in the
-[Q&A discussions](https://github.com/ultradeeprange/udeep/discussions/categories/q-a). What has changed is in [`CHANGELOG.md`](CHANGELOG.md).
+[Q&A discussions](https://github.com/ultradeeprange/udeep/discussions/categories/q-a). What has changed is in [`CHANGELOG.md`](https://github.com/ultradeeprange/udeep/blob/main/CHANGELOG.md).
 
 ## Citing
 
-See [`CITATION.cff`](CITATION.cff) (GitHub shows a "Cite this repository" button). Author: Mathew Newman,
+See [`CITATION.cff`](https://github.com/ultradeeprange/udeep/blob/main/CITATION.cff) (GitHub shows a "Cite this repository" button). Author: Mathew Newman,
 [ORCID 0000-0003-1784-3250](https://orcid.org/0000-0003-1784-3250).
 
 ## Licence
 
-Code: BSD-3-Clause ([`LICENSE`](LICENSE)). Text, profile and site content: CC BY 4.0
-([`LICENSE-docs.txt`](LICENSE-docs.txt)).
+Code: BSD-3-Clause ([`LICENSE`](https://github.com/ultradeeprange/udeep/blob/main/LICENSE)). Text, profile and site content: CC BY 4.0
+([`LICENSE-docs.txt`](https://github.com/ultradeeprange/udeep/blob/main/LICENSE-docs.txt)).
 
 ## Data on the site
 

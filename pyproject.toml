@@ -13,11 +13,29 @@ authors = [{ name = "Mathew Newman" }]
 requires-python = ">=3.11"
 # numpy 2.1 is the first with numpy.astype and the other Array API functions the mapping is written against
 dependencies = ["numpy>=2.1", "pillow>=10"]
+keywords = ["HDR", "high dynamic range", "scientific figures", "gain map", "Ultra HDR", "matplotlib", "colour map"]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Topic :: Scientific/Engineering :: Visualization",
+    "Development Status :: 3 - Alpha",                # a research preview of a draft standard
     "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",            # the core is a wheel per platform; without it, NumPy and Pillow
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Rust",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Visualization",
 ]
+
+[project.urls]
+Homepage = "https://ultradeeprange.github.io/udeep/"
+Documentation = "https://ultradeeprange.github.io/udeep/reference/"
+Source = "https://github.com/ultradeeprange/udeep"
+Issues = "https://github.com/ultradeeprange/udeep/issues"
+Questions = "https://github.com/ultradeeprange/udeep/discussions/categories/q-a"
+Changelog = "https://github.com/ultradeeprange/udeep/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 mpl = ["matplotlib>=3.8"]

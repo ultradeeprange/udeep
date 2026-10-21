@@ -1,0 +1,41 @@
+name: publish
+
+# Puts a release's Python packages on PyPI, when a person publishes the release on GitHub. Nothing else starts it.
+#
+# The packages are the ones the wheels workflow built for the version tag, attached to the draft release and
+# checked there, including the first install on fresh machines: they are downloaded from the release, not built
+# again. PyPI trusts this workflow by its identity (trusted publishing, OpenID Connect), so no token is stored. Two
+# things must be set up once, by the project's owner, before the first release (RELEASING.md):
+#   - on pypi.org, a trusted publisher for the project "udeep": this repository, workflow publish.yml,
+#     environment pypi
+#   - in this repository's settings, the environment "pypi", with the owner as its required reviewer, so that the
+#     upload waits for a person's approval
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  pypi:
+    name: Upload to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/udeep/
+    permissions:
+      contents: read
+      id-token: write           # PyPI's trusted publishing: GitHub vouches for this run
+    steps:
+      - name: The release's packages, as they were built and checked
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "udeep-*" --dir dist
+          ls -l dist
+          test "$(ls dist/*.tar.gz | wc -l)" = 1
+          test "$(ls dist/*.whl | wc -l)" -ge 4
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
