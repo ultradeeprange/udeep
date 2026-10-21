@@ -1,57 +1,104 @@
 """Install udeep as a newcomer would, on this machine, and check that it runs the first time.
 
-Needs only Python 3.11 or later: no checkout of the repository, nothing installed beforehand. It makes a fresh
+Needs only Python 3.13 or later: no checkout of the repository, nothing installed beforehand. It makes a fresh
 virtual environment in a temporary folder, installs "udeep[mpl]" into it with the pip that comes with Python (not
 upgraded, as a newcomer's is not), then runs `python -m udeep.selftest` there, from an empty folder, so that only
 the installed package can be imported. Nothing outside the temporary folder is changed.
 
     python first_install.py                         from PyPI, once it is released there
-    python first_install.py --find-links DIR        from packages built by the wheels workflow, in DIR; the
-                                                    dependencies still come from PyPI, so the result is what a
-                                                    PyPI release of those packages would give
+    python first_install.py --packages DIR          from packages built by the wheels workflow, in DIR, served
+                                                    to pip as a package index in the form PyPI uses, with each
+                                                    file's Requires-Python and hash; the dependencies still come
+                                                    from PyPI, so the result is what a PyPI release of those
+                                                    packages would give
     python first_install.py --git                   from the repository's main branch (builds from source)
 
     --expect-core      fail unless the Rust core is in use (on a platform for which a wheel is built)
+    --expect-refused   this Python is older than udeep supports: pass if pip refuses to install udeep, as it
+                       would refuse a newcomer with that Python; the output says whether pip also said why
     --json FILE        write what was installed, and the self-test's result, to FILE
     --keep             keep the temporary folder, and print where it is
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
+import html
 import json
 import os
 import platform
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
 import venv
+import zipfile
+from email.parser import Parser
 from pathlib import Path
 
 REPOSITORY = "https://github.com/ultradeeprange/udeep"
+MINIMUM = (3, 13)                # the package's requires-python: SPEC 0, three years from each Python's release
+REFUSED = "no matching distribution found for udeep"   # what any pip says when no udeep fits this Python
+REASON = "a different python"          # and what pip 26 adds, saying why ("...require a different python version");
+                                       # older pips (25 and before) give the reason only when run with -v
 
 
 def bin_python(env: Path) -> Path:
     return env / ("Scripts" if os.name == "nt" else "bin") / ("python.exe" if os.name == "nt" else "python")
 
 
+def requires_python(package: Path) -> str | None:
+    """The Requires-Python a built package declares: from a wheel's METADATA or a source distribution's PKG-INFO."""
+    if package.suffix == ".whl":
+        with zipfile.ZipFile(package) as z:
+            text = z.read(next(n for n in z.namelist() if n.endswith(".dist-info/METADATA"))).decode("utf-8")
+    else:
+        with tarfile.open(package) as t:
+            member = next(m for m in t.getmembers() if m.name.count("/") == 1 and m.name.endswith("/PKG-INFO"))
+            text = t.extractfile(member).read().decode("utf-8")
+    return Parser().parsestr(text).get("Requires-Python")
+
+
+def package_index(packages: Path, where: Path) -> Path:
+    """A package index in the form PyPI serves (PEP 503, with PEP 503's data-requires-python and a hash for each
+    file), for the udeep packages in `packages`: pip reads it as it would read PyPI's page for udeep."""
+    files = sorted(p for p in packages.iterdir() if p.name.startswith("udeep-") and p.name.endswith((".whl", ".tar.gz")))
+    if not files:
+        raise SystemExit(f"no udeep packages in {packages}")
+    links = []
+    for f in files:
+        digest = hashlib.sha256(f.read_bytes()).hexdigest()
+        needs = requires_python(f)
+        attribute = f' data-requires-python="{html.escape(needs)}"' if needs else ""
+        links.append(f'<a href="{f.resolve().as_uri()}#sha256={digest}"{attribute}>{f.name}</a><br>')
+    project = where / "simple" / "udeep"
+    project.mkdir(parents=True)
+    (project / "index.html").write_text("<!DOCTYPE html><html><body>\n" + "\n".join(links) + "\n</body></html>\n",
+                                        encoding="utf-8")
+    (where / "simple" / "index.html").write_text('<!DOCTYPE html><html><body><a href="udeep/">udeep</a></body></html>\n',
+                                                 encoding="utf-8")
+    return where / "simple"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     source = parser.add_mutually_exclusive_group()
-    source.add_argument("--find-links", type=Path, help="install udeep from the packages in this folder")
+    source.add_argument("--packages", type=Path, help="install udeep from the built packages in this folder")
     source.add_argument("--git", action="store_true", help="install from the repository's main branch")
     parser.add_argument("--expect-core", action="store_true")
+    parser.add_argument("--expect-refused", action="store_true")
     parser.add_argument("--json", type=Path)
     parser.add_argument("--keep", action="store_true")
     args = parser.parse_args(argv)
 
-    if sys.version_info < (3, 11):                              # noqa: UP036  (it may be run with any Python)
-        print(f"udeep needs Python 3.11 or later; this is {platform.python_version()}")
+    if sys.version_info < MINIMUM and not args.expect_refused:
+        print(f"udeep needs Python {MINIMUM[0]}.{MINIMUM[1]} or later; this is {platform.python_version()}")
         return 1
     where = Path(tempfile.mkdtemp(prefix="udeep-first-install-"))
     record = {"python": platform.python_version(), "platform": platform.platform(), "machine": platform.machine(),
-              "source": "git" if args.git else f"find-links {args.find_links}" if args.find_links else "PyPI"}
+              "source": "git" if args.git else f"packages {args.packages}" if args.packages else "PyPI"}
     try:
         env = where / "env"
         venv.create(env, with_pip=True)                            # the pip that comes with this Python
@@ -62,12 +109,24 @@ def main(argv: list[str] | None = None) -> int:
         requirement = f"udeep[mpl] @ git+{REPOSITORY}" if args.git else "udeep[mpl]"
         command = [str(python), "-m", "pip", "install", "--disable-pip-version-check", "--report",
                    str(where / "report.json"), requirement]
-        if args.find_links:
-            command[4:4] = ["--find-links", str(args.find_links.resolve())]
+        if args.packages:                                          # beside PyPI, which has the dependencies
+            command[4:4] = ["--extra-index-url", package_index(args.packages.resolve(), where).as_uri() + "/"]
         print(f"installing {requirement!r} with pip {pip_version} on Python {record['python']}, {record['platform']}", flush=True)
         started = time.perf_counter()
         installed = subprocess.run(command, capture_output=True, text=True, check=False)
         record["install_seconds"] = round(time.perf_counter() - started, 1)
+        said = installed.stdout + installed.stderr
+        if args.expect_refused:
+            lowered = said.lower()
+            record["ok"] = installed.returncode != 0 and REFUSED in lowered
+            record["reason_given"] = REASON in lowered
+            told = [line.strip() for line in said.splitlines() if REFUSED in line.lower() or REASON in line.lower()]
+            if record["ok"]:
+                print("refused, as it should be" + ("" if record["reason_given"] else
+                      f"; this pip ({pip_version}) does not say why") + ":\n  " + "\n  ".join(told))
+            else:
+                print(f"NOT refused as it should be:\n{said[-4000:]}")
+            return 0 if record["ok"] else 1
         if installed.returncode != 0:
             print(installed.stdout[-4000:], installed.stderr[-4000:], sep="\n")
             print(f"the install FAILED after {record['install_seconds']} s")

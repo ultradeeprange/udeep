@@ -10,7 +10,7 @@ readme = "README.md"
 license = "BSD-3-Clause"
 license-files = ["LICENSE", "LICENSE-THIRD-PARTY.txt"]
 authors = [{ name = "Mathew Newman" }]
-requires-python = ">=3.11"
+requires-python = ">=3.13"            # SPEC 0: a Python is supported for three years after its release
 # numpy 2.1 is the first with numpy.astype and the other Array API functions the mapping is written against
 dependencies = ["numpy>=2.1", "pillow>=10"]
 keywords = ["HDR", "high dynamic range", "scientific figures", "gain map", "Ultra HDR", "matplotlib", "colour map"]
@@ -20,8 +20,6 @@ classifiers = [
     "Operating System :: OS Independent",            # the core is a wheel per platform; without it, NumPy and Pillow
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Rust",
@@ -58,7 +56,7 @@ testpaths = ["tests"]
 # Release wheels (.github/workflows/wheels.yml). The wheel carries the Rust core and is the same for every Python 3
 # (setup.py), so one build per platform is enough; it is then installed and checked without the source tree.
 [tool.cibuildwheel]
-build = "cp312-*"
+build = "cp313-*"
 skip = "*-musllinux_* *-win32 *_i686"
 archs = "auto64"
 environment = { UDEEP_BUILD_CORE = "1" }

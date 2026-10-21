@@ -2,7 +2,7 @@
 # environment, twine, to check the page PyPI will show, and the package's dependencies, for the environments it is
 # installed into. Compiled, with every
 # file's hash, to build.txt:
-#     uv pip compile --universal --python-version 3.11 --generate-hashes .github/requirements/build.in -o .github/requirements/build.txt
+#     uv pip compile --universal --python-version 3.13 --generate-hashes .github/requirements/build.in -o .github/requirements/build.txt
 build
 setuptools>=70.1
 twine

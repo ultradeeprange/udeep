@@ -78,11 +78,17 @@ Three things to know about that example:
 - **The SDR figure of record is the one saved with the same cropping** (`bbox_inches="tight", pad_inches=0.1`).
   The JPEG records a digest of exactly those pixels, which is what `--sdr figure.png` checks.
 
-Install (no PyPI release yet; needs Python 3.11 or later and NumPy 2.1 or later):
+Install (no PyPI release yet; needs Python 3.13 or later and NumPy 2.1 or later; following
+[SPEC 0](https://scientific-python.org/specs/spec-0000/), as NumPy and matplotlib do, each Python is supported for
+three years after its release):
 
 ```
 pip install "udeep[mpl] @ git+https://github.com/ultradeeprange/udeep"
 ```
+
+On an older Python, pip will not install it. A recent pip says why ("require a different python version"); pip
+25 and earlier say only "No matching distribution found for udeep", which means the same. `python --version` shows
+which you have; [uv](https://docs.astral.sh/uv/), conda or the installer from python.org give a newer one beside it.
 
 For a dark page, build the figure inside `with plt.rc_context(hp.theme("dark")):`. The background and the text
 change; the data, its colours, the mapping and what the file declares do not, so a light and a dark copy are two

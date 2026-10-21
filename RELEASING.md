@@ -32,7 +32,7 @@ something is done by a person; the workflows build, check and wait.
    which built from source, and that every self-test passed.
 5. **Publish.** Publish the draft release on GitHub. The `publish` workflow downloads its packages, waits for the
    `pypi` environment's approval, and uploads them.
-6. **Check from outside.** On any machine with Python 3.11 or later and nothing else:
+6. **Check from outside.** On any machine with Python 3.13 or later and nothing else:
 
        python first_install.py                  (tools/first_install.py, copied there on its own)
 

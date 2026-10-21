@@ -2,7 +2,7 @@
 # its [test] extra (pyproject.toml), the coverage plugin, Markdown for the site build, and setuptools, its build
 # backend, so that the editable install needs nothing from the network. Compiled, with every file's hash, to
 # test.txt:
-#     uv pip compile --universal --python-version 3.11 --generate-hashes .github/requirements/test.in -o .github/requirements/test.txt
+#     uv pip compile --universal --python-version 3.13 --generate-hashes .github/requirements/test.in -o .github/requirements/test.txt
 numpy>=2.1
 pillow>=10
 pytest>=8

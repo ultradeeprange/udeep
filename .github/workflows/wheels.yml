@@ -106,14 +106,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "Ubuntu 24.04, Python 3.11", os: ubuntu-24.04, python: "3.11", expect: "--expect-core" }
+          - { name: "Ubuntu 24.04, Python 3.13", os: ubuntu-24.04, python: "3.13", expect: "--expect-core" }
           - { name: "Ubuntu 24.04, Python 3.14", os: ubuntu-24.04, python: "3.14", expect: "--expect-core" }
-          - { name: "Ubuntu 22.04, Python 3.12", os: ubuntu-22.04, python: "3.12", expect: "--expect-core" }
-          - { name: "Windows, Python 3.11", os: windows-latest, python: "3.11", expect: "--expect-core" }
+          - { name: "Ubuntu 22.04, Python 3.13", os: ubuntu-22.04, python: "3.13", expect: "--expect-core" }
+          - { name: "Windows, Python 3.13", os: windows-latest, python: "3.13", expect: "--expect-core" }
           - { name: "Windows, Python 3.14", os: windows-latest, python: "3.14", expect: "--expect-core" }
           - { name: "macOS 14, Apple silicon, Python 3.13", os: macos-14, python: "3.13", expect: "--expect-core" }
           - { name: "macOS 15, Apple silicon, Python 3.14", os: macos-15, python: "3.14", expect: "--expect-core" }
-          - { name: "macOS 15, Intel, Python 3.11", os: macos-15-intel, python: "3.11", expect: "--expect-core" }
+          - { name: "macOS 15, Intel, Python 3.13", os: macos-15-intel, python: "3.13", expect: "--expect-core" }
           - { name: "Linux on ARM, no wheel", os: ubuntu-24.04-arm, python: "3.13", expect: "" }
           - { name: "Windows on ARM, no wheel", os: windows-11-arm, python: "3.13", expect: "" }
     steps:
@@ -135,7 +135,7 @@ jobs:
           path: dist
       - name: Install and run, as a newcomer would
         shell: bash
-        run: python tools/first_install.py --find-links dist ${{ matrix.expect }} --json first-install.json
+        run: python tools/first_install.py --packages dist ${{ matrix.expect }} --json first-install.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -145,7 +145,8 @@ jobs:
 
   # The same on Linux systems as their users have them, each in its own container: Debian with the Python
   # project's image, Ubuntu and Fedora with the system's own Python, and Alpine, whose musl C library no wheel
-  # here is built for.
+  # here is built for. Ubuntu 24.04's own Python, 3.12, is older than udeep supports: there pip must refuse it and
+  # say why.
   first-install-linux:
     name: First install, ${{ matrix.name }}
     needs: [wheel, sdist]
@@ -154,14 +155,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Debian 12, Python 3.12
-            image: python:3.12-slim-bookworm@sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70
+          - name: Debian 13, Python 3.13
+            image: python:3.13-slim-trixie@sha256:4873c73fa393882cf10f9d1054c928e95201c1559ca2107c1589786ece10f49f
             setup: "true"
             expect: "--expect-core"
-          - name: Ubuntu 24.04, its own Python
-            image: ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+          - name: Ubuntu 26.04, its own Python
+            image: ubuntu:26.04@sha256:c098726dd9b9733f3e885f8de0ef375206a311b0a317eadc40d347b1115fb944
             setup: "apt-get update -qq && apt-get install -y -qq python3 python3-venv > /dev/null"
             expect: "--expect-core"
+          - name: Ubuntu 24.04, its own Python 3.12, refused
+            image: ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+            setup: "apt-get update -qq && apt-get install -y -qq python3 python3-venv > /dev/null"
+            expect: "--expect-refused"
           - name: Fedora 42, its own Python
             image: fedora:42@sha256:99e203b80b1c3d8f7e161ec10a68fd02b081ef83a3963553e513c82846b97814
             setup: "dnf install -y -q python3"
@@ -191,7 +196,7 @@ jobs:
           EXPECT: ${{ matrix.expect }}
         run: |
           docker run --rm -v "$PWD:/work" -w /work -e SETUP -e EXPECT "$IMAGE" \
-            sh -c 'eval "$SETUP" && python3 tools/first_install.py --find-links dist $EXPECT --json first-install.json'
+            sh -c 'eval "$SETUP" && python3 tools/first_install.py --packages dist $EXPECT --json first-install.json'
 
   release:
     name: Draft release

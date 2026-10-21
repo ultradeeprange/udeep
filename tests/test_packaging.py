@@ -43,4 +43,5 @@ def test_the_readme_links_work_on_pypi():
 def test_the_package_says_where_its_project_is():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     assert {"Homepage", "Documentation", "Source", "Issues", "Questions", "Changelog"} <= set(project["urls"])
-    assert project["requires-python"] == ">=3.11" and "Programming Language :: Python :: 3.11" in project["classifiers"]
+    assert project["requires-python"] == ">=3.13" and "Programming Language :: Python :: 3.13" in project["classifiers"]
+    assert not [c for c in project["classifiers"] if c.endswith((":: 3.11", ":: 3.12"))]
