@@ -4,8 +4,8 @@ This exercises the interface a host application would use: the `udeep_mapping` r
 says, buffers in and out, error codes back. Skipped when cargo is not installed.
 """
 import ctypes
-import importlib
 import dataclasses
+import importlib
 import json
 import math
 import os
@@ -17,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import test_udeep_readback as readback
 
 from udeep import golden
 
@@ -1154,3 +1155,34 @@ def test_the_c_host_runs_clean_under_valgrind(lib, tmp_path):
                     f"--suppressions={CORE / 'tests' / 'valgrind.supp'}", str(host)])
     assert ran.returncode == 0, ran.stderr[-4000:]
     host_gets_the_golden_results(ran.stdout)
+
+
+# ---- the data read back, against levels found independently (tests/test_udeep_readback.py has the oracle)
+
+@pytest.mark.parametrize(("name", "cmap", "headroom"), readback.CASES)
+def test_the_core_gives_every_value_as_the_middle_of_its_own_level(lib, name, cmap, headroom):
+    """The codes are the reference's, as a file it wrote holds them; the core finds the levels with its own
+    arithmetic, which can round a rare code differently, so it is held to the oracle, not to the reference."""
+    from udeep import core
+    from udeep.metadata import pq16_codes
+    was = core.enabled()
+    core.enable(False)
+    try:
+        m = readback.mapping(name, cmap, headroom)
+        x = readback.values_to_check(m)
+        start, end = readback.runs_around(m, x)
+        codes = pq16_codes(m.colours(m.light(x)))
+    finally:
+        core.enable(was)
+    c = CMapping(m.range_low, m.range_high, m.knee, m.reference_headroom, m.stretch_width, m.stretch_offset,
+                 m.exit_slope, STRETCH[m.stretch], 0)
+    table = None if m.table is None else np.ascontiguousarray(np.concatenate([m.table.below, m.table.above]), "<f4")
+    pointer = None if table is None else table.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+    given = np.ascontiguousarray(codes, dtype=np.uint16).reshape(-1)
+    back = np.empty(x.size)
+    assert lib.udeep_values_pq16(ctypes.byref(c), pointer, 0 if table is None else table.size // 6, 203.0, 1 << 20,
+                                 given.ctypes.data_as(ctypes.POINTER(ctypes.c_uint16)), x.size,
+                                 back.ctypes.data_as(ctypes.POINTER(ctypes.c_double))) == 0
+    span = m.range_high - m.range_low
+    wrong = np.isnan(back) | (np.abs(back - 0.5 * (start + end)) > 1e-5 * (end - start) + 1e-10 * span)
+    assert not wrong.any(), f"{wrong.sum()} of {x.size} values misread, for example {np.sort(x[wrong])[:8]}"

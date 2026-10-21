@@ -8,8 +8,8 @@ when it meets a kind of case it has never heard of, and when the binding hands t
 Skipped without node, cargo, or the wasm32-unknown-unknown target (rustup target add wasm32-unknown-unknown).
 """
 import collections
-import importlib
 import dataclasses
+import importlib
 import json
 import re
 import shutil

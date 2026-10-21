@@ -46,6 +46,10 @@
   section .body { display: grid; gap: 14px; }
   .short { font-size: 18px; line-height: 1.5; }
   .from { font-size: 14px; color: var(--muted); }
+  .btn { display: inline-block; font: 600 14px var(--sans); color: var(--ground); background: var(--tag); padding: 9px 16px; border-radius: 4px; text-decoration: none; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  #ask { border-top-color: var(--warm); }
   footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
   @media (max-width: 560px) { section > .wrap { grid-template-columns: minmax(0, 1fr); } section .n { padding-top: 0; } }
 </style>
@@ -116,6 +120,7 @@
     <li><a href="#check">How do I know a file used the mapping it says it did?</a></li>
     <li><a href="#comfort">Will a bright figure be uncomfortable to look at?</a></li>
   </ol>
+  <p class="muted">Not here? <a href="#ask">Ask your own</a>.</p>
 </div>
 
 <section id="why"><div class="wrap">
@@ -254,9 +259,21 @@
       <a href="../profile/index.html#14-comfort-and-accessibility">section 14 of the profile</a>.</p>
   </div>
 </div></section>
+
+<section id="ask"><div class="wrap">
+  <span class="n">?</span>
+  <div class="body">
+    <h2>A question that isn't here?</h2>
+    <p>Ask it in the project's discussions on GitHub. Questions there are public, so anyone can read the answers,
+      and the answer that settles a question is marked as the answer. Questions that come up often are added to this
+      page. Reading needs no account; asking needs a GitHub account.</p>
+    <div class="cta"><a class="btn" href="https://github.com/ultradeeprange/udeep/discussions/new?category=q-a">Ask a question</a><a class="btn ghost" href="https://github.com/ultradeeprange/udeep/discussions/categories/q-a">Questions asked so far</a></div>
+    <p class="from">A fault in the tools, a report of what your screen shows, or a comment on the profile goes to the
+      <a href="https://github.com/ultradeeprange/udeep/issues/new/choose">issue tracker</a> instead.</p>
+  </div>
+</div></section>
 </main>
 
-<footer><div class="wrap"><p>UDeep · Mathew Newman · text under CC BY 4.0. A question that isn't here? Ask it on the
-  <a href="https://github.com/ultradeeprange/udeep/issues">issue tracker</a>.</p></div></footer>
+<footer><div class="wrap"><p>UDeep · Mathew Newman · text under CC BY 4.0.</p></div></footer>
 </body>
 </html>

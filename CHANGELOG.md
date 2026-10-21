@@ -12,16 +12,25 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ### 2026-10-21
 
+- **A questions page on the site**, with short answers to what a doubtful scientist asks first, and a way to ask
+  others: the project's Q&A discussions on GitHub, with a short form (`.github/DISCUSSION_TEMPLATE/q-a.yml`).
 - **A data record read back as data by the Rust core**, whatever its colour map: `udeep_png_pq_values` (and
   `udeep_values_pq16`, from the codes) in the C interface, `read_png_data(file, m; cmap)` in Julia, and
   `readPngData` and `valuesPq16` in the WebAssembly binding. On files the reference wrote (grey, `fire` and
   `ice`, at 3x, 4x and 8x) it gives the reference's values to 1e-9 of the range.
-- **Fixed: data near the bottom of a range read back as NaN.** Near black PQ codes change faster than the
+- **Fixed: data near the bottom of a range was not read back.** Near black PQ codes change faster than the
   million samples `values_pq16` takes: on a range of 0 to 4095, values from 0 to about 3 hold codes no sample
   lands on, and those more than one code from a run the sampling found came back NaN (32 of 59 test values
-  from 0.05 to 2.95, with white at 1,000). A true data record of faint data then failed the validator's "data read back". The
-  reader now halves any gap between samples that skips a code until none does, so every value comes back to
-  within half of `MaxDataStep`. `data_steps_pq16`, `MaxDataStep` and the golden vectors do not change.
+  from 0.05 to 2.95, with white at 1,000). With a colour map there was a second fault: a colour held between two
+  channels' changes was no level of its own, so its values came back as a neighbouring level's (with the first
+  fault fixed, 223 of 1,224 test values for `fire` near black, by up to 84 times their level's width). The reader now halves any gap
+  between samples that skips a code until none does, and finds each change of colour between two neighbouring
+  points in turn. A new verification, `tests/test_udeep_readback.py`, finds each value's level by walking out from
+  it in data space and checks that the reader, and the Rust core, give its middle: for linear, log, asinh and
+  proportional mappings, grey, `fire` and `ice`, at headrooms 2 to 16, from 1e-14 of the range up. Run with the
+  reader as it was, a faint data record (counts from 0 to 3 under a read noise of 3) failed the validator's
+  "data read back", with 633 of its pixels unread; it passes now. `data_steps_pq16`, `MaxDataStep` and the golden
+  vectors do not change.
 - **CI installs only files it has checked.** Every package the workflows take from PyPI is pinned with its hash in
   `.github/requirements` (compiled with `uv pip compile --universal --generate-hashes`; the command is at the top
   of each file), and installed with `--require-hashes`. The package itself is then installed from the checkout with

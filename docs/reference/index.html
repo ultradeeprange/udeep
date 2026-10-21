@@ -676,10 +676,14 @@ declared mapping turned back, through the file&#x27;s own codes, whatever the co
 pixel is given the middle of the run whose code it holds, and so comes back to within half that run&#x27;s width,
 which is at most half of MaxDataStep. Near black PQ codes change faster than any even sampling can follow:
 there, where two neighbouring samples are more than one code apart in some channel, the gap between them is
-halved, and halved again, until no piece of it skips a code (at most REFINE_STEPS times). The ends of the runs
-are then found to within a millionth of the spacing around them. A writer that rounds a sum of three products in a different order can leave a rare code one step
-from the reference&#x27;s (udeep.core); a pixel whose code is in no run takes the nearest run that is a step away
-in each channel at most, and a pixel with none so near is not a colour of this mapping and is NaN.</p>
+halved, and halved again, until no piece of it skips a code (at most REFINE_STEPS times). Where two
+neighbouring points differ, the first change of code between them is found to within a millionth of their
+spacing; if the code just past it is not yet the second point&#x27;s, the next change is found the same way, and
+so on, so that a colour held between two channels&#x27; changes is a level of its own. A writer that rounds a sum of three
+products in a different order can leave a rare code one step from the reference&#x27;s (udeep.core); a pixel whose
+code is in no run takes the nearest run that is a step away in each channel at most, and a pixel with none so
+near is not a colour of this mapping and is NaN.</p>
+<p>tests/test_udeep_readback.py checks this against values found by walking out from each one in data space.</p>
 <p>ValueError when two separate runs share one code: that code would not say which data value it stands for. It
 has not happened with any map tried (grey, fire and ice, linear over 0 to 4095 at a 4x headroom).</p>
 <h3 id="metadata.read_png_data"><span class="kind">function</span>read_png_data</h3>

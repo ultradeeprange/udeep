@@ -549,7 +549,9 @@ Open issues:
    `examples/detector_record.py` shows. It reads such a file back as data (`udeep.read_png_data`), whatever its
    colour map. *Added 2026-10-21.* So does the Rust core (`udeep_png_pq_values`), and through it the Julia package
    and the WebAssembly binding. Until that date the reference's reader gave no value for data in the lowest levels
-   of a range, which near black are narrower than its sampling; it now samples more finely where codes are skipped.
+   of a range, which near black are narrower than its sampling, and with a colour map it read a colour held
+   between two channels' changes as a neighbouring level; it now samples more finely where codes are skipped and
+   finds each change of colour in turn, and a test holds it to levels found independently.
 4. Gain-map AVIF (9.1), the SVG media-query fallback (9.2.4) and metadata inside MP4 (9.3.3) are untested.
 5. Precision of colour maps and of gain-map JPEGs has not been analysed (Annex C).
 6. Device evidence comes from one phone and one monitor (Annex B). More devices are needed. Reports are kept as

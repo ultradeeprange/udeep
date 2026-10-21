@@ -1,0 +1,21 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask anything about UDeep figures, the draft profile or the tools. Short answers to the usual doubts are on
+        the [questions page](https://ultradeeprange.github.io/udeep/questions/), and questions that come up often
+        are added there. A fault in the tools, a device report or a comment on the profile goes to the
+        [issue tracker](https://github.com/ultradeeprange/udeep/issues/new/choose) instead.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: The more specific the better. If it is about your own data or figure, say what kind it is.
+    validations:
+      required: true
+  - type: input
+    id: field
+    attributes:
+      label: Your field or kind of data
+      description: Optional. It helps to pitch the answer.
+      placeholder: "astronomy images; CT; mass spectra; simulations"

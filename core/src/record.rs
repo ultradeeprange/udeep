@@ -112,6 +112,8 @@ pub fn levels_pq16(mapping: &Mapping, table: Option<&Table>, white_nits: f64, sa
 const EDGE_STEPS: u32 = 20;
 /// How often [`values_pq16`] may halve a gap between samples that skips a code.
 pub const REFINE_STEPS: u32 = 64;
+/// The most colours [`values_pq16`] looks for between two neighbouring points.
+const BETWEEN: usize = 6;
 
 /// Whether two colours' codes are more than one step apart in some channel, so that codes lie between them.
 fn skips(a: [u16; 3], b: [u16; 3]) -> bool {
@@ -149,8 +151,10 @@ fn pieces(
 /// is given the middle of the run whose code it holds, so it comes back to within half that run's width, which is
 /// at most half of `udeep:MaxDataStep`. Near black PQ codes change faster than any even sampling can follow: there,
 /// where two neighbouring samples are more than one code apart in some channel, the gap between them is halved, and
-/// halved again, until no piece of it skips a code (at most [`REFINE_STEPS`] times). The ends of the runs are then
-/// found to within a millionth of the spacing around them. A writer that rounds a sum of three products in another order can leave a rare code one step from this
+/// halved again, until no piece of it skips a code (at most [`REFINE_STEPS`] times). Where two neighbouring points
+/// differ, the first change of code between them is found to within a millionth of their spacing; if the code just
+/// past it is not yet the second point's, the next change is found the same way, and so on, so that a colour held
+/// between two channels' changes is a level of its own. A writer that rounds a sum of three products in another order can leave a rare code one step from this
 /// one's: a pixel whose code is in no run takes the nearest run that is a step away in each channel at most (fewest
 /// channels moved, the first in order of -1, 0, +1 on each channel), and a pixel with none so near is not a colour
 /// of this mapping and is NaN.
@@ -179,18 +183,28 @@ pub fn values_pq16(
     let first = code_at(0.0);
     let (mut runs, mut ends) = (vec![first], vec![0.0]);
     // a run ends between two neighbouring points whose codes differ: found by halving the space between them
-    let mut piece = |(mut lo, low): Point, (mut hi, high): Point| {
-        if low != high {
+    // each change of code between two neighbouring points, in turn, as far as the second point's colour
+    let mut piece = |(mut lo, mut current): Point, (top, high): Point| {
+        if current == high {
+            return;
+        }
+        for _ in 0..BETWEEN {
+            let mut hi = top;
             for _ in 0..EDGE_STEPS {
                 let mid = 0.5 * (lo + hi);
-                if code_at(mid) == low {
+                if code_at(mid) == current {
                     lo = mid;
                 } else {
                     hi = mid;
                 }
             }
+            let past = code_at(hi); // the colour just past the change
             ends.push(hi);
-            runs.push(high);
+            runs.push(past);
+            if past == high {
+                break;
+            }
+            (lo, current) = (hi, past);
         }
     };
     let mut before = (0.0, first);

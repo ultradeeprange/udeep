@@ -387,6 +387,7 @@ def data_steps_pq16(mapping: Mapping, sdr_white_nits: float = REF_WHITE_NITS,
 
 
 REFINE_STEPS = 64          # how often values_pq16 may halve a gap between samples that skips a code
+BETWEEN = 6                # the most colours values_pq16 looks for between two neighbouring points
 
 
 def _skips(a: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -409,10 +410,15 @@ def values_pq16(mapping: Mapping, light, sdr_white_nits: float = REF_WHITE_NITS,
     pixel is given the middle of the run whose code it holds, and so comes back to within half that run's width,
     which is at most half of MaxDataStep. Near black PQ codes change faster than any even sampling can follow:
     there, where two neighbouring samples are more than one code apart in some channel, the gap between them is
-    halved, and halved again, until no piece of it skips a code (at most REFINE_STEPS times). The ends of the runs
-    are then found to within a millionth of the spacing around them. A writer that rounds a sum of three products in a different order can leave a rare code one step
-    from the reference's (udeep.core); a pixel whose code is in no run takes the nearest run that is a step away
-    in each channel at most, and a pixel with none so near is not a colour of this mapping and is NaN.
+    halved, and halved again, until no piece of it skips a code (at most REFINE_STEPS times). Where two
+    neighbouring points differ, the first change of code between them is found to within a millionth of their
+    spacing; if the code just past it is not yet the second point's, the next change is found the same way, and
+    so on, so that a colour held between two channels' changes is a level of its own. A writer that rounds a sum of three
+    products in a different order can leave a rare code one step from the reference's (udeep.core); a pixel whose
+    code is in no run takes the nearest run that is a step away in each channel at most, and a pixel with none so
+    near is not a colour of this mapping and is NaN.
+
+    tests/test_udeep_readback.py checks this against values found by walking out from each one in data space.
 
     ValueError when two separate runs share one code: that code would not say which data value it stands for. It
     has not happened with any map tried (grey, fire and ice, linear over 0 to 4095 at a 4x headroom)."""
@@ -442,14 +448,26 @@ def values_pq16(mapping: Mapping, light, sdr_white_nits: float = REF_WHITE_NITS,
         at = np.searchsorted(t, more_t[order])
         t, code = np.insert(t, at, more_t[order]), np.insert(code, at, more_code[order], axis=0)
     edges = np.flatnonzero(np.any(code[1:] != code[:-1], axis=1)) + 1
-    lo, hi, before = t[edges - 1], t[edges], code[edges - 1]
-    for _ in range(20):                                   # each change of code, to a millionth of a sample's spacing
-        mid = 0.5 * (lo + hi)
-        same = np.all(code_at(mid) == before, axis=1)
-        lo, hi = np.where(same, mid, lo), np.where(same, hi, mid)
-    x = mapping.value_at(np.concatenate([[0.0], hi, [1.0]]))
+    which, top, after = np.arange(edges.size), t[edges], code[edges]
+    lo, hi, current = t[edges - 1], top.copy(), code[edges - 1]
+    ends, colours, owners = [], [], []
+    for _ in range(BETWEEN):              # each change of code between two neighbouring points, in turn
+        for _ in range(20):                                  # to a millionth of the space left
+            mid = 0.5 * (lo + hi)
+            same = np.all(code_at(mid) == current, axis=1)
+            lo, hi = np.where(same, mid, lo), np.where(same, hi, mid)
+        past = code_at(hi)                                   # the colour just past the change
+        ends.append(hi); colours.append(past); owners.append(which)
+        more = np.any(past != after[which], axis=1)          # another colour still lies before the second point
+        which, current, lo = which[more], past[more], hi[more]
+        hi = top[which]
+        if not which.size:
+            break
+    ends, colours = np.concatenate(ends), np.concatenate(colours)
+    order = np.lexsort((ends, np.concatenate(owners)))       # by edge, then along it
+    x = mapping.value_at(np.concatenate([[0.0], ends[order], [1.0]]))
     middle = 0.5 * (x[:-1] + x[1:])
-    keys = _key(code[np.concatenate([[0], edges])])
+    keys = _key(np.concatenate([code[:1], colours[order]]))
     order = np.argsort(keys, kind="stable")
     ordered = keys[order]
     if np.any(ordered[1:] == ordered[:-1]):
