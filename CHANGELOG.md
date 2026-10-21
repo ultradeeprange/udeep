@@ -14,8 +14,8 @@ the code implements: 0.3 implements the v0.3 draft.
 
 - **Python 3.13 and later only**, following [SPEC 0](https://scientific-python.org/specs/spec-0000/), as NumPy and
   matplotlib do: each Python is supported for three years after its release, so 3.11 and 3.12 are no longer.
-  On an older Python, pip refuses to install it. pip 26 says why; pip 25 and earlier say only that no version
-  fits, so the README says what that means. The wheels workflow checks the refusal with Ubuntu 24.04's own
+  On an older Python, pip refuses to install it and says why, except pip 25.0 and 25.0.1, which say only that
+  no version fits (found by trying every pip from 24.0 to 26.2), so the README says what that means. The wheels workflow checks the refusal with Ubuntu 24.04's own
   Python 3.12, from a package index served as PyPI serves it.
 - **Ready for PyPI, and tested as a newcomer would meet it.** `python -m udeep.selftest` says whether udeep works on
   the machine it runs on: the README's quick start on made-up data, the file checked against the profile, and a

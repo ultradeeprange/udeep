@@ -41,8 +41,8 @@ from pathlib import Path
 REPOSITORY = "https://github.com/ultradeeprange/udeep"
 MINIMUM = (3, 13)                # the package's requires-python: SPEC 0, three years from each Python's release
 REFUSED = "no matching distribution found for udeep"   # what any pip says when no udeep fits this Python
-REASON = "a different python"          # and what pip 26 adds, saying why ("...require a different python version");
-                                       # older pips (25 and before) give the reason only when run with -v
+REASON = "a different python"          # and what pip adds, saying why ("...require a different python version"),
+                                       # except pip 25.0 and 25.0.1, which give the reason only when run with -v
 
 
 def bin_python(env: Path) -> Path:

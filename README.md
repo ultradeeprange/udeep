@@ -86,8 +86,8 @@ three years after its release):
 pip install "udeep[mpl] @ git+https://github.com/ultradeeprange/udeep"
 ```
 
-On an older Python, pip will not install it. A recent pip says why ("require a different python version"); pip
-25 and earlier say only "No matching distribution found for udeep", which means the same. `python --version` shows
+On an older Python, pip will not install it, and says why ("require a different python version"); pip 25.0 and
+25.0.1 alone say only "No matching distribution found for udeep", which means the same. `python --version` shows
 which you have; [uv](https://docs.astral.sh/uv/), conda or the installer from python.org give a newer one beside it.
 
 For a dark page, build the figure inside `with plt.rc_context(hp.theme("dark")):`. The background and the text
