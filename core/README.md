@@ -16,7 +16,7 @@ vectors (`../src/udeep/golden.json`).
 | PQ and sRGB encoding | |
 | the `isolated-3x3` mask rule | |
 | the bytes of the ISO 21496-1 gain-map block | |
-| the data and pixel digests (its own SHA-256, checked against the FIPS 180-4 examples) | |
+| the data and pixel digests (its own SHA-256 and SHA3-256, checked against the FIPS 180-4 and FIPS 202 examples) | |
 | stored levels and the data criterion, for each noise model | |
 | a parallel loop on standard-library threads, bit-identical to the serial one | |
 | the declared metadata's serialised form and the generated caption, byte for byte | |
@@ -159,7 +159,9 @@ agreeing with the reference's `values_pq16` to 1e-9 of the range.
 
 The stages of the mapping are there on their own too, with the bytes a file is checked by: `udeep_scale` (a bare
 scale), `udeep_tone` (the tone curve), `udeep_pq_encode`, `udeep_digest_bytes` (the digest of any bytes, such as a
-shipped table's file) and `udeep_iso21496_block`. They are for a host that keeps its own mapping, a viewer that
+shipped table's file; `udeep_digest_bytes_sha3` with SHA3-256, as for combining the digests of a figure's images)
+and `udeep_iso21496_block`. Each digest has a SHA3-256 twin (`udeep_digest_data_sha3`, `udeep_digest_pixels_sha3`):
+a file declares both (profile 8.6), so that the link to its data does not rest on one hash function. They are for a host that keeps its own mapping, a viewer that
 draws the curve, and a port that checks itself against the golden vectors: with them, every kind of golden case
 can be reproduced through the interface. Each refuses what the reference's function refuses, and before that,
 unlike the reference, a parameter that is NaN or infinite.

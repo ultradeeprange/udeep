@@ -735,10 +735,12 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
   July 2025.</li>
 <li>9.4.5 <strong>Traceable from the paper.</strong> <em>Added 2026-10-22.</em> A published figure SHOULD state, in its caption or the
   paper's data availability statement, the persistent identifier of its data (as in <code>DataSource</code>) and its
-  <code>DataDigest</code> in full. The data SHOULD be deposited where that identifier resolves, with the version of this
-  profile the figure follows. Printed in the paper, the digest is kept by every library that keeps the paper, and
-  with the definitions of 8.6 it lets the figure be checked against its data long after any service, key or
-  signature it relies on today has gone (§16).</li>
+  <code>DataDigest</code> in full, with its <code>DataDigestSha3</code> where it declares one. The data SHOULD be deposited where that
+  identifier resolves, with the version of this profile the figure follows. Printed in the paper, the digests are
+  kept by every library that keeps the paper, and with the definitions of 8.6 they let the figure be checked
+  against its data long after any service, key or signature it relies on today has gone (§16). The reference
+  caption (8.2) ends with this sentence whenever <code>DataSource</code> is declared: "The data is kept at <em>source</em>, with
+  the digests <em>DataDigest</em> and <em>DataDigestSha3</em>." <em>Both digests and the caption's sentence added 2026-10-23.</em></li>
 </ul>
 <h2 id="10-conformance-and-open-issues">10. Conformance and open issues</h2>
 <p>A program can check that a conforming file:
@@ -1300,6 +1302,9 @@ form needs about one bit more at the middle of the shoulder, because it spreads 
   function. A file matches only if every digest a check can compute matches.</li>
 <li>2026-10-22 · <strong>Traceable from the paper</strong> (9.4.5, §16): a published figure states its data's identifier and
   digest in its caption or data statement; §16 says what a check made a century later rests on.</li>
+<li>2026-10-23 · <strong>Both digests in the paper</strong> (9.4.5): the SHA3-256 data digest is stated beside the SHA-256 one,
+  as §16 already said, and the reference caption ends with the sentence that states them. The golden caption and
+  XMP cases change with it, and three cases are added for the SHA3-256 digests.</li>
 </ul>
 <h2 id="references">References</h2>
 <ul>

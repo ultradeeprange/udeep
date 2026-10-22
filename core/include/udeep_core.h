@@ -105,17 +105,22 @@ int32_t udeep_sdr_light_parallel(const udeep_mapping *mapping, const double *x, 
 int32_t udeep_colours_parallel(const float *table, size_t nodes, double headroom, const double *light, double *rgb,
                                  size_t n, size_t threads);
 
-/* Digests, as text: "sha256:" and 64 hex digits. out receives UDEEP_DIGEST_LENGTH characters and a zero. */
+/* Digests, as text: "sha256:" and 64 hex digits. out receives UDEEP_DIGEST_LENGTH characters and a zero. Each
+ * has a SHA3-256 twin (the _sha3 functions, profile 8.6): "sha3-256:" and 64 hex digits, UDEEP_DIGEST_SHA3_LENGTH
+ * characters and a zero, so that the link to the data does not rest on one hash function. */
 #define UDEEP_DIGEST_LENGTH 71
+#define UDEEP_DIGEST_SHA3_LENGTH 73
 
 /* The digest of an array's values and shape (udeep:DataDigest). shape: `dimensions` sizes; values: their product
  * in doubles, row order. Independent of the type the data was stored as; every NaN equal; -0 counts as 0.
  * dimensions = 0 is one value with no shape (shape may then be NULL): it is digested as a list of one value,
  * shape 1, as the Python reference digests a scalar. */
 int32_t udeep_digest_data(const size_t *shape, size_t dimensions, const double *values, char *out);
+int32_t udeep_digest_data_sha3(const size_t *shape, size_t dimensions, const double *values, char *out);
 
 /* The digest of an 8-bit RGB image's pixels (udeep:SdrDigest): height * width * 3 bytes, row order. */
 int32_t udeep_digest_pixels(size_t height, size_t width, const uint8_t *rgb, char *out);
+int32_t udeep_digest_pixels_sha3(size_t height, size_t width, const uint8_t *rgb, char *out);
 
 /* ---- Drawing: the sRGB signal, and the one mask rule that looks at neighbours ----
  *
@@ -147,6 +152,7 @@ int32_t udeep_pq_encode(const double *nits, double *out, size_t n);
 /* The digest of any bytes, as the digests above (UDEEP_DIGEST_LENGTH characters and a zero): of a colour-map
  * table's file, the digest the index of the shipped tables records. data may be NULL when length is 0. */
 int32_t udeep_digest_bytes(const uint8_t *data, size_t length, char *out);
+int32_t udeep_digest_bytes_sha3(const uint8_t *data, size_t length, char *out);
 
 /* The ISO 21496-1 gain-map metadata block a gain-map JPEG carries: UDEEP_ISO21496_LENGTH bytes. The three values
  * are log2, as the Ultra HDR XMP gives them, each stored over 1,000,000; UDEEP_ERROR_BAD_IMAGE if a numerator does
@@ -174,6 +180,7 @@ typedef struct udeep_declaration {
     udeep_text data_unit, knee_rule, noise_model, record;
     udeep_text derived_mask, preset, colour_map, colour_map_table, data_digest, data_source, data_unit_code,
         sdr_digest;
+    udeep_text data_digest_sha3, sdr_digest_sha3;   /* each only with its SHA-256 partner above (profile 8.5) */
 } udeep_declaration;
 
 /* The declaration as the rdf:Description element a file carries, and the caption generated from it: UTF-8, not

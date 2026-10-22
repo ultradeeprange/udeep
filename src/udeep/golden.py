@@ -10,7 +10,8 @@ arithmetic are involved.
 
 Kinds: scale, tone, pq_encode, srgb_oetf, cmap (a table lookup), table (a shipped table's digest), mapping (a
 parameter record: position, light, fair SDR light, the inverse, colours), levels (stored levels and the data
-criterion, for the 8-bit gain-map path), levels_pq16 (the same for a 16-bit PQ PNG), mask_isolated, digest_data, digest_pixels, xmp (a declaration's serialised form), caption, iso21496
+criterion, for the 8-bit gain-map path), levels_pq16 (the same for a 16-bit PQ PNG), mask_isolated, digest_data, digest_pixels, digest_data_sha3, digest_pixels_sha3 (the same with SHA3-256), xmp (a
+declaration's serialised form), caption, iso21496
 (the gain-map metadata block's bytes).
 
 A levels_pq16 case is a levels case for a 16-bit PQ PNG with white at `white_nits` (203 cd/m2, profile 9.1.1): one
@@ -165,7 +166,8 @@ def _declaration() -> Declaration:
                        noise_parameter=0.25, masked=198, derived_mask=masks.ISOLATED, derived_masked=1797,
                        max_data_step=189.70123456789, rounding_to_noise=1.5e-3, record="rendering", preset="highlight",
                        data_digest="sha256:" + "ab" * 32, data_source="doi:10.0000/example; https://example.org/a.fits",
-                       sdr_digest="sha256:" + "cd" * 32)
+                       sdr_digest="sha256:" + "cd" * 32, data_digest_sha3="sha3-256:" + "ef" * 32,
+                       sdr_digest_sha3="sha3-256:" + "01" * 32)
 
 
 XMP_NOTE = ("one rdf:Description; properties in the order of the reference record; text XML-escaped; each float as "
@@ -244,6 +246,14 @@ def make() -> dict:
     cases["digest_pixels_2x3"] = {"kind": "digest_pixels", "args": {"shape": [2, 3, 3], "values": wide},
                                   "out": digest_pixels(np.array(wide, np.uint8)), "exact": True,
                                   "note": "2 rows of 3 pixels: the text is 'udeep-rgb8-1;2x3;', height then width"}
+    # the same bytes with SHA3-256 (profile 8.6: DataDigestSha3 and SdrDigestSha3)
+    cases["digest_data_sha3"] = {"kind": "digest_data_sha3", "args": cases["digest_data"]["args"],
+                                 "out": digest_data(values, "sha3-256"), "exact": True,
+                                 "note": "the bytes of digest_data, digested with SHA3-256 (FIPS 202)"}
+    for name, array in (("digest_pixels_sha3", pixels), ("digest_pixels_2x3_sha3", wide)):
+        cases[name] = {"kind": "digest_pixels_sha3", "args": {"shape": list(np.shape(array)), "values": array},
+                       "out": digest_pixels(np.array(array, np.uint8), "sha3-256"), "exact": True,
+                       "note": "the bytes of digest_pixels, digested with SHA3-256 (FIPS 202)"}
 
     d = _declaration()
     fields = {k: v for k, v in dataclasses.asdict(d).items() if v is not None}

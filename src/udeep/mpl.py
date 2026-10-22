@@ -24,7 +24,6 @@ from __future__ import annotations
 import base64
 import contextlib
 import dataclasses
-import hashlib
 import html
 import io
 import tempfile
@@ -41,9 +40,10 @@ from udeep.export import srgb_oetf
 from udeep.gainmap import write_gainmap_jpeg
 from udeep.metadata import (
     Declaration,
+    combined_digest,
+    data_digests,
     data_steps,
     description,
-    digest_data,
     digest_pixels,
     read_metadata,
     rounding_to_noise,
@@ -189,7 +189,7 @@ def imshow(ax, data, mode: str, knee, stretch: dict, headroom: float = 2.0, cmap
     if knee is None:
         knee_rule = "percentile; " + v.warnings[0].split(":")[0]
     declare = {"unit": unit, "knee_rule": knee_rule, "noise": tuple(noise), "mode": mode, "mapping": v.mapping,
-               "masked": v.masked, "derived_mask": v.derived_mask, "derived_masked": v.derived_masked, "data_digest": digest_data(_real(data)), "source": source, "unit_code": unit_code}
+               "masked": v.masked, "derived_mask": v.derived_mask, "derived_masked": v.derived_masked, "data_digests": data_digests(_real(data)), "source": source, "unit_code": unit_code}
     _register(ax.figure, _Layer(img, np.asarray(v.sdr), np.asarray(v.hdr), headroom, declare))
     return img
 
@@ -259,15 +259,16 @@ def _render(fig, tight: bool = False, pad_inches: float = 0.1, crop=None) -> np.
 _LINEAR = _eotf(np.arange(256, dtype=np.float64) / 255.0)
 
 
-def _data_digest(ls) -> str:
-    """One image: the digest of its data. Several: a digest of their digests, in drawing order."""
-    parts = [layer.declare["data_digest"] for layer in ls]
-    return parts[0] if len(parts) == 1 else "sha256:" + hashlib.sha256("|".join(parts).encode()).hexdigest()
+def _data_digest(ls, algorithm: str = "sha256") -> str:
+    """One image: the digest of its data. Several: a digest of their digests, in drawing order. With `algorithm`
+    "sha3-256", the same with SHA3-256 (profile 8.6)."""
+    which = 0 if algorithm == "sha256" else 1                        # the order udeep.metadata.data_digests gives
+    return combined_digest([layer.declare["data_digests"][which] for layer in ls], algorithm)
 
 
-def _sdr_digest(raw_base) -> str:
+def _sdr_digest(raw_base, algorithm: str = "sha256") -> str:
     """The digest of the fair SDR figure's pixels, from its 8-bit render."""
-    return digest_pixels(raw_base)
+    return digest_pixels(raw_base, algorithm)
 
 
 def _headroom(fig, headroom: float | None = None) -> float:
@@ -312,7 +313,7 @@ def declaration(fig, headroom: float | None = None) -> Declaration:
         masked=sum(layer.declare["masked"] for layer in ls), derived_mask=d["derived_mask"],
         derived_masked=sum(layer.declare["derived_masked"] for layer in ls), max_data_step=float(steps[1].max()),
         rounding_to_noise=None if against_noise is None else min(against_noise["worst"], 1e9),
-        data_digest=_data_digest(ls),
+        data_digest=_data_digest(ls), data_digest_sha3=_data_digest(ls, "sha3-256"),
         data_source="; ".join(dict.fromkeys(x.declare["source"] for x in ls if x.declare["source"])) or None,
         record="rendering", preset=d["mode"])                  # an 8-bit gain-map JPEG is always a rendering (7.3.3)
 
@@ -348,7 +349,8 @@ def savefig_hdr(fig, path, headroom: float | None = None, quality: int = 95, tig
     raw_base, raw_scaled, raw_black, raw_white = _renders(fig, head, tight, pad_inches)
     extra = b""
     if metadata:
-        declared = dataclasses.replace(declaration(fig, head), sdr_digest=_sdr_digest(raw_base))
+        declared = dataclasses.replace(declaration(fig, head), sdr_digest=_sdr_digest(raw_base),
+                                       sdr_digest_sha3=_sdr_digest(raw_base, "sha3-256"))
         extra = description(declared)
         limit = 1.0 if declared.noise_model == "tolerance" else 0.1
         if declared.rounding_to_noise is not None and declared.rounding_to_noise > limit:
@@ -486,5 +488,7 @@ def validate(fig, path, tight: bool = True, pad_inches: float = 0.1, sdr=None):
         return _validate(path)
     expected = _compose(fig, d.reference_headroom, tight, pad_inches, with_codes=True)
     declared = [layer for layer in layers(fig) if layer.declare is not None]
-    return _validate(path, expected=expected[:2], sdr=sdr, data_digest=_data_digest(declared) if declared else None,
-                     sdr_digest=None if sdr is not None else _sdr_digest(expected[2]))
+    both = ("sha256", "sha3-256")
+    return _validate(path, expected=expected[:2], sdr=sdr,
+                     data_digest=[_data_digest(declared, a) for a in both] if declared else None,
+                     sdr_digest=None if sdr is not None else [_sdr_digest(expected[2], a) for a in both])

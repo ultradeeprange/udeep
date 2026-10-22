@@ -112,6 +112,7 @@ colour_table_text("fire", 3.0)                         # what a file at headroom
 hu_again = value(m, y)                                 # and back
 view = hdr_view(hu, m; mode = :extend)                 # the fair SDR and the HDR renderings of an image
 digest_data(hu)                                        # "sha256:..." as the Python reference computes it
+digest_data(hu; algorithm = "sha3-256")                # "sha3-256:...", the second digest a file declares
 max_step, ratio = levels(m, nothing, 4.0; noise = (:constant, 8.6))    # what an 8-bit file can resolve
 file = gainmap_jpeg(view.sdr, view.hdr, 4.0)           # the bytes of a gain-map JPEG
 ```

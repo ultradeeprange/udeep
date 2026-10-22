@@ -1,7 +1,53 @@
 //! What a file records beyond the mapping: digests that tie it to its data and to its SDR figure, the stored
 //! levels of an 8-bit rendering, and the data criterion (profile 7.2.1).
 
-use crate::{Mapping, Table, colours, sha256::Sha256, srgb_oetf};
+use crate::{Mapping, Table, colours, sha3::Sha3_256, sha256::Sha256, srgb_oetf};
+
+/// A hash function the digests are taken with, and the name a digest's text begins with (profile 8.6).
+trait Hasher: Default {
+    const NAME: &'static str;
+    fn add(&mut self, data: &[u8]);
+    fn finish(self) -> String;
+}
+
+impl Hasher for Sha256 {
+    const NAME: &'static str = "sha256";
+    fn add(&mut self, data: &[u8]) {
+        self.update(data);
+    }
+    fn finish(self) -> String {
+        self.hex()
+    }
+}
+
+impl Hasher for Sha3_256 {
+    const NAME: &'static str = "sha3-256";
+    fn add(&mut self, data: &[u8]) {
+        self.update(data);
+    }
+    fn finish(self) -> String {
+        self.hex()
+    }
+}
+
+fn data_digest<H: Hasher>(shape: &[usize], values: &[f64]) -> String {
+    let mut h = H::default();
+    let shape = if shape.is_empty() { &[1][..] } else { shape };
+    let sizes: Vec<String> = shape.iter().map(usize::to_string).collect();
+    h.add(format!("udeep-data-1;{};", sizes.join("x")).as_bytes());
+    for &v in values {
+        let canonical = if v.is_nan() { f64::NAN } else { v + 0.0 };
+        h.add(&canonical.to_le_bytes());
+    }
+    format!("{}:{}", H::NAME, h.finish())
+}
+
+fn pixels_digest<H: Hasher>(height: usize, width: usize, rgb: &[u8]) -> String {
+    let mut h = H::default();
+    h.add(format!("udeep-rgb8-1;{height}x{width};").as_bytes());
+    h.add(rgb);
+    format!("{}:{}", H::NAME, h.finish())
+}
 
 /// A digest of an array's values and shape, whatever type it was stored as: `"sha256:"` and 64 hex digits.
 ///
@@ -11,24 +57,24 @@ use crate::{Mapping, Table, colours, sha256::Sha256, srgb_oetf};
 /// A single value with no dimensions (an empty `shape`) is digested as a list of one, shape `1`: the reference
 /// does so, and the two must give one digest for one scalar.
 pub fn digest_data(shape: &[usize], values: &[f64]) -> String {
-    let mut h = Sha256::new();
-    let shape = if shape.is_empty() { &[1][..] } else { shape };
-    let sizes: Vec<String> = shape.iter().map(usize::to_string).collect();
-    h.update(format!("udeep-data-1;{};", sizes.join("x")).as_bytes());
-    for &v in values {
-        let canonical = if v.is_nan() { f64::NAN } else { v + 0.0 };
-        h.update(&canonical.to_le_bytes());
-    }
-    format!("sha256:{}", h.hex())
+    data_digest::<Sha256>(shape, values)
+}
+
+/// The same bytes as [`digest_data`] digested with SHA3-256 (`udeep:DataDigestSha3`): `"sha3-256:"` and 64 hex
+/// digits. A second hash function of another design, so that the link to the data does not rest on one.
+pub fn digest_data_sha3(shape: &[usize], values: &[f64]) -> String {
+    data_digest::<Sha3_256>(shape, values)
 }
 
 /// A digest of an 8-bit RGB image's pixels (`height` x `width` x 3, row order), independent of how a file
 /// stores them, after the text `udeep-rgb8-1;<height>x<width>;`.
 pub fn digest_pixels(height: usize, width: usize, rgb: &[u8]) -> String {
-    let mut h = Sha256::new();
-    h.update(format!("udeep-rgb8-1;{height}x{width};").as_bytes());
-    h.update(rgb);
-    format!("sha256:{}", h.hex())
+    pixels_digest::<Sha256>(height, width, rgb)
+}
+
+/// The same bytes as [`digest_pixels`] digested with SHA3-256 (`udeep:SdrDigestSha3`).
+pub fn digest_pixels_sha3(height: usize, width: usize, rgb: &[u8]) -> String {
+    pixels_digest::<Sha3_256>(height, width, rgb)
 }
 
 /// The stored levels of a rendering across the declared range: where each run of data values sharing one stored

@@ -99,6 +99,16 @@ bits(a) = collect(reinterpret(UInt64, vec(a)))
         v = pixels["args"]["values"]
         rgb = UInt8[v[i][j][k] for i in eachindex(v), j in eachindex(v[1]), k in 1:3]
         @test digest_pixels(rgb) == pixels["out"]
+        # the same bytes with SHA3-256 (profile 8.6), through the core's own SHA3
+        @test digest_data(a; algorithm = "sha3-256") == GOLDEN["cases"]["digest_data_sha3"]["out"]
+        @test digest_pixels(rgb; algorithm = "sha3-256") == GOLDEN["cases"]["digest_pixels_sha3"]["out"]
+        @test digest_pixels(UInt8[w[i][j][k] for i in eachindex(w), j in eachindex(w[1]), k in 1:3];
+                            algorithm = "sha3-256") == GOLDEN["cases"]["digest_pixels_2x3_sha3"]["out"]
+        @test_throws ArgumentError digest_data(a; algorithm = "md5")
+        two = [digest_data(a; algorithm = "sha3-256"), digest_data(a .+ 1; algorithm = "sha3-256")]
+        @test UDeepCore.combined_digest(two; algorithm = "sha3-256") ==
+              "sha3-256:" * bytes2hex(UDeepCore.sha3_256(join(two, "|")))
+        @test_throws ArgumentError UDeepCore.combined_digest(two)                     # sha3-256 digests, combined as sha256
     end
 
     @testset "shapes and errors" begin

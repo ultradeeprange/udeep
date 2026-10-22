@@ -76,6 +76,8 @@ fn declaration(m: Mapping, unit: Text) -> CDeclaration {
         data_source: none,
         data_unit_code: none,
         sdr_digest: none,
+        data_digest_sha3: none,
+        sdr_digest_sha3: none,
     }
 }
 

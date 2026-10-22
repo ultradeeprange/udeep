@@ -59,6 +59,8 @@ const KINDS = {
     return a.above.map((_, row) => list(held.subarray(row * width, (row + 1) * width)).join('')); },
   digest_data: a => core.digestData(a.shape, a.values.flat(Infinity).map(num)),
   digest_pixels: a => core.digestPixels(Uint8Array.from(a.values.flat(Infinity)), a.shape[0], a.shape[1]),
+  digest_data_sha3: a => core.digestDataSha3(a.shape, a.values.flat(Infinity).map(num)),
+  digest_pixels_sha3: a => core.digestPixelsSha3(Uint8Array.from(a.values.flat(Infinity)), a.shape[0], a.shape[1]),
   xmp: a => core.description(a.declaration),
   caption: a => core.caption(a.declaration),
 };

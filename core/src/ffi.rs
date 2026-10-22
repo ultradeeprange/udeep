@@ -295,17 +295,36 @@ pub unsafe extern "C" fn udeep_colours_parallel(
 
 /// The length of a digest as text, without the terminating zero: `"sha256:"` and 64 hex digits.
 pub const DIGEST_LENGTH: usize = 71;
+/// The length of a SHA3-256 digest as text, without the terminating zero: `"sha3-256:"` and 64 hex digits.
+pub const DIGEST_SHA3_LENGTH: usize = 73;
 
 unsafe fn put_digest(text: &str, out: *mut u8) -> i32 {
     if out.is_null() {
         return Error::NullPointer as i32;
     }
-    debug_assert_eq!(text.len(), DIGEST_LENGTH);
+    debug_assert!(text.len() == DIGEST_LENGTH || text.len() == DIGEST_SHA3_LENGTH);
     unsafe {
-        std::ptr::copy_nonoverlapping(text.as_ptr(), out, DIGEST_LENGTH);
-        out.add(DIGEST_LENGTH).write(0);
+        std::ptr::copy_nonoverlapping(text.as_ptr(), out, text.len());
+        out.add(text.len()).write(0);
     }
     OK
+}
+
+/// The shape and values the data digests take, from the C interface's pointers.
+unsafe fn shaped<'a>(
+    shape: *const usize,
+    dimensions: usize,
+    values: *const f64,
+) -> Result<(&'a [usize], &'a [f64]), i32> {
+    if (shape.is_null() && dimensions > 0) || values.is_null() {
+        return Err(Error::NullPointer as i32);
+    }
+    // a slice may not be made from a null pointer, even an empty one
+    let shape = if dimensions == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(shape, dimensions) } };
+    let Some(count) = shape.iter().try_fold(1usize, |n, &s| n.checked_mul(s)) else {
+        return Err(Error::BadTable as i32);
+    };
+    Ok((shape, unsafe { std::slice::from_raw_parts(values, count) }))
 }
 
 /// The digest of an array's values and shape (`udeep:DataDigest`). `shape` holds `dimensions` sizes whose
@@ -324,14 +343,28 @@ pub unsafe extern "C" fn udeep_digest_data(
     values: *const f64,
     out: *mut u8,
 ) -> i32 {
-    if (shape.is_null() && dimensions > 0) || values.is_null() {
-        return Error::NullPointer as i32;
+    match unsafe { shaped(shape, dimensions, values) } {
+        Ok((shape, values)) => unsafe { put_digest(&record::digest_data(shape, values), out) },
+        Err(status) => status,
     }
-    // a slice may not be made from a null pointer, even an empty one
-    let shape = if dimensions == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(shape, dimensions) } };
-    let Some(count) = shape.iter().try_fold(1usize, |n, &s| n.checked_mul(s)) else { return Error::BadTable as i32 };
-    let values = unsafe { std::slice::from_raw_parts(values, count) };
-    unsafe { put_digest(&record::digest_data(shape, values), out) }
+}
+
+/// The same as [`udeep_digest_data`] with SHA3-256 (`udeep:DataDigestSha3`): `out` receives 73 characters and a
+/// terminating zero, 74 bytes.
+///
+/// # Safety
+/// As [`udeep_digest_data`], with 74 writable bytes at `out`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_digest_data_sha3(
+    shape: *const usize,
+    dimensions: usize,
+    values: *const f64,
+    out: *mut u8,
+) -> i32 {
+    match unsafe { shaped(shape, dimensions, values) } {
+        Ok((shape, values)) => unsafe { put_digest(&record::digest_data_sha3(shape, values), out) },
+        Err(status) => status,
+    }
 }
 
 /// The digest of an 8-bit RGB image's pixels (`udeep:SdrDigest`): `height * width * 3` bytes, row order.
@@ -346,6 +379,20 @@ pub unsafe extern "C" fn udeep_digest_pixels(height: usize, width: usize, rgb: *
     let Some(count) = height.checked_mul(width).and_then(|n| n.checked_mul(3)) else { return Error::BadTable as i32 };
     let rgb = unsafe { std::slice::from_raw_parts(rgb, count) };
     unsafe { put_digest(&record::digest_pixels(height, width, rgb), out) }
+}
+
+/// The same as [`udeep_digest_pixels`] with SHA3-256 (`udeep:SdrDigestSha3`): 74 bytes at `out`.
+///
+/// # Safety
+/// `rgb` must point to `height * width * 3` readable bytes, `out` to 74 writable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_digest_pixels_sha3(height: usize, width: usize, rgb: *const u8, out: *mut u8) -> i32 {
+    if rgb.is_null() {
+        return Error::NullPointer as i32;
+    }
+    let Some(count) = height.checked_mul(width).and_then(|n| n.checked_mul(3)) else { return Error::BadTable as i32 };
+    let rgb = unsafe { std::slice::from_raw_parts(rgb, count) };
+    unsafe { put_digest(&record::digest_pixels_sha3(height, width, rgb), out) }
 }
 
 /// Write a gain-map JPEG into memory owned by the library. `sdr` (linear RGB in 0..1) and `hdr` (linear RGB in
@@ -479,6 +526,8 @@ pub struct CDeclaration {
     pub data_source: Text,
     pub data_unit_code: Text,
     pub sdr_digest: Text,
+    pub data_digest_sha3: Text,
+    pub sdr_digest_sha3: Text,
 }
 
 unsafe fn optional(text: Text) -> Result<Option<String>, Error> {
@@ -530,6 +579,8 @@ unsafe fn declaration(c: *const CDeclaration) -> Result<crate::Declaration, Erro
         data_source: unsafe { optional(c.data_source) }?,
         data_unit_code: unsafe { optional(c.data_unit_code) }?,
         sdr_digest: unsafe { optional(c.sdr_digest) }?,
+        data_digest_sha3: unsafe { optional(c.data_digest_sha3) }?,
+        sdr_digest_sha3: unsafe { optional(c.sdr_digest_sha3) }?,
         version: "0.3".to_string(),
         image_state: "data-referred".to_string(),
     })
@@ -1143,6 +1194,20 @@ pub unsafe extern "C" fn udeep_digest_bytes(data: *const u8, length: usize, out:
     }
     let bytes = if length == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(data, length) } };
     unsafe { put_digest(&crate::sha256::digest(bytes), out) }
+}
+
+/// The same as [`udeep_digest_bytes`] with SHA3-256: `"sha3-256:"` and 64 hex digits, then a zero, into 74 bytes
+/// at `out`. For a figure of several images, the SHA3-256 of their digests joined with `|` (profile 8.6).
+///
+/// # Safety
+/// `data` must point to `length` readable bytes and `out` to 74 writable ones.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn udeep_digest_bytes_sha3(data: *const u8, length: usize, out: *mut u8) -> i32 {
+    if data.is_null() && length > 0 {
+        return Error::NullPointer as i32;
+    }
+    let bytes = if length == 0 { &[][..] } else { unsafe { std::slice::from_raw_parts(data, length) } };
+    unsafe { put_digest(&crate::sha3::digest(bytes), out) }
 }
 
 /// The length of the ISO 21496-1 gain-map metadata block this library writes.

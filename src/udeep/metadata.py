@@ -10,7 +10,8 @@ how its data became light, so that the mapping can be inverted and checked.
     caption          a caption sentence generated from the declaration (section 8.2)
     max_data_step    the widest range of data values that one stored code stands for (section 7.2.3)
     rounding_to_noise  the data criterion (section 7.2.1): that rounding against the stated uncertainty
-    digest_data, digest_pixels   the digests that tie a file to its data and to its SDR figure of record
+    digest_data, digest_pixels   the digests that tie a file to its data and to its SDR figure of record, with
+                     SHA-256 or SHA3-256 (profile 8.6)
     digest_sdr       SdrDigest of a fair SDR rendering given as light, as the writers store it in 8 bits
     values_pq16, read_png_data   a 16-bit PQ PNG's light, and such a file, read back as data values
 
@@ -45,7 +46,10 @@ CAPTION_FIGURES = 6                                  # enough for a range top su
 # Properties a file may leave out (profile 8.1). NoiseParameter, DerivedMask and ColourMapTable are required only in
 # cases that the declaration's own values decide, and are checked there.
 OPTIONAL = ("noise_parameter", "derived_mask", "preset", "colour_map_table", "rounding_to_noise", "data_digest",
-            "data_source", "data_unit_code", "sdr_digest")
+            "data_source", "data_unit_code", "sdr_digest", "data_digest_sha3", "sdr_digest_sha3")
+# The hash functions a digest is taken with (profile 8.6), by the name its text begins with: two of unrelated design,
+# so that the link from a file to its data does not rest on one.
+HASHES = {"sha256": hashlib.sha256, "sha3-256": hashlib.sha3_256}
 _RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
 
@@ -60,7 +64,8 @@ class Declaration:
     (`noise_model`, `noise_parameter`), how finely the file stores it (`max_data_step`, `rounding_to_noise`),
     which pixels were held (`masked`, `derived_mask`, `derived_masked`), which preset made the figure (`preset`),
     whether the file is a data record or a rendering (`record`), and what ties it to its data and to its SDR
-    figure (`data_digest`, `data_source`, `sdr_digest`). `version` and `image_state` are fixed by the profile.
+    figure (`data_digest`, `data_source`, `sdr_digest`, and the SHA3-256 digests `data_digest_sha3` and
+    `sdr_digest_sha3`, each only with its SHA-256 partner). `version` and `image_state` are fixed by the profile.
 
     ValueError, with the reason, for a declaration the profile does not allow."""
 
@@ -89,6 +94,8 @@ class Declaration:
     data_source: str | None = None       # where that data is kept: a persistent identifier (doi:..., or a URL)
     data_unit_code: str | None = None    # the unit in machine-readable form: a UCUM code, such as "K" or "s-1"
     sdr_digest: str | None = None        # digest_pixels of the fair SDR figure, before any lossy coding
+    data_digest_sha3: str | None = None  # the same two with SHA3-256 (profile 8.6): the link to the data does not
+    sdr_digest_sha3: str | None = None   # rest on one hash function
     version: str = VERSION
     image_state: str = "data-referred"
 
@@ -129,6 +136,9 @@ class Declaration:
                 raise ValueError(f"{name} is a count of pixels and cannot be negative, got {getattr(self, name)!r}")
         if self.derived_masked > 0 and not self.derived_mask:
             raise ValueError(f"derived_mask must name the rule that holds {self.derived_masked} pixels at white")
+        for name in ("data_digest", "sdr_digest"):
+            if getattr(self, f"{name}_sha3") is not None and getattr(self, name) is None:
+                raise ValueError(f"{name}_sha3 is declared only with {name} (profile 8.5)")
 
     @property
     def mapping(self) -> Mapping:
@@ -170,8 +180,15 @@ def to_xmp(d: Declaration) -> bytes:
     return _packet(description(d))
 
 
-def digest_data(a) -> str:
-    """A digest of an array's values and shape, whatever type it is stored as: "sha256:" and 64 hex digits.
+def _hash(algorithm: str):
+    if algorithm not in HASHES:
+        raise ValueError(f"a digest is taken with one of {tuple(HASHES)}, not {algorithm!r}")
+    return HASHES[algorithm]()
+
+
+def digest_data(a, algorithm: str = "sha256") -> str:
+    """A digest of an array's values and shape, whatever type it is stored as: "sha256:" and 64 hex digits, or with
+    `algorithm="sha3-256"` the same bytes digested with SHA3-256, "sha3-256:" and 64 hex digits (DataDigestSha3).
 
     The array is taken as float64, little-endian, in row order; every NaN counts as the same value and -0 as 0.
     The shape goes in first, so the same numbers in another shape give another digest.
@@ -180,6 +197,13 @@ def digest_data(a) -> str:
     Anything else (complex numbers, text, booleans, dates, wider floats) raises ValueError, because the cast would
     give two different arrays one digest. A masked array is digested as its stored values, hidden ones included;
     the mask is not part of the digest."""
+    return data_digests(a, (algorithm,))[0]
+
+
+def data_digests(a, algorithms=tuple(HASHES)) -> list[str]:
+    """digest_data of `a` with each of `algorithms` (default: SHA-256, then SHA3-256), the array taken as float64
+    once for all of them."""
+    hashes = [_hash(name) for name in algorithms]
     given = np.asarray(a)
     kind = given.dtype.kind
     if kind not in "iuf" or (kind == "f" and given.dtype.itemsize > 8):
@@ -189,13 +213,17 @@ def digest_data(a) -> str:
         raise ValueError("integers beyond 2 ** 53 are not exact in float64, which the data digest is taken in")
     v = np.ascontiguousarray(given.astype("<f8")) + 0.0
     v = np.where(np.isnan(v), np.nan, v)
-    h = hashlib.sha256(("udeep-data-1;" + "x".join(str(n) for n in v.shape) + ";").encode())
-    h.update(np.ascontiguousarray(v, dtype="<f8").tobytes())
-    return "sha256:" + h.hexdigest()
+    header = ("udeep-data-1;" + "x".join(str(n) for n in v.shape) + ";").encode()
+    values = np.ascontiguousarray(v, dtype="<f8").tobytes()
+    for h in hashes:
+        h.update(header)
+        h.update(values)
+    return [f"{name}:{h.hexdigest()}" for name, h in zip(algorithms, hashes, strict=True)]
 
 
-def digest_pixels(rgb8) -> str:
-    """A digest of an 8-bit RGB image's pixels (H x W x 3), independent of how the file stores them.
+def digest_pixels(rgb8, algorithm: str = "sha256") -> str:
+    """A digest of an 8-bit RGB image's pixels (H x W x 3), independent of how the file stores them: "sha256:" and
+    64 hex digits, or with `algorithm="sha3-256"` the SHA3-256 of the same bytes (SdrDigestSha3).
 
     It is taken over the text "udeep-rgb8-1;<height>x<width>;" and then the bytes, row by row. The array must
     already be unsigned 8-bit: any other type raises ValueError, since casting it would wrap or truncate."""
@@ -204,12 +232,28 @@ def digest_pixels(rgb8) -> str:
         raise ValueError(f"pixels must be an unsigned 8-bit integer array, got {v.dtype}")
     if v.ndim != 3 or v.shape[-1] != 3:
         raise ValueError("pixels must be H x W x 3")
-    h = hashlib.sha256(f"udeep-rgb8-1;{v.shape[0]}x{v.shape[1]};".encode())
+    h = _hash(algorithm)
+    h.update(f"udeep-rgb8-1;{v.shape[0]}x{v.shape[1]};".encode())
     h.update(np.ascontiguousarray(v).tobytes())
-    return "sha256:" + h.hexdigest()
+    return f"{algorithm}:{h.hexdigest()}"
 
 
-def digest_sdr(sdr) -> str:
+def combined_digest(digests, algorithm: str = "sha256") -> str:
+    """The data digest of a figure of several images (profile 8.6): of one, its own; of several, `algorithm`
+    applied to their digests, each with its name, joined with "|" in the order they were drawn."""
+    parts = list(digests)
+    if not parts:
+        raise ValueError("no digests to combine")
+    if any(not p.startswith(f"{algorithm}:") for p in parts):
+        raise ValueError(f"every digest combined with {algorithm} must be a {algorithm} digest")
+    if len(parts) == 1:
+        return parts[0]
+    h = _hash(algorithm)
+    h.update("|".join(parts).encode())
+    return f"{algorithm}:{h.hexdigest()}"
+
+
+def digest_sdr(sdr, algorithm: str = "sha256") -> str:
     """The SdrDigest (profile 8.6) of a fair SDR rendering given as light: height x width x 3, linear, 0 to 1, as
     HdrView.sdr holds it. It is taken over the 8-bit sRGB codes the writers store for it (the base of a gain-map
     JPEG before compression, and udeep.write_png_sdr's file), with a NaN stored as 0.
@@ -217,7 +261,7 @@ def digest_sdr(sdr) -> str:
     A file with no SDR base of its own, such as a 16-bit PQ PNG, must declare it (profile 9.1.2); the gain-map JPEG
     of the same figure then declares the same value."""
     light = np.nan_to_num(np.asarray(sdr, dtype=np.float64), nan=0.0)
-    return digest_pixels(np.round(srgb_oetf(light) * 255.0).astype(np.uint8))
+    return digest_pixels(np.round(srgb_oetf(light) * 255.0).astype(np.uint8), algorithm)
 
 
 def description(d: Declaration) -> bytes:
@@ -347,6 +391,10 @@ def caption(d: Declaration) -> str:
         parts.append(f"Rounding to this file's levels is {worst} the stated uncertainty (a data record needs {limit:g} or less).")
     kind = ("a data record" if d.record == "data-record" else "a rendering, not a data record")
     parts.append(f"This file is {kind}: one stored level spans up to {_number(d.max_data_step)}{unit}.")
+    if d.data_source:              # profile 9.4.5: where the data is kept and its digests, so the paper holds the link
+        digests = [x for x in (d.data_digest, d.data_digest_sha3) if x]
+        with_ = (f", with the digest{'s' if len(digests) > 1 else ''} {' and '.join(digests)}" if digests else "")
+        parts.append(f"The data is kept at {d.data_source}{with_}.")
     return " ".join(parts)
 
 

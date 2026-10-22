@@ -426,10 +426,12 @@ A vector HDR figure is an SVG whose furniture is vector and whose data layer is 
   July 2025.
 - 9.4.5 **Traceable from the paper.** *Added 2026-10-22.* A published figure SHOULD state, in its caption or the
   paper's data availability statement, the persistent identifier of its data (as in `DataSource`) and its
-  `DataDigest` in full. The data SHOULD be deposited where that identifier resolves, with the version of this
-  profile the figure follows. Printed in the paper, the digest is kept by every library that keeps the paper, and
-  with the definitions of 8.6 it lets the figure be checked against its data long after any service, key or
-  signature it relies on today has gone (§16).
+  `DataDigest` in full, with its `DataDigestSha3` where it declares one. The data SHOULD be deposited where that
+  identifier resolves, with the version of this profile the figure follows. Printed in the paper, the digests are
+  kept by every library that keeps the paper, and with the definitions of 8.6 they let the figure be checked
+  against its data long after any service, key or signature it relies on today has gone (§16). The reference
+  caption (8.2) ends with this sentence whenever `DataSource` is declared: "The data is kept at *source*, with
+  the digests *DataDigest* and *DataDigestSha3*." *Both digests and the caption's sentence added 2026-10-23.*
 
 ## 10. Conformance and open issues
 
@@ -874,6 +876,9 @@ Each line is one normative addition or change, with the date it was made.
   function. A file matches only if every digest a check can compute matches.
 - 2026-10-22 · **Traceable from the paper** (9.4.5, §16): a published figure states its data's identifier and
   digest in its caption or data statement; §16 says what a check made a century later rests on.
+- 2026-10-23 · **Both digests in the paper** (9.4.5): the SHA3-256 data digest is stated beside the SHA-256 one,
+  as §16 already said, and the reference caption ends with the sentence that states them. The golden caption and
+  XMP cases change with it, and three cases are added for the SHA3-256 digests.
 
 ## References
 

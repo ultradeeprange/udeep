@@ -19,7 +19,7 @@ module UDeepCore
 using Artifacts
 using Base64: base64encode
 using Libdl
-using SHA: sha256
+using SHA: sha256, sha3_256
 
 # `position` is not exported: Base has a function of that name (for streams). Call it as UDeepCore.position.
 export Mapping, light, light!, sdr_light, value, colours, digest_data, digest_pixels, digest_sdr, core_version, core_build
@@ -49,6 +49,7 @@ const ERRORS = Dict(
           "a PQ file whose white is not at 203 cd/m2 (profile 9.1.1)",
 )
 const DIGEST_LENGTH = 71
+const DIGEST_SHA3_LENGTH = 73                  # "sha3-256:" and 64 hex digits
 const HANDLE = Ref{Ptr{Cvoid}}(C_NULL)
 
 """
@@ -198,31 +199,49 @@ end
 
 row_order(a::AbstractArray) = vec(permutedims(a, ndims(a):-1:1))
 
-function digest(call)
-    out = zeros(UInt8, DIGEST_LENGTH + 1)
+# The hash functions a digest is taken with (profile 8.6): the core's function for each, and the length of its text.
+const HASHES = Dict("sha256" => ("", DIGEST_LENGTH), "sha3-256" => ("_sha3", DIGEST_SHA3_LENGTH))
+
+function hash_of(algorithm::AbstractString)
+    haskey(HASHES, algorithm) ||
+        throw(ArgumentError("a digest is taken with sha256 or sha3-256, not $(repr(algorithm))"))
+    return HASHES[algorithm]
+end
+
+function digest(call, length_::Integer)
+    out = zeros(UInt8, length_ + 1)
     check(call(out))
-    return String(out[1:DIGEST_LENGTH])
+    return String(out[1:length_])
 end
 
 """
-    digest_data(a)
+    digest_data(a; algorithm = "sha256")
 
 The digest that ties a file to its data (`udeep:DataDigest`): of the values and shape of `a`, whatever type it is
 stored as. Every NaN counts as the same value. An array with no dimensions, such as `fill(1.5)`, has the digest of
 the one-element vector `[1.5]`: the Python reference digests a scalar so, and the core follows it.
+`algorithm = "sha3-256"` gives the same bytes digested with SHA3-256 (`udeep:DataDigestSha3`), so that the link to
+the data does not rest on one hash function.
 """
-function digest_data(a::AbstractArray{<:Real})
+function digest_data(a::AbstractArray{<:Real}; algorithm::AbstractString = "sha256")
+    suffix, length_ = hash_of(algorithm)
     values, shape = convert(Vector{Float64}, row_order(a)), collect(Csize_t, size(a))
-    return digest(out -> ccall(symbol(:udeep_digest_data), Int32, (Ptr{Csize_t}, Csize_t, Ptr{Float64}, Ptr{UInt8}),
-                               shape, length(shape), values, out))
+    return digest(out -> ccall(symbol(Symbol(:udeep_digest_data, suffix)), Int32,
+                               (Ptr{Csize_t}, Csize_t, Ptr{Float64}, Ptr{UInt8}), shape, length(shape), values, out),
+                  length_)
 end
 
-"`digest_pixels(rgb)`: the digest of an 8-bit RGB image, `height x width x 3` (`udeep:SdrDigest`)."
-function digest_pixels(rgb::AbstractArray{UInt8, 3})
+"""
+`digest_pixels(rgb; algorithm = "sha256")`: the digest of an 8-bit RGB image, `height x width x 3`
+(`udeep:SdrDigest`; with `algorithm = "sha3-256"`, `udeep:SdrDigestSha3`).
+"""
+function digest_pixels(rgb::AbstractArray{UInt8, 3}; algorithm::AbstractString = "sha256")
+    suffix, length_ = hash_of(algorithm)
     size(rgb, 3) == 3 || throw(ArgumentError("pixels must be height x width x 3"))
     bytes = row_order(rgb)
-    return digest(out -> ccall(symbol(:udeep_digest_pixels), Int32, (Csize_t, Csize_t, Ptr{UInt8}, Ptr{UInt8}),
-                               size(rgb, 1), size(rgb, 2), bytes, out))
+    return digest(out -> ccall(symbol(Symbol(:udeep_digest_pixels, suffix)), Int32,
+                               (Csize_t, Csize_t, Ptr{UInt8}, Ptr{UInt8}), size(rgb, 1), size(rgb, 2), bytes, out),
+                  length_)
 end
 
 include("figure.jl")

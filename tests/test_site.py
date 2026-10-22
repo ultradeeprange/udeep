@@ -67,9 +67,12 @@ def test_the_dark_figure_declares_what_the_light_one_does_and_is_its_own_sdr_fig
     dark = light.with_name(dark_name(light.name))
     a, b = read_metadata(light), read_metadata(dark)
     assert a is not None and b is not None
-    assert dataclasses.replace(a, sdr_digest=None) == dataclasses.replace(b, sdr_digest=None)
+    unlinked = {"sdr_digest": None, "sdr_digest_sha3": None}            # each theme's own SDR figure, by either hash
+    assert dataclasses.replace(a, **unlinked) == dataclasses.replace(b, **unlinked)
     if a.sdr_digest is not None:                                        # the demo figures state none
         assert a.sdr_digest != b.sdr_digest
+    if a.sdr_digest_sha3 is not None:                                   # files made before 23 October 2026 state none
+        assert a.sdr_digest_sha3 != b.sdr_digest_sha3
         sdr = dark.with_name(dark.name.replace("_hdr.jpg", "_sdr.png"))
         assert b.sdr_digest == digest_pixels(np.asarray(Image.open(sdr).convert("RGB")))
         assert validate(dark, sdr=sdr).ok

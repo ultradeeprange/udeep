@@ -7,8 +7,8 @@ use std::{collections::BTreeMap, fs, path::PathBuf};
 use serde_json::{Value, json};
 use udeep_core::{
     Declaration, Error, Levels, Mapping, Noise, Stretch, Table, UNBOUNDED, caption, colours, declaration::exit_slope,
-    description, digest_data, digest_pixels, float_text, format_g, iso21496_block, isolated, levels, levels_pq16, par,
-    pq_encode, rounding_to_noise, scale, sha256, srgb_oetf, tone,
+    description, digest_data, digest_data_sha3, digest_pixels, digest_pixels_sha3, float_text, format_g,
+    iso21496_block, isolated, levels, levels_pq16, par, pq_encode, rounding_to_noise, scale, sha256, srgb_oetf, tone,
 };
 
 fn root() -> PathBuf {
@@ -83,6 +83,8 @@ fn declaration(d: &Value) -> Declaration {
         data_source: optional("data_source"),
         data_unit_code: optional("data_unit_code"),
         sdr_digest: optional("sdr_digest"),
+        data_digest_sha3: optional("data_digest_sha3"),
+        sdr_digest_sha3: optional("sdr_digest_sha3"),
         version: text("version"),
         image_state: text("image_state"),
     }
@@ -146,19 +148,21 @@ fn compute(case: &Value) -> Option<Value> {
             let bytes = fs::read(root().join("tables").join(a["file"].as_str().unwrap())).unwrap();
             json!({"sha256": sha256::digest(&bytes), "nodes": bytes.len() / 24, "bytes": bytes.len()})
         }
-        "digest_data" => {
+        "digest_data" | "digest_data_sha3" => {
             let shape: Vec<usize> =
                 a["shape"].as_array().unwrap().iter().map(|n| n.as_u64().unwrap() as usize).collect();
             let values: Vec<f64> = a["values"].as_array().unwrap().iter().flat_map(numbers).collect();
-            json!(digest_data(&shape, &values))
+            let digest = if case["kind"] == "digest_data" { digest_data } else { digest_data_sha3 };
+            json!(digest(&shape, &values))
         }
-        "digest_pixels" => {
+        "digest_pixels" | "digest_pixels_sha3" => {
             let shape: Vec<usize> =
                 a["shape"].as_array().unwrap().iter().map(|n| n.as_u64().unwrap() as usize).collect();
             let rows = a["values"].as_array().unwrap();
             let rgb: Vec<u8> =
                 rows.iter().flat_map(|r| r.as_array().unwrap()).flat_map(numbers).map(|v| v as u8).collect();
-            json!(digest_pixels(shape[0], shape[1], &rgb))
+            let digest = if case["kind"] == "digest_pixels" { digest_pixels } else { digest_pixels_sha3 };
+            json!(digest(shape[0], shape[1], &rgb))
         }
         "levels" | "levels_pq16" => {
             let m = mapping(&a["mapping"]);
@@ -280,7 +284,9 @@ fn the_golden_file_holds_the_cases_this_test_was_written_for() {
         ("caption", 1),
         ("cmap", 2),
         ("digest_data", 1),
+        ("digest_data_sha3", 1),
         ("digest_pixels", 2),
+        ("digest_pixels_sha3", 2),
         ("iso21496", 1),
         ("levels", 32),
         ("levels_pq16", 8),
@@ -470,6 +476,8 @@ fn valid_declaration() -> Declaration {
         data_source: None,
         data_unit_code: None,
         sdr_digest: None,
+        data_digest_sha3: None,
+        sdr_digest_sha3: None,
         version: "0.3".into(),
         image_state: "data-referred".into(),
     }

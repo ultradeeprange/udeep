@@ -89,7 +89,9 @@ def step_record(folder: Path) -> str:
     declared = Declaration(**dataclasses.asdict(view.mapping), data_unit="counts",
                            knee_rule="preset; white at 1,000 counts", noise_model="constant", noise_parameter=3.0,
                            rounding_to_noise=against["worst"], max_data_step=float(steps[1].max()),
-                           record="data-record", data_digest=digest_data(data), sdr_digest=digest_sdr(view.sdr))
+                           record="data-record", data_digest=digest_data(data), sdr_digest=digest_sdr(view.sdr),
+                           data_digest_sha3=digest_data(data, "sha3-256"),
+                           sdr_digest_sha3=digest_sdr(view.sdr, "sha3-256"))
     path = folder / "record.png"
     write_png_pq(view.hdr, path, xmp=to_xmp(declared))
     back, _ = read_png_data(path)

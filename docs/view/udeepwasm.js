@@ -34,11 +34,11 @@
   const NOISE = { unknown: 0, constant: 1, poisson: 2, relative: 3, tolerance: 4 };
   // the text properties of udeep_declaration, in the order the record holds them
   const TEXTS = ['data_unit', 'knee_rule', 'noise_model', 'record', 'derived_mask', 'preset', 'colour_map',
-    'colour_map_table', 'data_digest', 'data_source', 'data_unit_code', 'sdr_digest'];
+    'colour_map_table', 'data_digest', 'data_source', 'data_unit_code', 'sdr_digest', 'data_digest_sha3', 'sdr_digest_sha3'];
   const DEFAULTS = { noise_model: 'unknown', record: 'rendering' };  // as the reference's Declaration has them
   const VERSION = '0.3', IMAGE_STATE = 'data-referred';              // the library's own: a record carries neither
   const ABOVE_KNEE = 'hermite; exit=1';
-  const MAPPING_BYTES = 64, DECLARATION_BYTES = 200, DIGEST_LENGTH = 71, ISO21496_LENGTH = 61, CRITERION_BYTES = 64, REF_WHITE_NITS = 203.0;
+  const MAPPING_BYTES = 64, DECLARATION_BYTES = 216, DIGEST_LENGTH = 71, DIGEST_SHA3_LENGTH = 73, ISO21496_LENGTH = 61, CRITERION_BYTES = 64, REF_WHITE_NITS = 203.0;
 
   // An ArrayBuffer, a Uint8Array or a node Buffer (which is a Uint8Array), as a Uint8Array over the same memory.
   function asBytes(buffer, what) {
@@ -153,6 +153,28 @@
       texts.forEach(([data, length], i) => { v.setUint32(at + 104 + 8 * i, data, true); v.setUint32(at + 108 + 8 * i, length, true); });
       return at;
     }
+    // The digests, by either hash function: `call` names the core's function, `length` the text it writes.
+    const digestBytes = (bytes, call, length) => scoped(take => {
+      const data = asBytes(bytes, 'what is digested'), from = putBytes(take, data), out = take(length + 1);
+      check(x[call](from, data.length, out));
+      return text.decode(bytesAt(out, length));
+    });
+    const digestData = (shape, values, call, length) => scoped(take => {
+      const numbers = asDoubles(values, 'what is digested');
+      const count = shape.reduce((n, size) => n * size, 1);
+      if (numbers.length !== count) throw new RangeError(`shape ${shape.join('x')} needs ${count} values, got ${numbers.length}`);
+      const sizes = shape.length ? take(4 * shape.length) : 0;
+      new Uint32Array(x.memory.buffer, sizes, shape.length).set(shape);
+      const from = putDoubles(take, numbers), out = take(length + 1);
+      check(x[call](sizes, shape.length, from, out));
+      return text.decode(bytesAt(out, length));
+    });
+    const digestPixels = (pixels, height, width, call, length) => scoped(take => {
+      const bytes = render(pixels, width, height, 'pixels');
+      const from = putBytes(take, bytes), out = take(length + 1);
+      check(x[call](height, width, from, out));
+      return text.decode(bytesAt(out, length));
+    });
     // Bytes the core returns in memory of its own: copied out, and released.
     function owned(take, call) {
       const cell = take(8);                                        // a pointer and a length
@@ -248,11 +270,9 @@
       pqEncode: signal('udeep_pq_encode'),                         // cd/m^2 -> PQ signal in [0, 1]
       // "sha256:" and the digest of any bytes: of a colour-map table's file, what the index of the shipped tables
       // records for it
-      digestBytes: bytes => scoped(take => {
-        const data = asBytes(bytes, 'what is digested'), from = putBytes(take, data), out = take(DIGEST_LENGTH + 1);
-        check(x.udeep_digest_bytes(from, data.length, out));
-        return text.decode(bytesAt(out, DIGEST_LENGTH));
-      }),
+      digestBytes: bytes => digestBytes(bytes, 'udeep_digest_bytes', DIGEST_LENGTH),
+      // the same with SHA3-256: "sha3-256:" and 64 hex digits
+      digestBytesSha3: bytes => digestBytes(bytes, 'udeep_digest_bytes_sha3', DIGEST_SHA3_LENGTH),
       // The ISO 21496-1 block a gain-map JPEG carries, 61 bytes. The three values are log2, as the XMP gives them.
       iso21496Metadata: (gainMapMin, gainMapMax, hdrCapacityMax) => scoped(take => {
         const out = take(ISO21496_LENGTH);
@@ -270,23 +290,13 @@
         return bytesAt(to, bytes.length).slice();
       }),
 
-      // The two digests a file declares, as "sha256:" and 64 hex digits. `values` is flat, in row order.
-      digestData: (shape, values) => scoped(take => {
-        const numbers = asDoubles(values, 'what is digested');
-        const count = shape.reduce((n, size) => n * size, 1);
-        if (numbers.length !== count) throw new RangeError(`shape ${shape.join('x')} needs ${count} values, got ${numbers.length}`);
-        const sizes = shape.length ? take(4 * shape.length) : 0;
-        new Uint32Array(x.memory.buffer, sizes, shape.length).set(shape);
-        const from = putDoubles(take, numbers), out = take(DIGEST_LENGTH + 1);
-        check(x.udeep_digest_data(sizes, shape.length, from, out));
-        return text.decode(bytesAt(out, DIGEST_LENGTH));
-      }),
-      digestPixels: (pixels, height, width) => scoped(take => {
-        const bytes = render(pixels, width, height, 'pixels');
-        const from = putBytes(take, bytes), out = take(DIGEST_LENGTH + 1);
-        check(x.udeep_digest_pixels(height, width, from, out));
-        return text.decode(bytesAt(out, DIGEST_LENGTH));
-      }),
+      // The two digests a file declares, as "sha256:" and 64 hex digits; the Sha3 ones as "sha3-256:" and 64
+      // hex digits (DataDigestSha3, SdrDigestSha3). `values` is flat, in row order.
+      digestData: (shape, values) => digestData(shape, values, 'udeep_digest_data', DIGEST_LENGTH),
+      digestDataSha3: (shape, values) => digestData(shape, values, 'udeep_digest_data_sha3', DIGEST_SHA3_LENGTH),
+      digestPixels: (pixels, height, width) => digestPixels(pixels, height, width, 'udeep_digest_pixels', DIGEST_LENGTH),
+      digestPixelsSha3: (pixels, height, width) =>
+        digestPixels(pixels, height, width, 'udeep_digest_pixels_sha3', DIGEST_SHA3_LENGTH),
 
       // The stored levels of a file of this mapping: the widest, in data units, and the data criterion's worst
       // ratio for `noise` = [model, parameter] (NaN when the noise is unknown or not given). `levels` is for an

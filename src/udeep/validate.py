@@ -39,10 +39,11 @@ from udeep.color import REF_WHITE_NITS
 from udeep.export import read_png_pq, srgb_oetf
 from udeep.gainmap import read_gainmap_jpeg, read_iso_metadata
 from udeep.metadata import (
+    HASHES,
     Declaration,
+    data_digests,
     data_steps,
     data_steps_pq16,
-    digest_data,
     digest_pixels,
     missing_properties,
     packet,
@@ -329,29 +330,56 @@ def _precision(report: Report, d: Declaration, file_headroom: float) -> None:
     add("pass", f"MaxDataStep {step:.4g} {d.data_unit} as stated; declared a rendering{note}")
 
 
-def _link(report: Report, name: str, what: str, stated: str | None, given: str | None, how: str = "") -> None:
-    """7. one link, to the data or to the SDR figure of record: the digest supplied against the one declared."""
-    if stated is None:
+def _declared(d: Declaration, of: str) -> dict[str, str]:
+    """The digests a declaration states of its data ("data_digest") or its SDR figure ("sdr_digest"), by the name
+    of the hash function each was taken with."""
+    found = {"sha256": getattr(d, of), "sha3-256": getattr(d, f"{of}_sha3")}
+    return {name: digest for name, digest in found.items() if digest is not None}
+
+
+def _by_name(digests) -> dict[str, str] | None:
+    """Digests supplied as text, one or several, by the name each begins with."""
+    if digests is None:
+        return None
+    return {x.partition(":")[0]: x for x in ([digests] if isinstance(digests, str) else digests)}
+
+
+def _link(report: Report, name: str, what: str, stated: dict[str, str], given: dict[str, str] | None,
+          how: str = "") -> None:
+    """7. one link, to the data or to the SDR figure of record: every digest the file declares that can be worked
+    out for what was supplied, against the one declared (profile 8.6). One that differs fails the link."""
+    compared = [h for h in stated if given is not None and h in given]
+    unchecked = "" if given is None or len(compared) == len(stated) else (
+        "; not checked: " + ", ".join(h for h in stated if h not in compared))
+    if not stated:
         report.add("7", name, "skipped", f"the file declares no digest of {what}")
     elif given is None:
         report.add("7", name, "skipped", f"{what} was not supplied to compare with the declared digest")
-    elif given == stated:
-        report.add("7", name, "pass", f"{what} supplied is what the file was made from ({stated[:19]}…){how}")
+    elif not compared:
+        report.add("7", name, "skipped", f"{what} was supplied without a digest of the kinds the file declares "
+                                         f"({', '.join(stated)})")
+    elif wrong := [h for h in compared if given[h] != stated[h]]:
+        report.add("7", name, "fail", f"{what} supplied is not what the file was made from: its {wrong[0]} digest is "
+                                      f"{given[wrong[0]][:21]}…, the file declares {stated[wrong[0]][:21]}…{how}"
+                                      f"{unchecked}")
     else:
-        report.add("7", name, "fail", f"{what} supplied is not what the file was made from: its digest is "
-                                      f"{given[:19]}…, the file declares {stated[:19]}…{how}")
+        report.add("7", name, "pass", f"{what} supplied is what the file was made from, by "
+                                      f"{' and '.join(compared)} ({stated[compared[0]][:19]}…){how}{unchecked}")
 
 
-def _data_link(report: Report, d: Declaration, data, digest: str | None) -> None:
-    _link(report, "data link", "the data", d.data_digest, digest if data is None else digest_data(data))
+def _data_link(report: Report, d: Declaration, data, digest) -> None:
+    given = _by_name(digest) if data is None else dict(zip(HASHES, data_digests(data), strict=True))
+    _link(report, "data link", "the data", _declared(d, "data_digest"), given)
 
 
-def _sdr_link(report: Report, d: Declaration, sdr, digest: str | None) -> None:
+def _sdr_link(report: Report, d: Declaration, sdr, digest) -> None:
     """The SDR figure supplied, an 8-bit image, by its pixels. A gain-map JPEG's own base is JPEG-coded, so it is
     not the record and does not match."""
+    given = _by_name(digest)
     if sdr is not None:
-        digest = digest_pixels(np.asarray(Image.open(sdr).convert("RGB")))
-    _link(report, "sdr link", "the SDR figure", d.sdr_digest, digest)
+        pixels = np.asarray(Image.open(sdr).convert("RGB"))
+        given = {h: digest_pixels(pixels, h) for h in HASHES}
+    _link(report, "sdr link", "the SDR figure", _declared(d, "sdr_digest"), given)
 
 
 def _png_sdr_link(report: Report, d: Declaration, sdr, digest: str | None) -> None:
@@ -359,18 +387,22 @@ def _png_sdr_link(report: Report, d: Declaration, sdr, digest: str | None) -> No
     pixels. Supplied as the gain-map JPEG of the same figure, whose base is JPEG-coded and so cannot be compared by
     its pixels, it is compared by the SdrDigest it declares, once its data and its mapping are found to be this
     file's: a JPEG of another figure fails, whatever digest it states."""
-    how = ""
+    how, given = "", _by_name(digest)
     if sdr is not None:
         other = read_metadata(sdr) if Path(sdr).read_bytes()[:2] == b"\xff\xd8" else None
         if other is not None and other.sdr_digest is not None:
-            if other.data_digest != d.data_digest or other.mapping != d.mapping:
+            # the same data by SHA-256, and by SHA3-256 where both files declare it
+            sha3_differs = None not in (other.data_digest_sha3, d.data_digest_sha3) and \
+                other.data_digest_sha3 != d.data_digest_sha3
+            if other.data_digest != d.data_digest or sha3_differs or other.mapping != d.mapping:
                 return report.add("7", "sdr link", "fail", "the gain-map JPEG supplied declares another figure: its "
                                                            "data or its mapping is not this file's (profile 9.1.2)")
-            digest, how = other.sdr_digest, ("; the gain-map JPEG of the same figure, compared by the SdrDigest it "
-                                             "declares")
+            given, how = _declared(other, "sdr_digest"), ("; the gain-map JPEG of the same figure, compared by the "
+                                                          "SdrDigest it declares")
         else:
-            digest = digest_pixels(np.asarray(Image.open(sdr).convert("RGB")))
-    _link(report, "sdr link", "the SDR figure", d.sdr_digest, digest, how)
+            pixels = np.asarray(Image.open(sdr).convert("RGB"))
+            given = {h: digest_pixels(pixels, h) for h in HASHES}
+    _link(report, "sdr link", "the SDR figure", _declared(d, "sdr_digest"), given, how)
 
 
 def _pixels(report: Report, path, hdr, expected: tuple) -> None:
@@ -528,12 +560,13 @@ def _signature(raw: bytes) -> str | None:
     return "C2PA" if b"\xff\xeb" in raw and b"jumb" in raw and b"c2pa" in raw else None
 
 
-def validate(path, expected: tuple | None = None, data=None, sdr=None, data_digest: str | None = None,
-             sdr_digest: str | None = None) -> Report:
+def validate(path, expected: tuple | None = None, data=None, sdr=None, data_digest: str | list[str] | None = None,
+             sdr_digest: str | list[str] | None = None) -> Report:
     """Check the gain-map JPEG, or the 16-bit PQ PNG, at `path`. `expected` is (sdr, hdr): the fair SDR figure and the HDR figure as
     linear RGB arrays in multiples of SDR white, for the checks that need the pixels (udeep.mpl.validate
     supplies them from a figure). `data` is the array the figure was made from and `sdr` the path of its SDR figure
-    of record: each is compared with the digest the file declares (or pass the digests themselves). For a 16-bit
+    of record: each is compared with every digest the file declares, SHA-256 and SHA3-256 (or pass the digests
+    themselves, one or a list, each beginning with the name of its hash function). For a 16-bit
     PNG, `sdr` may also be the gain-map JPEG of the same figure, which is compared by the SdrDigest it declares,
     and `data` is also read back out of the file.
 

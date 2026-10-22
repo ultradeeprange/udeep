@@ -113,7 +113,7 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      113 public functions and classes in 18 Python modules, and the 38 names the Julia
+      115 public functions and classes in 18 Python modules, and the 38 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -558,7 +558,8 @@ declared_light   the declared mapping, data -&gt; light, computed from the decla
 caption          a caption sentence generated from the declaration (section 8.2)
 max_data_step    the widest range of data values that one stored code stands for (section 7.2.3)
 rounding_to_noise  the data criterion (section 7.2.1): that rounding against the stated uncertainty
-digest_data, digest_pixels   the digests that tie a file to its data and to its SDR figure of record
+digest_data, digest_pixels   the digests that tie a file to its data and to its SDR figure of record, with
+                 SHA-256 or SHA3-256 (profile 8.6)
 digest_sdr       SdrDigest of a fair SDR rendering given as light, as the writers store it in 8 bits
 values_pq16, read_png_data   a 16-bit PQ PNG&#x27;s light, and such a file, read back as data values</pre>
 <p>The namespace URI resolves to a page listing these properties; it is provisional until version 1.0 (profile
@@ -572,7 +573,8 @@ what the data is (<code>data_unit</code>, <code>data_unit_code</code>), why the 
 (<code>noise_model</code>, <code>noise_parameter</code>), how finely the file stores it (<code>max_data_step</code>, <code>rounding_to_noise</code>),
 which pixels were held (<code>masked</code>, <code>derived_mask</code>, <code>derived_masked</code>), which preset made the figure (<code>preset</code>),
 whether the file is a data record or a rendering (<code>record</code>), and what ties it to its data and to its SDR
-figure (<code>data_digest</code>, <code>data_source</code>, <code>sdr_digest</code>). <code>version</code> and <code>image_state</code> are fixed by the profile.</p>
+figure (<code>data_digest</code>, <code>data_source</code>, <code>sdr_digest</code>, and the SHA3-256 digests <code>data_digest_sha3</code> and
+<code>sdr_digest_sha3</code>, each only with its SHA-256 partner). <code>version</code> and <code>image_state</code> are fixed by the profile.</p>
 <p>ValueError, with the reason, for a declaration the profile does not allow.</p>
 <div class="member">
 <h4 id="metadata.Declaration.mapping">mapping <span class="kind">property</span></h4>
@@ -591,21 +593,31 @@ the sign of the exponent p - 1 and at least two digits of it.</p>
 <pre class="sig">to_xmp(d: Declaration) -&gt; bytes</pre>
 <p>A complete XMP packet holding the declaration as <code>udeep:</code> attributes.</p>
 <h3 id="metadata.digest_data"><span class="kind">function</span>digest_data</h3>
-<pre class="sig">digest_data(a) -&gt; str</pre>
-<p>A digest of an array&#x27;s values and shape, whatever type it is stored as: &quot;sha256:&quot; and 64 hex digits.</p>
+<pre class="sig">digest_data(a, algorithm: str=&#x27;sha256&#x27;) -&gt; str</pre>
+<p>A digest of an array&#x27;s values and shape, whatever type it is stored as: &quot;sha256:&quot; and 64 hex digits, or with
+<code>algorithm=&quot;sha3-256&quot;</code> the same bytes digested with SHA3-256, &quot;sha3-256:&quot; and 64 hex digits (DataDigestSha3).</p>
 <p>The array is taken as float64, little-endian, in row order; every NaN counts as the same value and -0 as 0.
 The shape goes in first, so the same numbers in another shape give another digest.</p>
 <p>Only real numbers that float64 holds exactly are accepted: floats, and integers no larger than 2 ** 53.
 Anything else (complex numbers, text, booleans, dates, wider floats) raises ValueError, because the cast would
 give two different arrays one digest. A masked array is digested as its stored values, hidden ones included;
 the mask is not part of the digest.</p>
+<h3 id="metadata.data_digests"><span class="kind">function</span>data_digests</h3>
+<pre class="sig">data_digests(a, algorithms=tuple(HASHES)) -&gt; list[str]</pre>
+<p>digest_data of <code>a</code> with each of <code>algorithms</code> (default: SHA-256, then SHA3-256), the array taken as float64
+once for all of them.</p>
 <h3 id="metadata.digest_pixels"><span class="kind">function</span>digest_pixels</h3>
-<pre class="sig">digest_pixels(rgb8) -&gt; str</pre>
-<p>A digest of an 8-bit RGB image&#x27;s pixels (H x W x 3), independent of how the file stores them.</p>
+<pre class="sig">digest_pixels(rgb8, algorithm: str=&#x27;sha256&#x27;) -&gt; str</pre>
+<p>A digest of an 8-bit RGB image&#x27;s pixels (H x W x 3), independent of how the file stores them: &quot;sha256:&quot; and
+64 hex digits, or with <code>algorithm=&quot;sha3-256&quot;</code> the SHA3-256 of the same bytes (SdrDigestSha3).</p>
 <p>It is taken over the text &quot;udeep-rgb8-1;&lt;height&gt;x&lt;width&gt;;&quot; and then the bytes, row by row. The array must
 already be unsigned 8-bit: any other type raises ValueError, since casting it would wrap or truncate.</p>
+<h3 id="metadata.combined_digest"><span class="kind">function</span>combined_digest</h3>
+<pre class="sig">combined_digest(digests, algorithm: str=&#x27;sha256&#x27;) -&gt; str</pre>
+<p>The data digest of a figure of several images (profile 8.6): of one, its own; of several, <code>algorithm</code>
+applied to their digests, each with its name, joined with &quot;|&quot; in the order they were drawn.</p>
 <h3 id="metadata.digest_sdr"><span class="kind">function</span>digest_sdr</h3>
-<pre class="sig">digest_sdr(sdr) -&gt; str</pre>
+<pre class="sig">digest_sdr(sdr, algorithm: str=&#x27;sha256&#x27;) -&gt; str</pre>
 <p>The SdrDigest (profile 8.6) of a fair SDR rendering given as light: height x width x 3, linear, 0 to 1, as
 HdrView.sdr holds it. It is taken over the 8-bit sRGB codes the writers store for it (the base of a gain-map
 JPEG before compression, and udeep.write_png_sdr&#x27;s file), with a NaN stored as 0.</p>
@@ -773,13 +785,14 @@ the one thing no file can show.</p>
     expected: tuple | None = None,
     data=None,
     sdr=None,
-    data_digest: str | None = None,
-    sdr_digest: str | None = None,
+    data_digest: str | list[str] | None = None,
+    sdr_digest: str | list[str] | None = None,
 ) -&gt; Report</pre>
 <p>Check the gain-map JPEG, or the 16-bit PQ PNG, at <code>path</code>. <code>expected</code> is (sdr, hdr): the fair SDR figure and the HDR figure as
 linear RGB arrays in multiples of SDR white, for the checks that need the pixels (udeep.mpl.validate
 supplies them from a figure). <code>data</code> is the array the figure was made from and <code>sdr</code> the path of its SDR figure
-of record: each is compared with the digest the file declares (or pass the digests themselves). For a 16-bit
+of record: each is compared with every digest the file declares, SHA-256 and SHA3-256 (or pass the digests
+themselves, one or a list, each beginning with the name of its hash function). For a 16-bit
 PNG, <code>sdr</code> may also be the gain-map JPEG of the same figure, which is compared by the SdrDigest it declares,
 and <code>data</code> is also read back out of the file.</p>
 <p>It does not raise on a file, whatever the file holds: see the report&#x27;s checks.</p>
@@ -1184,7 +1197,8 @@ tight where an implementation in float64 must agree with the reference, looser w
 arithmetic are involved.</p>
 <p>Kinds: scale, tone, pq_encode, srgb_oetf, cmap (a table lookup), table (a shipped table&#x27;s digest), mapping (a
 parameter record: position, light, fair SDR light, the inverse, colours), levels (stored levels and the data
-criterion, for the 8-bit gain-map path), levels_pq16 (the same for a 16-bit PQ PNG), mask_isolated, digest_data, digest_pixels, xmp (a declaration&#x27;s serialised form), caption, iso21496
+criterion, for the 8-bit gain-map path), levels_pq16 (the same for a 16-bit PQ PNG), mask_isolated, digest_data, digest_pixels, digest_data_sha3, digest_pixels_sha3 (the same with SHA3-256), xmp (a
+declaration&#x27;s serialised form), caption, iso21496
 (the gain-map metadata block&#x27;s bytes).</p>
 <p>A levels_pq16 case is a levels case for a 16-bit PQ PNG with white at <code>white_nits</code> (203 cd/m2, profile 9.1.1): one
 code for each colour, no split at the knee. Its mappings are the grey forms of the mapping records. Sixteen-bit codes
@@ -1242,12 +1256,15 @@ mapped on the caller&#x27;s thread whatever <code>threads</code> is: starting an
 them (<code>Vector{Float32}</code> of <code>2 * nodes * 3</code> numbers) or <code>nothing</code> for grey. Returns an array of the shape of <code>y</code>
 with a last dimension of 3.</p>
 <h3 id="julia.digest_data"><span class="kind">function</span>digest_data</h3>
-<pre class="block">digest_data(a)</pre>
+<pre class="block">digest_data(a; algorithm = &quot;sha256&quot;)</pre>
 <p>The digest that ties a file to its data (<code>udeep:DataDigest</code>): of the values and shape of <code>a</code>, whatever type it is
 stored as. Every NaN counts as the same value. An array with no dimensions, such as <code>fill(1.5)</code>, has the digest of
-the one-element vector <code>[1.5]</code>: the Python reference digests a scalar so, and the core follows it.</p>
+the one-element vector <code>[1.5]</code>: the Python reference digests a scalar so, and the core follows it.
+<code>algorithm = &quot;sha3-256&quot;</code> gives the same bytes digested with SHA3-256 (<code>udeep:DataDigestSha3</code>), so that the link to
+the data does not rest on one hash function.</p>
 <h3 id="julia.digest_pixels"><span class="kind">function</span>digest_pixels</h3>
-<p><code>digest_pixels(rgb)</code>: the digest of an 8-bit RGB image, <code>height x width x 3</code> (<code>udeep:SdrDigest</code>).</p>
+<p><code>digest_pixels(rgb; algorithm = &quot;sha256&quot;)</code>: the digest of an 8-bit RGB image, <code>height x width x 3</code>
+(<code>udeep:SdrDigest</code>; with <code>algorithm = &quot;sha3-256&quot;</code>, <code>udeep:SdrDigestSha3</code>).</p>
 <h3 id="julia.srgb_encode"><span class="kind">function</span>srgb_encode</h3>
 <p><code>srgb_encode(linear)</code>: linear light -&gt; sRGB signal, both in [0, 1]; values outside are clipped, NaN stays NaN.</p>
 <h3 id="julia.srgb_decode"><span class="kind">function</span>srgb_decode</h3>
@@ -1257,7 +1274,7 @@ the one-element vector <code>[1.5]</code>: the Python reference digests a scalar
 <p>The <code>udeep:SdrDigest</code> of a fair SDR rendering given as light (<code>height x width x 3</code>, linear, 0 to 1: the <code>sdr</code> of
 an <code>HdrView</code>), taken over the 8-bit sRGB codes the writers store for it, with NaN as 0. A file with no SDR
 base of its own, such as a 16-bit PQ PNG, must declare it (profile 9.1.2); the gain-map JPEG of the same figure
-then declares the same value.</p>
+then declares the same value. <code>algorithm = &quot;sha3-256&quot;</code> gives <code>udeep:SdrDigestSha3</code>.</p>
 <h3 id="julia.value_at"><span class="kind">function</span>value_at</h3>
 <p><code>value_at(m, t)</code>: position in [0, 1] -&gt; data values, the inverse of <code>UDeepCore.position</code> inside the range.</p>
 <h3 id="julia.isolated"><span class="kind">function</span>isolated</h3>

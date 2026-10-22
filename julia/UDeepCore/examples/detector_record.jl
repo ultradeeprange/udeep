@@ -39,7 +39,9 @@ function record(directory)
                                               max_data_step = step, noise_model = "constant", noise_parameter = READ_NOISE,
                                               rounding_to_noise = ratio, record = kind, preset = "extend",
                                               colour_map = "grey", data_digest = digest_data(data),
-                                              sdr_digest = digest_sdr(view.sdr))
+                                              sdr_digest = digest_sdr(view.sdr),
+                                              data_digest_sha3 = digest_data(data; algorithm = "sha3-256"),
+                                              sdr_digest_sha3 = digest_sdr(view.sdr; algorithm = "sha3-256"))
     kind(ratio) = ratio <= 0.1 ? "data-record" : "rendering"
 
     step8, ratio8 = levels(m, nothing, HEADROOM; noise = NOISE)

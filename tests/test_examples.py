@@ -36,6 +36,10 @@ def test_a_figure_example_writes_a_conforming_file_for_both_themes(name, tmp_pat
     light, dark = read_metadata(tmp_path / f"{name}_hdr.jpg"), read_metadata(tmp_path / f"{name}_dark_hdr.jpg")
     assert light is not None and dark is not None and light.record == "rendering"
     assert light.data_digest == dark.data_digest and light.mapping == dark.mapping     # one figure, two themes
+    # each theme its own SDR figure, by both hash functions; the data the same, by both (profile 8.7)
+    assert light.data_digest_sha3 == dark.data_digest_sha3 is not None
+    assert light.sdr_digest != dark.sdr_digest and light.sdr_digest_sha3 != dark.sdr_digest_sha3
+    assert None not in (light.sdr_digest_sha3, dark.sdr_digest_sha3)
     assert (tmp_path / f"{name}_sdr.png").stat().st_size > 10_000
 
 

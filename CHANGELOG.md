@@ -10,6 +10,22 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ## Unreleased
 
+### 2026-10-23
+
+- **SHA3-256 digests, written and checked.** Every writer now declares `DataDigestSha3` and `SdrDigestSha3` beside
+  the SHA-256 digests: `udeep.mpl` (each theme of a figure with its own SDR digests, the data's the same in both),
+  the Julia Makie extension, the self-test's data record and the examples. The validator checks every digest a
+  file declares that it can work out (`validate(..., data=...)`, `--sdr`, or digests given as text) and fails a
+  link if any differs. The Rust core has its own SHA3-256 (`core/src/sha3.rs`, no new dependency; checked against
+  FIPS 202's examples and, through the C interface, against Python's `hashlib` on every length from 0 to 299
+  bytes), with `udeep_digest_data_sha3`, `udeep_digest_pixels_sha3` and `udeep_digest_bytes_sha3`;
+  `udeep_declaration` gains two text fields at its end, so C callers must rebuild. The JavaScript port has its
+  own too, and the WebAssembly binding reaches the core's. `digest_data`, `digest_pixels` and `digest_sdr` take
+  `algorithm="sha3-256"` in Python and `algorithm = "sha3-256"` in Julia. When a file declares where its data is
+  kept, the reference caption now ends by saying so, with both digests in full (profile 9.4.5). Three golden
+  cases are added and the caption and XMP cases change; Python, Rust, Julia, the JavaScript port and the
+  WebAssembly build all reproduce them.
+
 ### 2026-10-22
 
 - **Checkable in a hundred years, and traceable** (profile 8.6, 9.4.5, §16; agreed by Mathew the same day). A
@@ -17,8 +33,7 @@ the code implements: 0.3 implements the v0.3 draft.
   that the link to its data does not rest on one hash function; a file matches only if every digest a check can
   compute matches. A published figure should state its data's identifier and digest in its caption or data
   statement, where every library that keeps the paper keeps them too. §16 and the Trust page say what a check made
-  a century later rests on: no live service, trust list or single algorithm. The reference implementation does
-  not write or check the SHA3-256 digests yet.
+  a century later rests on: no live service, trust list or single algorithm.
 - **A Trust page on the site**: a proposal for checking a scientific figure against the data it claims to show,
   with graded verdicts, a public record of the original that copies point back to, an open verifier, and the first
   experiment, C2PA signatures on UDeep files. Decided the same day: signing will be optional and off unless asked

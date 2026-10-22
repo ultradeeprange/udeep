@@ -278,6 +278,8 @@ fn declarations_with_bad_text_or_numbers_are_refused() {
         data_source: none,
         data_unit_code: none,
         sdr_digest: none,
+        data_digest_sha3: none,
+        sdr_digest_sha3: none,
     };
     let (mut data, mut length) = (null_mut::<u8>(), 0usize);
     unsafe {
@@ -377,6 +379,8 @@ fn calls_from_many_threads_at_once_agree_with_one_thread() {
                         data_source: none,
                         data_unit_code: none,
                         sdr_digest: none,
+                        data_digest_sha3: none,
+                        sdr_digest_sha3: none,
                     };
                     let (mut data, mut length) = (null_mut::<u8>(), 0usize);
                     unsafe {

@@ -22,7 +22,7 @@ needs_node = pytest.mark.skipif(NODE is None, reason="node not installed")
 
 # What the port implements, and what it is known not to: the levels, the declaration's text and the caption.
 IMPLEMENTED = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "mask_isolated", "digest_data",
-               "digest_pixels", "iso21496"}
+               "digest_pixels", "digest_data_sha3", "digest_pixels_sha3", "iso21496"}
 NOT_IN_THE_PORT = {"levels", "levels_pq16", "xmp", "caption"}
 
 

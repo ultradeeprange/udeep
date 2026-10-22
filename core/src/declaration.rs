@@ -46,6 +46,8 @@ pub struct Declaration {
     pub data_source: Option<String>,
     pub data_unit_code: Option<String>,
     pub sdr_digest: Option<String>,
+    pub data_digest_sha3: Option<String>,
+    pub sdr_digest_sha3: Option<String>,
     pub version: String,
     pub image_state: String,
 }
@@ -123,6 +125,14 @@ impl Declaration {
         }
         if self.derived_masked > 0 && self.derived_mask.as_deref().unwrap_or("").is_empty() {
             return Err(format!("derived_mask must name the rule that holds {} pixels at white", self.derived_masked));
+        }
+        for (sha3, sha256, name) in [
+            (&self.data_digest_sha3, &self.data_digest, "data_digest"),
+            (&self.sdr_digest_sha3, &self.sdr_digest, "sdr_digest"),
+        ] {
+            if sha3.is_some() && sha256.is_none() {
+                return Err(format!("{name}_sha3 is declared only with {name} (profile 8.5)"));
+            }
         }
         self.mapping()?;
         if !KNEE_RULES.contains(&self.knee_rule.split(';').next().unwrap_or("").trim()) {
@@ -293,6 +303,8 @@ pub fn description(d: &Declaration) -> Result<String, String> {
     put("DataSource", d.data_source.clone());
     put("DataUnitCode", d.data_unit_code.clone());
     put("SdrDigest", d.sdr_digest.clone());
+    put("DataDigestSha3", d.data_digest_sha3.clone());
+    put("SdrDigestSha3", d.sdr_digest_sha3.clone());
     put("Version", text(&d.version));
     put("ImageState", text(&d.image_state));
     out.push_str("/>");
@@ -378,5 +390,16 @@ pub fn caption(d: &Declaration) -> String {
     }
     let kind = if d.record == "data-record" { "a data record" } else { "a rendering, not a data record" };
     parts.push(format!("This file is {kind}: one stored level spans up to {}{unit}.", caption_number(d.max_data_step)));
+    if let Some(source) = &d.data_source {
+        // profile 9.4.5: where the data is kept, and its digests in full, so the paper itself holds the link
+        let digests: Vec<&str> =
+            [&d.data_digest, &d.data_digest_sha3].into_iter().flatten().map(String::as_str).collect();
+        let with = match digests.len() {
+            0 => String::new(),
+            1 => format!(", with the digest {}", digests[0]),
+            _ => format!(", with the digests {}", digests.join(" and ")),
+        };
+        parts.push(format!("The data is kept at {source}{with}."));
+    }
     parts.join(" ")
 }

@@ -31,10 +31,10 @@ srgb_decode(signal::AbstractArray{<:Real}) = buffers(:udeep_srgb_decode, signal)
 The `udeep:SdrDigest` of a fair SDR rendering given as light (`height x width x 3`, linear, 0 to 1: the `sdr` of
 an [`HdrView`](@ref)), taken over the 8-bit sRGB codes the writers store for it, with NaN as 0. A file with no SDR
 base of its own, such as a 16-bit PQ PNG, must declare it (profile 9.1.2); the gain-map JPEG of the same figure
-then declares the same value.
+then declares the same value. `algorithm = "sha3-256"` gives `udeep:SdrDigestSha3`.
 """
-digest_sdr(sdr::AbstractArray{<:Real, 3}) =
-    digest_pixels(round.(UInt8, srgb_encode(replace(Float64.(sdr), NaN => 0.0)) .* 255))
+digest_sdr(sdr::AbstractArray{<:Real, 3}; algorithm::AbstractString = "sha256") =
+    digest_pixels(round.(UInt8, srgb_encode(replace(Float64.(sdr), NaN => 0.0)) .* 255); algorithm)
 
 "`value_at(m, t)`: position in [0, 1] -> data values, the inverse of `UDeepCore.position` inside the range."
 value_at(m::Mapping, t::AbstractArray{<:Real}) = each(:udeep_value_at, m, t)
@@ -212,6 +212,8 @@ Base.@kwdef struct Declaration
     data_source::Union{Nothing, String} = nothing
     data_unit_code::Union{Nothing, String} = nothing
     sdr_digest::Union{Nothing, String} = nothing
+    data_digest_sha3::Union{Nothing, String} = nothing     # each only with its SHA-256 partner (profile 8.5)
+    sdr_digest_sha3::Union{Nothing, String} = nothing
 end
 
 struct CText
@@ -227,11 +229,12 @@ struct CDeclaration
     rounding_to_noise::Float64
     masked::UInt64
     derived_masked::UInt64
-    texts::NTuple{12, CText}
+    texts::NTuple{14, CText}
 end
 
 texts(d::Declaration) = (d.data_unit, d.knee_rule, d.noise_model, d.record, d.derived_mask, d.preset, d.colour_map,
-                         d.colour_map_table, d.data_digest, d.data_source, d.data_unit_code, d.sdr_digest)
+                         d.colour_map_table, d.data_digest, d.data_source, d.data_unit_code, d.sdr_digest,
+                         d.data_digest_sha3, d.sdr_digest_sha3)
 
 function owned_text(name::Symbol, d::Declaration)
     (d.masked >= 0 && d.derived_masked >= 0) || throw(ArgumentError("masked pixel counts cannot be negative"))
@@ -256,15 +259,19 @@ description(d::Declaration) = owned_text(:udeep_description, d)
 caption(d::Declaration) = owned_text(:udeep_caption, d)
 
 """
-    combined_digest(digests)
+    combined_digest(digests; algorithm = "sha256")
 
 The data digest of a figure: of one image, its own; of several, a digest of their digests in drawing order, as
-the Python reference combines them.
+the Python reference combines them. With `algorithm = "sha3-256"`, of their SHA3-256 digests, with SHA3-256.
 """
-function combined_digest(digests::AbstractVector{<:AbstractString})
+function combined_digest(digests::AbstractVector{<:AbstractString}; algorithm::AbstractString = "sha256")
+    hash_of(algorithm)
     isempty(digests) && throw(ArgumentError("no digests to combine"))
+    all(d -> startswith(d, algorithm * ":"), digests) ||
+        throw(ArgumentError("every digest combined with $algorithm must be a $algorithm digest"))
     length(digests) == 1 && return String(only(digests))
-    return "sha256:" * bytes2hex(sha256(join(digests, "|")))
+    joined = join(digests, "|")
+    return algorithm * ":" * bytes2hex(algorithm == "sha256" ? sha256(joined) : sha3_256(joined))
 end
 
 """

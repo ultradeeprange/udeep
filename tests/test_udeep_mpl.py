@@ -392,8 +392,10 @@ def test_a_theme_changes_the_furniture_and_nothing_about_the_data(tmp_path):
     light = themed_figure("light", tmp_path); dark = themed_figure("dark", tmp_path)
     assert light[1].ok and dark[1].ok, (str(light[1]), str(dark[1]))
     a, b = read_metadata(light[0]), read_metadata(dark[0])
-    assert a.sdr_digest != b.sdr_digest                                  # two SDR figures, two files
-    assert dataclasses.replace(a, sdr_digest=None) == dataclasses.replace(b, sdr_digest=None)   # one declaration
+    assert a.sdr_digest != b.sdr_digest and a.sdr_digest_sha3 != b.sdr_digest_sha3   # two SDR figures, two files
+    assert a.data_digest_sha3 == b.data_digest_sha3 is not None          # one data, by either hash function
+    unlinked = {"sdr_digest": None, "sdr_digest_sha3": None}
+    assert dataclasses.replace(a, **unlinked) == dataclasses.replace(b, **unlinked)   # one declaration
     (base_l, hdr_l), (base_d, hdr_d) = light[2:], dark[2:]
     assert base_l.shape == base_d.shape
     lifted_l, lifted_d = (hdr_l > base_l).any(-1), (hdr_d > base_d).any(-1)

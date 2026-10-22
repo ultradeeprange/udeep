@@ -12,7 +12,8 @@ function declaration(d)
                        preset = text("preset"), colour_map = text("colour_map"),
                        colour_map_table = text("colour_map_table"), data_digest = text("data_digest"),
                        data_source = text("data_source"), data_unit_code = text("data_unit_code"),
-                       sdr_digest = text("sdr_digest"))
+                       sdr_digest = text("sdr_digest"), data_digest_sha3 = text("data_digest_sha3"),
+                       sdr_digest_sha3 = text("sdr_digest_sha3"))
 end
 
 @testset "what a figure needs" begin

@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import './udeepcore.js';
 
 const { cmap, makeTable, pqEncode, scale, tone, srgbOetf, position, light, valueOfLight, kneePosition, colours,
-  sha256, digestData, digestPixels, isolated, iso21496Metadata } = globalThis.UDeepCore;
+  sha256, digestData, digestDataSha3, digestPixels, digestPixelsSha3, isolated, iso21496Metadata } = globalThis.UDeepCore;
 
 const NOT_IN_THIS_PORT = ['levels', 'levels_pq16', 'xmp', 'caption'];           // the levels, the declaration's text, the caption
 
@@ -39,6 +39,8 @@ const KINDS = {
     .map(row => row.map(v => (v ? '1' : '0')).join('')),
   digest_data: a => digestData(a.shape, a.values.flat(Infinity).map(num)),
   digest_pixels: a => digestPixels(Uint8Array.from(a.values.flat(Infinity)), a.shape[0], a.shape[1]),
+  digest_data_sha3: a => digestDataSha3(a.shape, a.values.flat(Infinity).map(num)),
+  digest_pixels_sha3: a => digestPixelsSha3(Uint8Array.from(a.values.flat(Infinity)), a.shape[0], a.shape[1]),
   iso21496: a => hex(iso21496Metadata(a.gain_map_min, a.gain_map_max, a.hdr_capacity_max)),
 };
 

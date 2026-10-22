@@ -5,9 +5,10 @@ import json
 from udeep import golden
 
 KINDS = {"scale", "tone", "pq_encode", "srgb_oetf", "cmap", "table", "mapping", "levels", "levels_pq16", "mask_isolated", "digest_data",
-         "digest_pixels", "xmp", "caption", "iso21496"}
+         "digest_pixels", "digest_data_sha3", "digest_pixels_sha3", "xmp", "caption", "iso21496"}
 COUNTS = {"scale": 3, "tone": 11, "pq_encode": 1, "srgb_oetf": 1, "cmap": 2, "table": 24, "mapping": 8, "levels": 32, "levels_pq16": 8,
-          "mask_isolated": 1, "digest_data": 1, "digest_pixels": 2, "xmp": 2, "caption": 1, "iso21496": 1}
+          "mask_isolated": 1, "digest_data": 1, "digest_pixels": 2, "digest_data_sha3": 1, "digest_pixels_sha3": 2, "xmp": 2,
+          "caption": 1, "iso21496": 1}
 
 
 def refuse(constant: str):
@@ -24,7 +25,7 @@ def cases_of(kind: str) -> dict:
 
 def test_the_contract_has_the_cases_it_is_said_to_have():
     cases = committed()["cases"]
-    assert {kind: len(cases_of(kind)) for kind in KINDS} == COUNTS and len(cases) == sum(COUNTS.values()) == 98
+    assert {kind: len(cases_of(kind)) for kind in KINDS} == COUNTS and len(cases) == sum(COUNTS.values()) == 101
 
 
 def test_the_data_criterion_is_pinned_for_every_noise_model():

@@ -5,6 +5,7 @@ says, buffers in and out, error codes back. Skipped when cargo is not installed.
 """
 import ctypes
 import dataclasses
+import hashlib
 import importlib
 import json
 import math
@@ -44,7 +45,7 @@ class CText(ctypes.Structure):
 
 
 TEXTS = ("data_unit", "knee_rule", "noise_model", "record", "derived_mask", "preset", "colour_map", "colour_map_table",
-         "data_digest", "data_source", "data_unit_code", "sdr_digest")
+         "data_digest", "data_source", "data_unit_code", "sdr_digest", "data_digest_sha3", "sdr_digest_sha3")
 
 
 class CCriterion(ctypes.Structure):
@@ -95,6 +96,10 @@ def lib():
     dll.udeep_digest_data.restype = ctypes.c_int32
     dll.udeep_digest_pixels.argtypes = [ctypes.c_size_t, ctypes.c_size_t, ctypes.POINTER(ctypes.c_uint8), ctypes.c_char_p]
     dll.udeep_digest_pixels.restype = ctypes.c_int32
+    dll.udeep_digest_data_sha3.argtypes = dll.udeep_digest_data.argtypes
+    dll.udeep_digest_data_sha3.restype = ctypes.c_int32
+    dll.udeep_digest_pixels_sha3.argtypes = dll.udeep_digest_pixels.argtypes
+    dll.udeep_digest_pixels_sha3.restype = ctypes.c_int32
     dll.udeep_gainmap_jpeg.argtypes = [doubles, doubles, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_uint32,
                                          ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t,
                                          ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)), ctypes.POINTER(ctypes.c_size_t)]
@@ -123,6 +128,8 @@ def lib():
     dll.udeep_pq_encode.restype = ctypes.c_int32
     dll.udeep_digest_bytes.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_char_p]
     dll.udeep_digest_bytes.restype = ctypes.c_int32
+    dll.udeep_digest_bytes_sha3.argtypes = dll.udeep_digest_bytes.argtypes
+    dll.udeep_digest_bytes_sha3.restype = ctypes.c_int32
     dll.udeep_iso21496_block.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_double, ctypes.c_char_p]
     dll.udeep_iso21496_block.restype = ctypes.c_int32
     dll.udeep_levels_criterion.argtypes = [record, ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
@@ -164,7 +171,7 @@ def test_the_library_exports_every_function_the_header_declares(lib):
     only a WebAssembly build has (tests/test_udeep_wasm.py holds that build to the whole header)."""
     header = re.sub(r"/\*.*?\*/", "", (CORE / "include" / "udeep_core.h").read_text(encoding="utf-8"), flags=re.DOTALL)
     declared = set(re.findall(r"\b(udeep_\w+)\(", header)) - {"udeep_buffer_alloc", "udeep_buffer_free"}
-    assert len(declared) == 39 and not [name for name in sorted(declared) if not hasattr(lib, name)]
+    assert len(declared) == 42 and not [name for name in sorted(declared) if not hasattr(lib, name)]
     assert not hasattr(lib, "udeep_buffer_alloc")               # memory is the host's own outside WebAssembly
 
 
@@ -421,6 +428,27 @@ def test_the_digests_through_the_c_interface_are_the_reference_ones(lib):
     cases = json.loads(golden.PATH.read_text(encoding="utf-8"))["cases"]
     assert digest_data(data) == cases["digest_data"]["out"]          # the same array as the golden case
     assert lib.udeep_digest_pixels(37, 53, None, out) == 1
+
+
+def test_the_sha3_digests_through_the_c_interface_are_the_reference_ones(lib):
+    """The core's own SHA3-256 (core/src/sha3.rs) against Python's hashlib, through the digests a file declares and
+    on bytes of every length either side of the 136-byte block."""
+    from udeep.metadata import digest_data, digest_pixels
+    out = ctypes.create_string_buffer(74)
+    data = np.array([[0.0, -0.0, 1.5], [np.nan, -2.25, 1e300]])
+    shape = (ctypes.c_size_t * 2)(*data.shape)
+    assert lib.udeep_digest_data_sha3(shape, 2, data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)), out) == 0
+    assert out.value.decode() == digest_data(data, "sha3-256") and len(out.value) == 73
+    image = np.random.default_rng(1).integers(0, 256, (37, 53, 3), dtype=np.uint8)
+    assert lib.udeep_digest_pixels_sha3(37, 53, image.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)), out) == 0
+    assert out.value.decode() == digest_pixels(image, "sha3-256")
+    message = bytes(np.random.default_rng(2).integers(0, 256, 700, dtype=np.uint8))
+    for length in [*range(300), 543, 544, 545, 700]:
+        assert lib.udeep_digest_bytes_sha3(message[:length], length, out) == 0
+        assert out.value.decode() == "sha3-256:" + hashlib.sha3_256(message[:length]).hexdigest(), length
+    assert lib.udeep_digest_bytes_sha3(None, 0, out) == 0
+    assert lib.udeep_digest_bytes_sha3(None, 3, out) == 1 and lib.udeep_digest_bytes_sha3(b"abc", 3, None) == 1
+    assert lib.udeep_digest_data_sha3(None, 2, None, out) == 1 and lib.udeep_digest_pixels_sha3(2, 2, None, out) == 1
 
 
 def test_a_value_with_no_dimensions_has_the_reference_digest_of_a_scalar(lib):

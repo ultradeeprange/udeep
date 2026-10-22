@@ -14,7 +14,8 @@
 //! * a colour map is a table, [`Table`], interpolated linearly (D9); [`cmap`] makes a registered map's table
 //!   at a headroom that has no published one;
 //! * the library draws nothing and encodes no image formats (D5, D6), and depends on no other crate: its
-//!   SHA-256 ([`sha256`]) and its threads ([`par`]) are the standard library's or its own.
+//!   SHA-256 and SHA3-256 ([`sha256`], [`sha3`]) and its threads ([`par`]) are the standard library's or its
+//!   own.
 //!
 //! The C interface is in [`ffi`]; its header is `include/udeep_core.h`.
 
@@ -31,10 +32,12 @@ pub mod par;
 pub mod png;
 pub mod record;
 pub mod sha256;
+pub mod sha3;
 
 pub use declaration::{Declaration, caption, description, float_text, format_g};
 pub use record::{
-    Criterion, Levels, Noise, UNBOUNDED, digest_data, digest_pixels, levels, levels_pq16, rounding_to_noise,
+    Criterion, Levels, Noise, UNBOUNDED, digest_data, digest_data_sha3, digest_pixels, digest_pixels_sha3, levels,
+    levels_pq16, rounding_to_noise,
 };
 
 /// How close to either end of the range the curve can place a knee. A record whose knee is nearer the bottom than

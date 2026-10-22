@@ -1,5 +1,5 @@
 // JS port of UDeep's core: scale, tone, colour-map tables, mapping records, PQ. Scalar functions, float64.
-// Also the parts of a file that are plain bytes: the two digests, the isolated-pixel rule and the gain map's
+// Also the parts of a file that are plain bytes: the two digests (with SHA-256 and with SHA3-256), the isolated-pixel rule and the gain map's
 // ISO 21496-1 metadata. It does not write the declaration, the caption or the levels.
 // Contract: reproduce udeep/golden.json, each case to its own stated tolerance (check_golden.mjs).
 // A plain script, not an ES module: pages load it with <script src="udeepcore.js"> (the supplementary
@@ -232,10 +232,72 @@
     return Array.from(h, v => v.toString(16).padStart(8, '0')).join('');
   }
 
+  // SHA3-256 (FIPS 202) of bytes, as 64 hex digits, written out for the same reasons. The Keccak-f[1600]
+  // permutation works on 25 lanes of 64 bits, each held here as two 32-bit halves, the low one first.
+  const KECCAK_RC = ['0000000000000001', '0000000000008082', '800000000000808a', '8000000080008000',
+    '000000000000808b', '0000000080000001', '8000000080008081', '8000000000008009', '000000000000008a',
+    '0000000000000088', '0000000080008009', '000000008000000a', '000000008000808b', '800000000000008b',
+    '8000000000008089', '8000000000008003', '8000000000008002', '8000000000000080', '000000000000800a',
+    '800000008000000a', '8000000080008081', '8000000000008080', '0000000080000001', '8000000080008008']
+    .map(h => [parseInt(h.slice(8), 16), parseInt(h.slice(0, 8), 16)]);
+  // each lane's rotation (rho), in the order the lanes are moved (pi), and where each moves to: index x + 5 y
+  const KECCAK_ROTATION = [1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14, 27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44];
+  const KECCAK_MOVE = [10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4, 15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6, 1];
+  function rotl64(lo, hi, n) {                                     // n from 1 to 63
+    if (n === 32) return [hi, lo];
+    if (n > 32) { [lo, hi] = [hi, lo]; n -= 32; }                  // a turn of 32 swaps the halves
+    return [(lo << n) | (hi >>> (32 - n)), (hi << n) | (lo >>> (32 - n))];
+  }
+  function keccakF(s) {                                            // s: 50 words, lane i at s[2i] and s[2i + 1]
+    const c = new Uint32Array(10), row = new Uint32Array(10);
+    for (const [rcLo, rcHi] of KECCAK_RC) {
+      for (let x = 0; x < 5; x++) {                                // theta
+        c[2 * x] = s[2 * x] ^ s[2 * x + 10] ^ s[2 * x + 20] ^ s[2 * x + 30] ^ s[2 * x + 40];
+        c[2 * x + 1] = s[2 * x + 1] ^ s[2 * x + 11] ^ s[2 * x + 21] ^ s[2 * x + 31] ^ s[2 * x + 41];
+      }
+      for (let x = 0; x < 5; x++) {
+        const a = (x + 4) % 5, b = (x + 1) % 5, [lo, hi] = rotl64(c[2 * b], c[2 * b + 1], 1);
+        for (let y = 0; y < 25; y += 5) { s[2 * (y + x)] ^= c[2 * a] ^ lo; s[2 * (y + x) + 1] ^= c[2 * a + 1] ^ hi; }
+      }
+      let lo = s[2], hi = s[3];                                    // rho and pi
+      for (let i = 0; i < 24; i++) {
+        const to = KECCAK_MOVE[i], nextLo = s[2 * to], nextHi = s[2 * to + 1];
+        [s[2 * to], s[2 * to + 1]] = rotl64(lo, hi, KECCAK_ROTATION[i]);
+        lo = nextLo; hi = nextHi;
+      }
+      for (let y = 0; y < 25; y += 5) {                            // chi
+        row.set(s.subarray(2 * y, 2 * y + 10));
+        for (let x = 0; x < 5; x++) {
+          const b = (x + 1) % 5, d = (x + 2) % 5;
+          s[2 * (y + x)] = row[2 * x] ^ (~row[2 * b] & row[2 * d]);
+          s[2 * (y + x) + 1] = row[2 * x + 1] ^ (~row[2 * b + 1] & row[2 * d + 1]);
+        }
+      }
+      s[0] ^= rcLo; s[1] ^= rcHi;                                  // iota
+    }
+  }
+  function sha3_256(buffer) {
+    const bytes = asBytes(buffer, 'what is digested'), rate = 136;
+    const padded = new Uint8Array(bytes.length - (bytes.length % rate) + rate);  // the bytes, 0x06, zeros, a top bit
+    padded.set(bytes);
+    padded[bytes.length] ^= 0x06;
+    padded[padded.length - 1] ^= 0x80;
+    const s = new Uint32Array(50), view = new DataView(padded.buffer);
+    for (let block = 0; block < padded.length; block += rate) {
+      for (let i = 0; i < rate / 4; i++) s[i] ^= view.getUint32(block + 4 * i, true);
+      keccakF(s);
+    }
+    // the first 32 bytes of the state, each lane's least significant first, whatever the machine's own order
+    return Array.from({ length: 32 }, (_, i) => ((s[i >> 2] >>> (8 * (i & 3))) & 255).toString(16).padStart(2, '0')).join('');
+  }
+
   // The digest of an array's values and shape (udeep/metadata.py, digest_data): the text
   // "udeep-data-1;<shape, joined by x>;", then each value as a little-endian float64, in row order. -0 counts
   // as 0 and every NaN as the same NaN. `values` is flat: an array, or a typed array, of numbers.
-  function digestData(shape, values) {
+  // digestDataSha3 is the same bytes with SHA3-256 (DataDigestSha3).
+  const digestData = (shape, values) => 'sha256:' + sha256(dataBytes(shape, values));
+  const digestDataSha3 = (shape, values) => 'sha3-256:' + sha3_256(dataBytes(shape, values));
+  function dataBytes(shape, values) {
     const count = shape.reduce((n, size) => n * size, 1);
     if (values.length !== count) throw new RangeError(`shape ${shape.join('x')} needs ${count} values, got ${values.length}`);
     const body = new Uint8Array(8 * count), view = new DataView(body.buffer);
@@ -245,15 +307,17 @@
       if (Number.isNaN(v)) view.setUint32(8 * i + 4, 0x0000f87f);  // the bytes of the one NaN: 00 00 00 00 00 00 f8 7f
       else view.setFloat64(8 * i, v + 0, true);
     }
-    return 'sha256:' + sha256(joined([ascii(`udeep-data-1;${shape.join('x')};`), body]));
+    return joined([ascii(`udeep-data-1;${shape.join('x')};`), body]);
   }
 
   // The digest of an 8-bit RGB image's pixels (digest_pixels): the text "udeep-rgb8-1;<height>x<width>;", then
-  // the bytes, row by row. `pixels` is bytes, height x width x 3 of them.
-  function digestPixels(pixels, height, width) {
+  // the bytes, row by row. `pixels` is bytes, height x width x 3 of them. digestPixelsSha3: with SHA3-256.
+  const digestPixels = (pixels, height, width) => 'sha256:' + sha256(pixelBytes(pixels, height, width));
+  const digestPixelsSha3 = (pixels, height, width) => 'sha3-256:' + sha3_256(pixelBytes(pixels, height, width));
+  function pixelBytes(pixels, height, width) {
     const bytes = asBytes(pixels, 'pixels');
     if (bytes.length !== height * width * 3) throw new RangeError(`${height} x ${width} x 3 pixels are not ${bytes.length} bytes`);
-    return 'sha256:' + sha256(joined([ascii(`udeep-rgb8-1;${height}x${width};`), bytes]));
+    return joined([ascii(`udeep-rgb8-1;${height}x${width};`), bytes]);
   }
 
   // The isolated-pixel rule (udeep/masks.py, "isolated-3x3"): the pixels of `above` that belong to no full
@@ -289,6 +353,6 @@
   }
 
   globalThis.UDeepCore = { REF_WHITE_NITS, xyzToJzazbz, jzazbzToXyz, scale, tone, makeTable, cmap, pqEncode, srgbOetf,
-    position, kneePosition, light, lightAt, valueAt, valueOfLight, colours, exitSlope, uniformBlock, sha256, digestData,
-    digestPixels, isolated, iso21496Metadata };
+    position, kneePosition, light, lightAt, valueAt, valueOfLight, colours, exitSlope, uniformBlock, sha256, sha3_256,
+    digestData, digestDataSha3, digestPixels, digestPixelsSha3, isolated, iso21496Metadata };
 })();

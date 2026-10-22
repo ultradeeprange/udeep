@@ -349,10 +349,11 @@ if __name__ == "__main__":
     with plt.rc_context(hp.theme("dark")):
         dark = build()
     for name, entry in report.items():      # the dark set declares the same as the light one, bar the SDR figure
-        same = lambda d: {k: v for k, v in d["declared"].items() if k != "sdr_digest"}
+        same = lambda d: {k: v for k, v in d["declared"].items() if k not in ("sdr_digest", "sdr_digest_sha3")}
         if same(dark[name]) != same(entry) or dark[name]["caption"] != entry["caption"]:
             raise RuntimeError(f"{name}: the dark figure does not declare what the light one does")
-        entry["dark"] = {"sdr_digest": dark[name]["declared"]["sdr_digest"], "conformance": dark[name]["conformance"],
+        entry["dark"] = {"sdr_digest": dark[name]["declared"]["sdr_digest"],
+                         "sdr_digest_sha3": dark[name]["declared"].get("sdr_digest_sha3"), "conformance": dark[name]["conformance"],
                          "hdr_max": dark[name]["hdr_max"], "base_max": dark[name]["base_max"]}
     (ROOT / "tools" / "showcase_report.json").write_text(json.dumps(report, indent=1, default=str) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=1, default=str))

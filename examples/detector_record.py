@@ -45,7 +45,8 @@ def main(folder: Path = OUTPUT) -> dict:
     mapping = view.mapping
     common = {**dataclasses.asdict(mapping), "data_unit": "counts", "knee_rule": "preset; white at 1,000 counts",
               "noise_model": NOISE[0], "noise_parameter": NOISE[1], "preset": "extend", "data_digest": digest_data(data),
-              "sdr_digest": digest_sdr(view.sdr)}
+              "sdr_digest": digest_sdr(view.sdr), "data_digest_sha3": digest_data(data, "sha3-256"),
+              "sdr_digest_sha3": digest_sdr(view.sdr, "sha3-256")}
     out = {}
     for name, steps in (("jpeg", data_steps(mapping, scaled_by=HEADROOM)), ("png", data_steps_pq16(mapping))):
         against = rounding_to_noise(mapping, NOISE, steps=steps)

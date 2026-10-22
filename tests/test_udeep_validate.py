@@ -178,10 +178,22 @@ def test_a_required_property_that_is_absent_fails(saved, name):
 
 def test_an_optional_property_may_be_absent(saved):
     _fig, path = saved
-    for name in ("Preset", "DataDigest", "SdrDigest"):
+    for name in ("Preset", "DataDigest", "SdrDigest", "DataDigestSha3", "SdrDigestSha3"):
         rename(path, name)
     r = validate(path)
     assert r.ok and "complete and consistent" in detail(r, "metadata"), str(r)
+
+
+@pytest.mark.parametrize("name", ["DataDigest", "SdrDigest"])
+def test_a_sha3_digest_left_without_its_sha256_partner_fails(saved, name):
+    """Profile 8.5: a SHA3-256 digest is declared only with the SHA-256 one it goes with. Taking the SHA3-256 one out
+    as well (the test above) is allowed."""
+    _fig, path = saved
+    rename(path, name)
+    r = validate(path)
+    field = {"DataDigest": "data_digest", "SdrDigest": "sdr_digest"}[name]
+    assert not r.ok and r.status("metadata") == "fail", str(r)
+    assert f"{field}_sha3 is declared only with {field}" in detail(r, "metadata")
 
 
 @pytest.mark.parametrize("name, value", [("Version", "9.9"), ("ImageState", "display-referred"), ("Masked", "-5"),

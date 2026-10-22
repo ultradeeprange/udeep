@@ -96,9 +96,11 @@ declared_in(file) = String(copy(file))
         @test d.derived_mask == "isolated-3x3" && d.derived_masked == 1 && d.masked == 0
         @test d.data_digest == digest_data(scene_data()) && d.data_source == "doi:10.0000/example"
         @test d.record == "rendering" && d.sdr_digest === nothing && d.data_unit_code == "K"
+        @test d.data_digest_sha3 == digest_data(scene_data(); algorithm = "sha3-256") && d.sdr_digest_sha3 === nothing
         @test (d.max_data_step, d.rounding_to_noise) == levels(m, colour_table("fire", 4.0), 4.0; noise = (:constant, 2.5))
         codes = EXT.render(fig, 1)
-        written = EXT.with_sdr_digest(d, digest_pixels(codes))
+        written = EXT.with_sdr_digests(d, codes)
+        @test written.sdr_digest == digest_pixels(codes) && written.sdr_digest_sha3 == digest_pixels(codes; algorithm = "sha3-256")
         @test occursin(description(written), declared_in(file))                           # the file carries exactly this
         @test hdr_caption(fig) == caption(d) && occursin("50 K", hdr_caption(fig))
         # the core makes the file from the four renders; from the two figures written out, it is the same file
