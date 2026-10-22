@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trust · UDeep</title>
+<meta name="description" content="A proposal for checking a scientific figure against the data it claims to show: signatures, a public record of the original, and an open verifier.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --faint: #6b7580;
+    --tag: #8cc2e6; --warm: #e8b04a; --good: #9fd49a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  h3 { font-size: 18px; line-height: 1.3; }
+  p { margin: 0; max-width: 70ch; }
+  ul, ol { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 74ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover { color: var(--ink); }
+  .intro { padding-block: 48px 30px; display: grid; gap: 16px; }
+  section { padding-block: 40px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; gap: 18px; }
+  .status { justify-self: start; font-family: var(--mono); font-size: 12px; padding: 4px 10px; border: 1px solid var(--warm-line);
+            color: var(--warm); border-radius: 3px; }
+
+  /* the chain, from the measurement to a shared copy */
+  .chain { display: grid; gap: 8px; }
+  .link { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 16px; padding: 14px 16px;
+          background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+  .link b { font-family: var(--cond); font-size: 18px; }
+  .link p { font-size: 15px; color: var(--soft); }
+  .link.copy { border-style: dashed; }
+
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 640px; width: 100%; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; overflow-x: auto;
+        font: 13px/1.55 var(--mono); color: var(--ink); margin: 0; }
+  .refs { font-size: 14px; color: var(--soft); }
+  figure.diagram { margin: 6px 0; display: grid; gap: 10px; color: var(--ink); }
+  figure.diagram svg { width: 100%; height: auto; max-width: 980px; display: block; }
+  figure.diagram figcaption { font-size: 14px; color: var(--muted); max-width: 74ch; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 640px) { .link { grid-template-columns: 1fr; gap: 6px; } }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/trust/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Trust · UDeep">
+<meta property="og:description" content="A proposal for checking a scientific figure against the data it claims to show: signatures, a public record of the original, and an open verifier.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/trust/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  /* tables, the same on every page: a panel, readable headings, and a mark before each verdict */
+  .scroll:has(> table) { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 16px; }
+  .scroll > table th { color: var(--ink); }
+  .scroll > table td:first-child { font-weight: 600; color: var(--ink); }
+  td.yes, td.y, td.done { color: var(--yes); } td.no, td.n { color: var(--no); } td.part, td.p, td.next { color: var(--warm); }
+  td.later { color: var(--muted); }
+  td.yes::before, td.y::before, td.done::before { content: "\2713\00a0"; font-weight: 700; }
+  td.no::before, td.n::before { content: "\2717\00a0"; font-weight: 700; }
+  td.part::before, td.p::before { content: "\25D0\00a0"; }
+  td.next::before { content: "\2192\00a0"; }
+  td.later::before { content: "\25CB\00a0"; }
+  tr.ours td { background: var(--raise, var(--panel)); border-top: 2px solid var(--warm); border-bottom: 2px solid var(--warm); }
+  tr.ours td:first-child { color: var(--warm); }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">U<b>Deep</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../trust/index.html" aria-current="page">Trust</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <p class="eyebrow">Trust · a proposal, 17 October 2026, revised 22 October</p>
+  <h1>Checking a figure against its data</h1>
+  <p>A convincing image can now be made from nothing, and the metadata of any image can be changed in seconds.
+    Signatures and detectors already exist for photographs. A scientific figure is something else: it is a claim
+    about data. UDeep already declares how a figure's data became light, so it can do the one check that I could
+    not find anyone else doing, which is to confirm that a figure follows from the data it claims to show.</p>
+  <p class="status">Proposal. Nothing on this page is in the profile yet, and most of it is not built.</p>
+</div>
+
+<section id="principles"><div class="wrap">
+  <p class="eyebrow">Principles</p>
+  <h2>Nothing in the file is relied on for trust</h2>
+  <ul>
+    <li>Anything attached to an image can be removed: metadata, signatures, identifiers. Removing proof only makes a
+      file unverified. Nobody can add proof they do not hold.</li>
+    <li>The original is verified, and copies point back to it. Sharing (screenshots, messaging apps, a journal's
+      re-encoding) changes every byte, so a copy is never the evidence. It is a way back to the original.</li>
+    <li>Forgery is made hard by a private key, not by something hidden in the pixels. Anything a writer can compute
+      without a secret, a forger can compute too.</li>
+    <li>Zero trust: every claim is checked when it is used, no single party is trusted (this project included), and
+      keys are assumed to be stolen one day.</li>
+    <li>Anyone can always look at a figure. Using it as evidence, in a journal's submission system, a lab pipeline or
+      an archive, is what goes through verification.</li>
+    <li>Existing standards are used wherever they exist. UDeep adds only what is missing.</li>
+  </ul>
+</div></section>
+
+<section id="gap"><div class="wrap">
+  <p class="eyebrow">What exists</p>
+  <h2>Every part exists except one</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Who</th><th>Answers</th><th>Does not answer</th></tr></thead>
+    <tbody>
+      <tr><td>C2PA (Content Credentials), JPEG Trust (ISO/IEC 21617-1:2025), cameras that sign at capture</td>
+        <td>Who made this file, and has it changed since?</td><td>Whether it shows real data</td></tr>
+      <tr><td>AI labelling (the EU AI Act's transparency rules apply from 2 August 2026)</td>
+        <td>Was this made by AI?</td><td>A fake made by a person</td></tr>
+      <tr><td>Journal screening (Proofig, ImageTwin)</td>
+        <td>Does this look duplicated or manipulated?</td><td>Proof: they flag for an editor</td></tr>
+      <tr class="ours"><td>UDeep</td><td>Does this figure follow from this data, under its declared mapping?</td><td></td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="formats"><div class="wrap">
+  <p class="eyebrow">Why UDeep</p>
+  <h2>No existing format does all of it</h2>
+  <p>To be checked against its data, a figure has to do five things at once: open anywhere as an ordinary figure,
+    say exactly how its data became light, say how precisely it holds the data, name the data it was made from, and
+    be signed so that a change shows. Each format below does some of that. As far as I have found, none does all of
+    it, which is why UDeep is a profile on top of existing formats and not a new image format of its own.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Format</th><th>Opens anywhere</th><th>Declares data to light</th><th>States its precision</th><th>Names its data</th><th>Signed</th></tr></thead>
+    <tbody>
+      <tr><td>Ordinary PNG or JPEG figure</td><td class="y">yes</td><td class="n">no</td><td class="n">no (8 bits, unstated)</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>HDR photo formats (Ultra HDR JPEG, PQ AVIF)</td><td class="y">yes</td><td class="p">brightness only, with no data meaning</td><td class="n">no</td><td class="n">no</td><td class="n">no</td></tr>
+      <tr><td>C2PA-signed image</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="y">yes: who signed it, and that it is unchanged</td></tr>
+      <tr><td>PDF or SVG figure</td><td class="y">yes</td><td class="n">no</td><td class="n">no</td><td class="n">no</td><td class="p">possible</td></tr>
+      <tr><td>Scientific data formats (FITS, HDF5, OME-TIFF)</td><td class="p">specialist viewers</td><td class="p">display settings, where kept, are not part of a standard figure</td><td class="y">the data itself</td><td class="y">it is the data</td><td class="n">no</td></tr>
+      <tr><td>DICOM (medical)</td><td class="p">medical viewers</td><td class="y">yes, a window or lookup table</td><td class="y">the data itself</td><td class="y">it is the data</td><td class="p">possible</td></tr>
+      <tr class="ours"><td>UDeep</td><td class="y">yes (gain-map JPEG, PNG)</td><td class="y">yes, and invertible</td><td class="y">yes, and checked</td><td class="y">yes, by digest</td><td class="p">C2PA, being tested</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">DICOM comes closest: it declares how stored values are shown. But it stays inside medical
+    viewers, has no place in a paper or a web page, and does not use the range of an HDR screen. The scientific data
+    formats hold the data faithfully but not the figure; a reader of a paper never sees them. UDeep takes the parts
+    that exist, the gain-map JPEG, the 16-bit PNG, XMP metadata and C2PA, and adds what none of them carries: the
+    declared mapping, its precision and the link to the data.</p>
+</div></section>
+
+<section id="verdicts"><div class="wrap">
+  <p class="eyebrow">How a figure is checked</p>
+  <h2>Graded verdicts, never a green tick</h2>
+  <p>Each level is reported on its own, as pass, fail or unverified. Anything not checked is unverified, never
+    "fine". The report also names what was still trusted. A figure that is signed but does not reproduce from its own
+    data is the most suspicious result there is.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Level</th><th>Checked</th><th>Needs</th><th>Today</th></tr></thead>
+    <tbody>
+      <tr><td>Declared</td><td>The file says how its data became light</td><td>the file</td><td class="yes">yes</td></tr>
+      <tr><td>Consistent</td><td>The declaration is complete and invertible; its stated precision is worked out again</td><td>the file</td><td class="yes">yes, <code>udeep.validate</code></td></tr>
+      <tr><td>Plausible</td><td>The data behaves as its declared noise and instrument say it should: whole counts, the saturation level, the noise, the instrument's own artefacts</td><td>the data</td><td class="no">no</td></tr>
+      <tr><td>Reproduced</td><td>The data is the one the file names; the pixels are the declared mapping of it; a data record reads back as its data</td><td>the file and the data</td><td class="part">data records yes; whole figures not yet</td></tr>
+      <tr><td>Attributed</td><td>A signature over the file's bytes, a certificate naming the signer, a public log fixing the time</td><td>signature, log</td><td class="no">no: a C2PA manifest is reported, not checked</td></tr>
+      <tr><td>Traced</td><td>The data was signed when it was measured, and each processing step signed its own record</td><td>signed data and steps</td><td class="no">no</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="chain"><div class="wrap">
+  <p class="eyebrow">From the measurement to a shared copy</p>
+  <h2>The image carries a pointer; the proof lives in the record</h2>
+  <figure class="diagram"><svg viewBox="0 0 980 300" role="img" aria-label="The chain from a measurement to a shared copy; a copy finds its way back to the public record, where everything is checked."><defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: currentColor"/></marker></defs><defs><marker id="w1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--warm)"/></marker></defs><rect x="10" y="40" width="190" height="86" rx="4" style="fill: var(--panel); stroke: var(--warm)"/><text x="105.0" y="81.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Measurement</text><text x="105.0" y="99.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">the data as the</text><text x="105.0" y="113.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">instrument recorded it</text><rect x="266" y="40" width="190" height="86" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="361.0" y="81.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Data record</text><text x="361.0" y="99.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">sealed, with its digest,</text><text x="361.0" y="113.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">and timestamped</text><rect x="522" y="40" width="190" height="86" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="617.0" y="81.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">UDeep figure</text><text x="617.0" y="99.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">declaration + pointer</text><text x="617.0" y="113.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">signed (C2PA)</text><rect x="778" y="40" width="190" height="86" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="873.0" y="81.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Public record</text><text x="873.0" y="99.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">figure, data, every proof</text><text x="873.0" y="113.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">and its public keys; DOI</text><line x1="200" y1="83.0" x2="264" y2="83.0" style="stroke: currentColor; stroke-width: 1.5" marker-end="url(#a1)"/><text x="232.0" y="76.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">digest</text><line x1="456" y1="83.0" x2="520" y2="83.0" style="stroke: currentColor; stroke-width: 1.5" marker-end="url(#a1)"/><text x="488.0" y="76.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">declared</text><line x1="712" y1="83.0" x2="776" y2="83.0" style="stroke: currentColor; stroke-width: 1.5" marker-end="url(#a1)"/><text x="744.0" y="76.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">deposited</text><rect x="522" y="205" width="190" height="70" rx="4" style="fill: var(--panel); stroke: var(--line); stroke-dasharray: 5 4"/><text x="617.0" y="238.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Shared copy</text><text x="617.0" y="256.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">stripped, re-encoded,</text><text x="617.0" y="270.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">screenshotted</text><line x1="617.0" y1="128" x2="617.0" y2="203" style="stroke: currentColor; stroke-width: 1.5; stroke-dasharray: 5 4" marker-end="url(#a1)"/><text x="625.0" y="169.5" style="fill: var(--muted); font: 11.5px var(--sans)">shared</text><path d="M714,240 L873.0,240 L873.0,130" style="fill: none; stroke: var(--warm); stroke-width: 1.5" marker-end="url(#w1)"/><text x="792.5" y="233" text-anchor="middle" style="fill: var(--warm); font: 11.5px var(--sans)">finds the original</text><text x="881.0" y="169.5" style="fill: var(--warm); font: 11.5px var(--sans)">checked there</text><rect x="10" y="205" width="446" height="70" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="233.0" y="238.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">What the copy keeps</text><text x="233.0" y="256.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">the picture, and often its caption, with the identifier;</text><text x="233.0" y="270.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">the record still holds everything else</text></svg><figcaption>The image carries only a pointer. Every proof lives in the public record, so a shared copy, however stripped, loses nothing: it is only a way back to the original, and the original is what gets checked.</figcaption></figure>
+  <div class="chain">
+    <div class="link"><b>Measurement</b><p>The data as the instrument recorded it.</p></div>
+    <div class="link"><b>Data record</b><p>Sealed, with its digest, and timestamped.</p></div>
+    <div class="link"><b>UDeep figure</b><p>The declaration as now (the mapping, the data digest, the SDR figure's
+      digest), one new property saying where the provenance record is, and a C2PA signature over the file.</p></div>
+    <div class="link"><b>Public record</b><p>The original figure, its data, and every proof with the public keys
+      needed to check it, archived with a DOI, so verifying never depends on a service still being online.</p></div>
+    <div class="link copy"><b>Shared copies</b><p>Stripped, re-encoded, screenshotted. They keep the picture and,
+      often, its caption, which carries the identifier: enough to find the original, which is what gets checked.
+      Without the caption, the picture's own content is the way back.</p></div>
+  </div>
+</div></section>
+
+<section id="not"><div class="wrap">
+  <p class="eyebrow">What this does not do</p>
+  <h2>No watermarks, and no proof of truth</h2>
+  <p>Invisible watermarks can be removed. A regeneration attack removed 93 to 99 % of the marks of one of the most
+    resilient schemes (Zhao et al., NeurIPS 2024). A mark that any public detector can find can be studied and
+    taken out (Miller, 2002). Marks also change pixels, which the profile forbids in a figure of record, so UDeep
+    will not use them.</p>
+  <p>Cryptography shows where a file came from, not that it shows something real. Someone who fabricates data and
+    signs it with their own key passes every signature check. What makes that hard is the physics of the data,
+    independent witnesses and, in the end, another lab repeating the work.</p>
+</div></section>
+
+<section id="verifier"><div class="wrap">
+  <p class="eyebrow">The verifier</p>
+  <h2>Open, run in the reader's browser, not trusted either</h2>
+  <p>Given a file, a screenshot, a link or a DOI, a verifier finds the original, checks the chain and gives the
+    graded verdicts as a page or as JSON for a journal's systems. The engine is open source so anyone can run it,
+    and it can run in the reader's browser through UDeep's WebAssembly core, so the image never leaves their
+    machine. Its report says what was checked and never calls anything fake.</p>
+  <figure class="diagram"><svg viewBox="0 0 980 270" role="img" aria-label="Checking a shared copy: find the original by identifier or fingerprint, verify the original, then report a match, a difference, or no original."><defs><marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: currentColor"/></marker></defs><defs><marker id="w4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--warm)"/></marker></defs><rect x="10" y="95" width="170" height="70" rx="4" style="fill: var(--panel); stroke: var(--line); stroke-dasharray: 5 4"/><text x="95.0" y="128.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">A copy</text><text x="95.0" y="146.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">file, screenshot,</text><text x="95.0" y="160.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">link or DOI</text><rect x="250" y="95" width="200" height="70" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="350.0" y="128.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Find the original</text><text x="350.0" y="146.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">identifier in the caption,</text><text x="350.0" y="160.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">or content fingerprint</text><rect x="520" y="95" width="190" height="70" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="615.0" y="128.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Verify the original</text><text x="615.0" y="146.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">signature, data, physics,</text><text x="615.0" y="160.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">timestamps</text><line x1="182" y1="130" x2="248" y2="130" style="stroke: currentColor; stroke-width: 1.5" marker-end="url(#a4)"/><line x1="452" y1="130" x2="518" y2="130" style="stroke: currentColor; stroke-width: 1.5" marker-end="url(#a4)"/><text x="485.0" y="123.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">found</text><rect x="780" y="20" width="190" height="60" rx="4" style="fill: var(--panel); stroke: var(--warm)"/><text x="875.0" y="48.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Matches the original</text><text x="875.0" y="66.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">plus the graded verdicts</text><path d="M712,130 C745,130 745,50 778,50" style="fill: none; stroke: currentColor; stroke-width: 1.5" marker-end="url(#a4)"/><rect x="780" y="105" width="190" height="60" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="875.0" y="133.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">Differs from the original</text><text x="875.0" y="151.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">and shows where</text><path d="M712,130 C745,130 745,135 778,135" style="fill: none; stroke: currentColor; stroke-width: 1.5" marker-end="url(#a4)"/><rect x="780" y="190" width="190" height="60" rx="4" style="fill: var(--panel); stroke: var(--line)"/><text x="875.0" y="218.0" text-anchor="middle" style="fill: currentColor; font: 600 14px var(--cond)">No original found</text><text x="875.0" y="236.0" text-anchor="middle" style="fill: var(--muted); font: 11.5px var(--sans)">unverified, not 'fake'</text><path d="M712,130 C745,130 745,220 778,220" style="fill: none; stroke: currentColor; stroke-width: 1.5" marker-end="url(#a4)"/><path d="M350,167 C350,240 560,240 778,220" style="fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 5 4" marker-end="url(#a4)"/><text x="340" y="196" text-anchor="end" style="fill: var(--muted); font: 11.5px var(--sans)">none</text></svg><figcaption>Any copy can be checked, because the check is done on the original. Removing an identifier or a signature only moves a copy to the last box; it can never move a fake to the first.</figcaption></figure>
+  <pre><code>Matches the original figure · signed with M. Newman's own key · reproduces from its data
+data deposited 17 Oct 2026, 14:09 UTC
+two checks unavailable</code></pre>
+  <p class="muted">An example of the wording, not real output.</p>
+</div></section>
+
+<section id="status"><div class="wrap">
+  <p class="eyebrow">Where it stands</p>
+  <h2>First experiment: C2PA signatures on UDeep files</h2>
+  <p>On 17 October 2026 I signed two UDeep gain-map JPEGs and a 16-bit PNG with C2PA's own tool (c2patool 0.27.22)
+    and its test certificate.</p>
+  <ul>
+    <li>Each signed file verified, and UDeep read it exactly as before signing. Google's libultrahdr decoded the
+      signed JPEGs byte for byte the same as the unsigned ones.</li>
+    <li>Changing one byte in the metadata, in the picture, or inside the hidden gain map was caught every time.</li>
+    <li>With the signature stripped, the file read as unsigned, and the UDeep declaration and gain map survived.</li>
+    <li>One problem: the tool inserts its data before the gain map but does not update the index (MPF) that says where
+      the gain map is. Our reader and libultrahdr cope; a reader that trusts the index would look in the wrong place.
+      The fix belongs in our own writer, which has to leave room for the signature before signing.</li>
+  </ul>
+  <p>Decided on 22 October 2026. Signing is optional, and off unless asked for. It uses the author's own key
+    (self-signed): no authority and no login is involved, and a viewer shows an unknown signer until a reader
+    chooses to trust that key. The C2PA library becomes an optional part of UDeep's core, so the default build does
+    not change. A figure's identifier goes in its caption and its metadata, never into the picture.</p>
+  <p>Next: signing from UDeep's own writer, declaring which pixels hold the data so whole figures can be reproduced,
+    and checking supplied data against its declared noise.</p>
+</div></section>
+
+<section id="refs"><div class="wrap">
+  <p class="eyebrow">Sources and prior art</p>
+  <ul class="refs">
+    <li><a href="https://jpeg.org/jpegtrust/">JPEG Trust (ISO/IEC 21617)</a> · <a href="https://opensource.contentauthenticity.org/docs/durable-cr/">C2PA durable Content Credentials</a></li>
+    <li><a href="https://www.sony.eu/presscentre/sony-launches-camera-verify-feature-for-its-camera-authenticity-solution-for-news-organisations">Sony's Camera Authenticity Solution</a></li>
+    <li><a href="https://digital-strategy.ec.europa.eu/en/policies/code-practice-ai-generated-content">EU Code of Practice on AI-generated content</a></li>
+    <li><a href="https://proceedings.neurips.cc/paper_files/paper/2024/hash/10272bfd0371ef960ec557ed6c866058-Abstract.html">Zhao et al., invisible image watermarks are provably removable (NeurIPS 2024)</a> · <a href="https://arxiv.org/abs/2401.08573">WAVES benchmark</a> · <a href="https://new.eurasip.org/Proceedings/Eusipco/2002/articles/paper770.pdf">Miller, EUSIPCO 2002</a></li>
+  </ul>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · text under CC BY 4.0. Comment on the proposal in the <a href="https://github.com/ultradeeprange/udeep/issues">issue tracker</a>.</p></div></footer>
+</body>
+</html>

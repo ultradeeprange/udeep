@@ -16,6 +16,7 @@ BASE = "https://ultradeeprange.github.io/udeep/"                 # where the sit
 REPO = "https://github.com/ultradeeprange/udeep"
 NAV = [("index.html", "Home"), ("gallery/index.html", "Real data"), ("profile/index.html", "Profile"),
        ("apps/index.html", "In your apps"), ("view/index.html", "Live view"), ("standard/index.html", "Standardisation"),
+       ("trust/index.html", "Trust"),
        ("evidence/index.html", "Evidence"), ("questions/index.html", "Questions"),
        ("check/index.html", "Device checks"), ("about/index.html", "About")]
 CHECK_DESCRIPTIONS = {

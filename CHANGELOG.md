@@ -12,6 +12,12 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ### 2026-10-22
 
+- **A Trust page on the site**: a proposal for checking a scientific figure against the data it claims to show,
+  with graded verdicts, a public record of the original that copies point back to, an open verifier, and the first
+  experiment, C2PA signatures on UDeep files. Decided the same day: signing will be optional and off unless asked
+  for, with the author's own key (self-signed: no authority, no login); the C2PA library will be an optional part of
+  the core, so the default build does not change; and a figure's identifier goes in its caption and metadata, never
+  into the picture. Nothing on the page is in the profile yet.
 - **The core built for newer processors as well, and chosen when it loads.** On x86-64 the wheels carry the core
   twice: built for any processor, and for x86-64-v3 (AVX2, FMA: Intel Core processors since 2013, AMD since
   2015), 4 to 16 % faster on the colours, gain-map JPEGs and the mapping on every core (project/performance-scope.md,
