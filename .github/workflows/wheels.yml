@@ -111,6 +111,8 @@ jobs:
           - { name: "Ubuntu 22.04, Python 3.13", os: ubuntu-22.04, python: "3.13", expect: "--expect-core" }
           - { name: "Windows, Python 3.13", os: windows-latest, python: "3.13", expect: "--expect-core" }
           - { name: "Windows, Python 3.14", os: windows-latest, python: "3.14", expect: "--expect-core" }
+          - { name: "Ubuntu 24.04, Python 3.14 free-threaded", os: ubuntu-24.04, python: "3.14t", expect: "--expect-core" }
+          - { name: "Windows, Python 3.14 free-threaded", os: windows-latest, python: "3.14t", expect: "--expect-core" }
           - { name: "macOS 14, Apple silicon, Python 3.13", os: macos-14, python: "3.13", expect: "--expect-core" }
           - { name: "macOS 15, Apple silicon, Python 3.14", os: macos-15, python: "3.14", expect: "--expect-core" }
           - { name: "macOS 15, Intel, Python 3.13", os: macos-15-intel, python: "3.13", expect: "--expect-core" }

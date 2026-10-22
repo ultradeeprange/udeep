@@ -187,10 +187,14 @@
 </div></section>
 </main>
 
-<footer><div class="wrap"><p>UDeep · the shader is <code>mapping.wgsl</code>, the numbers under the pointer come from
-  <code>udeepcore.js</code>; both are copies of the project's own, placed here by <code>tools/make_view.py</code>.</p></div></footer>
+<footer><div class="wrap"><p>UDeep · the shader is <code>mapping.wgsl</code>; the numbers under the pointer come from the
+  project's Rust core built as WebAssembly (<code>udeep_core.wasm</code>, through <code>udeepwasm.js</code>), or where
+  that cannot load, from the JavaScript port, <code>udeepcore.js</code>. All are the project's own, placed here by
+  <code>tools/make_view.py</code>, and the WebAssembly is built from the source each time the site is published.</p></div></footer>
 
 <script src="udeepcore.js"></script>
+<script src="udeepwasm.js"></script>
+<script src="held.js"></script>
 <script src="view.js"></script>
 </body>
 </html>

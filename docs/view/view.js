@@ -1,11 +1,14 @@
 /* The live view. Data goes to the graphics card once; the mapping runs there for every screen pixel on every frame
    (mapping.wgsl, the project's reference shader, with view.wgsl added to draw it), so moving the knee is instant
-   and nothing is rendered twice or written to a file. The numbers read out under the pointer come from udeepcore.js
-   in float64, the same code that is held to the project's test vectors: the picture is the shader's, the numbers
-   are the reference's. All data on this page is made here or opened from your own computer; none is sent anywhere. */
+   and nothing is rendered twice or written to a file. The numbers read out under the pointer, the held pixels and the
+   self-check's reference come from the project's Rust core built as WebAssembly (udeep_core.wasm, through
+   udeepwasm.js), in float64, the same code the Python and Julia packages call; where that cannot be loaded, from the
+   JavaScript port (udeepcore.js), which agrees with it to 1e-12. The picture is the shader's, the numbers are the
+   core's. All data on this page is made here or opened from your own computer; none is sent anywhere. */
 (function () {
   "use strict";
-  var H = globalThis.UDeepCore;
+  var H = globalThis.UDeepCore;          // the JavaScript port: the shader's parameter block, the slider, and the fallback
+  var C = null;                          // the WebAssembly core, once loaded
   var $ = function (id) { return document.getElementById(id); };
   var canvas = $("view"), statusBox = $("status");
   var HEADROOMS = [2, 4, 8, 16];
@@ -119,27 +122,24 @@
     return fetch(file).then(function (r) {
       if (!r.ok) throw new Error("the colour-map table " + file + " could not be loaded");
       return r.arrayBuffer();
-    }).then(function (buffer) { return (state.tables[file] = H.makeTable(buffer, headroom)); });
+    }).then(function (buffer) { return (state.tables[file] = (C ? globalThis.UDeepWasm : H).makeTable(buffer, headroom)); });
   }
 
   /* ---- which pixels are held: no data, and for Highlight the pixels above the knee that stand alone */
   function heldPixels(m) {
-    var n = state.width * state.height, out = new Uint32Array(n), any = false, kneeT = H.kneePosition(m);
-    var above = state.mode === "highlight" ? [] : null;
-    for (var j = 0; j < state.height; j++) {
-      var row = above ? new Array(state.width) : null;
-      for (var i = 0; i < state.width; i++) {
-        var v = state.data[j * state.width + i];
-        if (!Number.isFinite(v)) { out[j * state.width + i] = 2; any = true; if (row) row[i] = false; continue; }
-        if (row) row[i] = H.position(m, v) > kneeT;
-      }
-      if (above) above.push(row);
-    }
-    var alone = 0;
-    if (above) H.isolated(above).forEach(function (row, j) { row.forEach(function (lone, i) {
-      if (lone) { out[j * state.width + i] = 1; any = true; alone++; } }); });
-    return { values: out, any: any, alone: alone };
+    return globalThis.UDeepViewHeld(m, state.data, state.width, state.height, state.mode === "highlight", C, H);
   }
+
+  /* ---- the core, as WebAssembly: the view works without it, on the port, if it cannot be had */
+  function loadCore() {
+    if (!globalThis.UDeepWasm || typeof WebAssembly !== "object") return Promise.resolve(null);
+    return fetch("udeep_core.wasm").then(function (r) { return r.ok ? r.arrayBuffer() : null; })
+      .then(function (bytes) { return bytes ? globalThis.UDeepWasm.load(bytes) : null; })
+      .catch(function () { return null; });
+  }
+  // light and position of one value, for the readout
+  function lightOf(m, v, sdr) { return C ? (sdr ? C.sdrLight(m, [v]) : C.light(m, [v]))[0] : H.light(m, v, sdr ? 1 : undefined); }
+  function positionOf(m, v) { return C ? C.position(m, [v])[0] : H.position(m, v); }
 
   /* ---- the graphics card */
   function start() {
@@ -267,8 +267,8 @@
     var v = state.data[j * state.width + i];
     if (!Number.isFinite(v)) { out.textContent = "pixel (" + i + ", " + j + "): no data"; return; }
     var isHeld = state.held.values[j * state.width + i] === 1;
-    var light = H.light(m, v, isHeld || state.sdrOnly ? 1 : undefined);
-    out.textContent = "pixel (" + i + ", " + j + "): " + fmt(v) + " " + state.unit + " → position " + H.position(m, v).toFixed(4) +
+    var light = lightOf(m, v, isHeld || state.sdrOnly);
+    out.textContent = "pixel (" + i + ", " + j + "): " + fmt(v) + " " + state.unit + " → position " + positionOf(m, v).toFixed(4) +
       " → " + light.toFixed(3) + " × SDR white" + (isHeld ? " (held: it stands alone above the knee)" : "");
   });
 
@@ -302,16 +302,18 @@
       var toFloat = function (h) { var s = (h & 0x8000) ? -1 : 1, e = (h >> 10) & 31, q = h & 1023;
         return e === 0 ? s * Math.pow(2, -14) * (q / 1024) : e === 31 ? (q ? NaN : s * Infinity) : s * Math.pow(2, e - 15) * (1 + q / 1024); };
       var linear = function (c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+      // the reference maps the numbers the card was given: the float32 nearest each value
+      var reference = C ? C.colours(C.light(m, Float64Array.from(xs)), m.colour_map === "grey" ? null : table) : null;
       for (var i = 0; i < n; i++) {
-        // the reference maps the number the card was given: the float32 nearest the value
-        var want = H.colours(m, H.light(m, xs[i]), table);
+        var want = C ? reference.subarray(3 * i, 3 * i + 3) : H.colours(m, H.light(m, xs[i]), table);
         for (var c = 0; c < 3; c++) {
           var got = linear(toFloat(half[4 * i + c]));
           worst = Math.max(worst, Math.abs(got - want[c]) / Math.max(want[c], 0.05));
         }
       }
       out.unmap();
-      return "the shader agrees with the float64 reference to " + (100 * worst).toFixed(2) + " % at worst, over " + n +
+      return "the shader agrees with the float64 reference (" + (C ? "the Rust core, as WebAssembly" : "the JavaScript port") +
+        ") to " + (100 * worst).toFixed(2) + " % at worst, over " + n +
         " values across the range (a 16-bit float canvas resolves about 0.1 %)";
     });
   }
@@ -366,6 +368,8 @@
     lines.push(high ? ["yes", "The screen reports a high dynamic range to the page."]
                     : ["no", "The screen does not report a high dynamic range to the page, so nothing can be brighter than white here."]);
     lines.push(["note", "How much brighter than white this screen can go is not something a page is told."]);
+    lines.push(C ? ["yes", "The numbers come from the project's Rust core, built as WebAssembly."]
+                 : ["note", "The numbers come from the JavaScript port: the WebAssembly core could not be loaded here."]);
     say(lines.concat([["note", "Checking the shader against the reference…"]]));
     return selfCheck().then(function (text) {
       say(lines.concat([[/agrees/.test(text) ? "yes" : "note", "Self-check: " + text + "."]]));
@@ -377,7 +381,8 @@
   // a link may name the data to open with: view/#chirp
   var first = dataset(location.hash.slice(1));
   $("dataset").value = first;
-  start().then(function () { return show(sets[first]()); }).then(report).catch(function (e) {
+  loadCore().then(function (core) { C = core; return start(); })
+    .then(function () { return show(sets[first]()); }).then(report).catch(function (e) {
     say([["no", "The live view needs WebGPU, and it is not available here: " + e.message + ". " +
           "The figures in the gallery need nothing but an image viewer."]]);
     canvas.hidden = true;

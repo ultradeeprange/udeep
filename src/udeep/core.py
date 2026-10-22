@@ -3,6 +3,7 @@
     import udeep.core
     udeep.core.enabled()           # True when the core was found and has not been turned off
     udeep.core.enable(False)       # use the NumPy and Pillow code instead, from here on
+    udeep.core.THREADS = 4         # spread the work over 4 threads (None, the default: every core)
 
 The core (core/, a Rust library with a C interface) is used wherever it is found: it maps and colours an image on
 every processor core at once (60 to 250 megapixels a second on the development machine against NumPy's 8 to 12,
@@ -25,6 +26,8 @@ import ctypes
 import math
 import os
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -38,6 +41,56 @@ _ERRORS = {1: "a required pointer was null", 2: "unknown stretch", 3: "the decla
            7: "the colour-map table is not two segments of nodes x 3", 10: "a number in the mapping is not finite",
            11: "the declaration is one the profile refuses (in a PQ file: one with white at other than 203 cd/m2)"}
 _state = {"library": None, "looked": False, "on": None}      # on: None until asked, then True or False
+_load_lock = threading.Lock()        # the first load, from whichever thread asks first; the others wait for it
+
+# How many threads the work is spread over; 1 is one at a time. The Rust core uses this many, and so does the NumPy
+# code, which works through an image in chunks (udeep.scale.in_chunks). None, the default, is every processor core
+# this process may use, except for the NumPy code on a Python with the global interpreter lock: there at most
+# GIL_THREADS, since more threads wait on the lock between NumPy's steps. Measured with tools/speed_rig.py on
+# 22 October 2026 (20 logical cores, 16 megapixels): with the lock, the mapping 4.6 times faster on 8 threads and
+# 3.4 on 20; on a free-threaded Python 3.14, 5.2 and 5.9 (project/performance-scope.md, 4h). The result is the
+# same, value for value, on any number. Read from ENV["UDEEP_THREADS"] when the package is imported; set udeep.core.THREADS to change it.
+THREADS: int | None = int(os.environ["UDEEP_THREADS"]) if os.environ.get("UDEEP_THREADS") else None
+GIL_THREADS = 8
+_pool = {"executor": None, "size": 0}
+_pool_lock = threading.Lock()
+_worker = threading.local()
+
+
+def free_threaded() -> bool:
+    """Whether this Python runs without the global interpreter lock (a free-threaded build, with the lock off)."""
+    return not getattr(sys, "_is_gil_enabled", lambda: True)()
+
+
+def threads() -> int:
+    """The number of threads the NumPy code works on now: THREADS, or by default every core this process may use,
+    at most GIL_THREADS where the interpreter lock is on."""
+    if THREADS is not None:
+        return max(1, THREADS)
+    cores = max(1, os.process_cpu_count() or 1)
+    return cores if free_threaded() else min(cores, GIL_THREADS)
+
+
+def in_worker() -> bool:
+    """Whether this is one of the package's worker threads: work started there runs there, on that thread alone."""
+    return getattr(_worker, "busy", False)
+
+
+def _mark_worker() -> None:
+    _worker.busy = True
+
+
+def executor() -> ThreadPoolExecutor:
+    """The package's pool of threads() worker threads, made when first needed and made again if the count changes."""
+    size = threads()
+    with _pool_lock:
+        if _pool["executor"] is None or _pool["size"] != size:
+            if _pool["executor"] is not None:
+                _pool["executor"].shutdown(wait=False)
+            _pool["executor"] = ThreadPoolExecutor(max_workers=size, thread_name_prefix="udeep",
+                                                   initializer=_mark_worker)
+            _pool["size"] = size
+        return _pool["executor"]
 _DOUBLES = ctypes.POINTER(ctypes.c_double)
 
 
@@ -60,64 +113,71 @@ def library_path() -> Path | None:
 
 def _load():
     if not _state["looked"]:
-        _state["looked"] = True
-        path = library_path()
-        if path is not None:
-            try:
-                dll = ctypes.CDLL(str(path))
-                record = ctypes.POINTER(_Record)
-                for function in (dll.udeep_light_parallel, dll.udeep_sdr_light_parallel):
-                    function.argtypes = [record, _DOUBLES, _DOUBLES, ctypes.c_size_t, ctypes.c_size_t]
-                    function.restype = ctypes.c_int32
-                dll.udeep_colours_parallel.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
-                                                         _DOUBLES, _DOUBLES, ctypes.c_size_t, ctypes.c_size_t]
-                dll.udeep_colours_parallel.restype = ctypes.c_int32
-                dll.udeep_version.restype = ctypes.c_uint32
-                _state["library"] = dll
-                if all(hasattr(dll, f) for f in ("udeep_gainmap_jpeg", "udeep_gainmap_read",
-                                                 "udeep_gainmap_from_renders")):                 # the jpeg feature
-                    bytes_ = ctypes.POINTER(ctypes.c_uint8)
-                    dll.udeep_gainmap_jpeg.argtypes = [
-                        _DOUBLES, _DOUBLES, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_uint32,
-                        ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(bytes_),
-                        ctypes.POINTER(ctypes.c_size_t)]
-                    dll.udeep_gainmap_jpeg.restype = ctypes.c_int32
-                    dll.udeep_bytes_free.argtypes = [bytes_, ctypes.c_size_t]
-                    dll.udeep_bytes_free.restype = None
-                    dll.udeep_gainmap_size.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
-                                                         ctypes.POINTER(ctypes.c_size_t)]
-                    dll.udeep_gainmap_size.restype = ctypes.c_int32
-                    dll.udeep_gainmap_read.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_double,
-                                                         ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_size_t]
-                    dll.udeep_gainmap_read.restype = ctypes.c_int32
-                    dll.udeep_gainmap_from_renders.argtypes = [
-                        bytes_, bytes_, bytes_, bytes_, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
-                        ctypes.c_uint32, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(bytes_),
-                        ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t)]
-                    dll.udeep_gainmap_from_renders.restype = ctypes.c_int32
-                    _state["files"] = True
-                if all(hasattr(dll, f) for f in ("udeep_png_pq", "udeep_png_pq_size", "udeep_png_pq_read",
-                                                 "udeep_levels_pq16")):                             # the png feature
-                    bytes_ = ctypes.POINTER(ctypes.c_uint8)
-                    size = ctypes.POINTER(ctypes.c_size_t)
-                    dll.udeep_bytes_free.argtypes = [bytes_, ctypes.c_size_t]
-                    dll.udeep_bytes_free.restype = None
-                    dll.udeep_png_pq.argtypes = [_DOUBLES, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
-                                                   ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(bytes_), size]
-                    dll.udeep_png_pq.restype = ctypes.c_int32
-                    dll.udeep_png_pq_size.argtypes = [ctypes.c_char_p, ctypes.c_size_t, size, size]
-                    dll.udeep_png_pq_size.restype = ctypes.c_int32
-                    dll.udeep_png_pq_read.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_double, _DOUBLES,
-                                                        ctypes.c_size_t]
-                    dll.udeep_png_pq_read.restype = ctypes.c_int32
-                    dll.udeep_levels_pq16.argtypes = [
-                        ctypes.POINTER(_Record), ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
-                        ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, _DOUBLES, _DOUBLES, size]
-                    dll.udeep_levels_pq16.restype = ctypes.c_int32
-                    _state["png"] = True
-            except (OSError, AttributeError):        # not loadable here, or a build older than these functions
-                _state["library"] = None
-    return _state["library"]
+        with _load_lock:
+            if not _state["looked"]:
+                _load_now()
+                _state["looked"] = True                # only once everything is in place: a thread that sees it
+    return _state["library"]                           # true sees the library, or knows there is none
+
+
+def _load_now():
+    """Find the library and set up its functions: the work _load does once, under its lock."""
+    path = library_path()
+    if path is not None:
+        try:
+            dll = ctypes.CDLL(str(path))
+            record = ctypes.POINTER(_Record)
+            for function in (dll.udeep_light_parallel, dll.udeep_sdr_light_parallel):
+                function.argtypes = [record, _DOUBLES, _DOUBLES, ctypes.c_size_t, ctypes.c_size_t]
+                function.restype = ctypes.c_int32
+            dll.udeep_colours_parallel.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
+                                                     _DOUBLES, _DOUBLES, ctypes.c_size_t, ctypes.c_size_t]
+            dll.udeep_colours_parallel.restype = ctypes.c_int32
+            dll.udeep_version.restype = ctypes.c_uint32
+            _state["library"] = dll
+            if all(hasattr(dll, f) for f in ("udeep_gainmap_jpeg", "udeep_gainmap_read",
+                                             "udeep_gainmap_from_renders")):                 # the jpeg feature
+                bytes_ = ctypes.POINTER(ctypes.c_uint8)
+                dll.udeep_gainmap_jpeg.argtypes = [
+                    _DOUBLES, _DOUBLES, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double, ctypes.c_uint32,
+                    ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(bytes_),
+                    ctypes.POINTER(ctypes.c_size_t)]
+                dll.udeep_gainmap_jpeg.restype = ctypes.c_int32
+                dll.udeep_bytes_free.argtypes = [bytes_, ctypes.c_size_t]
+                dll.udeep_bytes_free.restype = None
+                dll.udeep_gainmap_size.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_size_t),
+                                                     ctypes.POINTER(ctypes.c_size_t)]
+                dll.udeep_gainmap_size.restype = ctypes.c_int32
+                dll.udeep_gainmap_read.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_double,
+                                                     ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_size_t]
+                dll.udeep_gainmap_read.restype = ctypes.c_int32
+                dll.udeep_gainmap_from_renders.argtypes = [
+                    bytes_, bytes_, bytes_, bytes_, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
+                    ctypes.c_uint32, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(bytes_),
+                    ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t)]
+                dll.udeep_gainmap_from_renders.restype = ctypes.c_int32
+                _state["files"] = True
+            if all(hasattr(dll, f) for f in ("udeep_png_pq", "udeep_png_pq_size", "udeep_png_pq_read",
+                                             "udeep_levels_pq16")):                             # the png feature
+                bytes_ = ctypes.POINTER(ctypes.c_uint8)
+                size = ctypes.POINTER(ctypes.c_size_t)
+                dll.udeep_bytes_free.argtypes = [bytes_, ctypes.c_size_t]
+                dll.udeep_bytes_free.restype = None
+                dll.udeep_png_pq.argtypes = [_DOUBLES, ctypes.c_size_t, ctypes.c_size_t, ctypes.c_double,
+                                               ctypes.c_char_p, ctypes.c_size_t, ctypes.POINTER(bytes_), size]
+                dll.udeep_png_pq.restype = ctypes.c_int32
+                dll.udeep_png_pq_size.argtypes = [ctypes.c_char_p, ctypes.c_size_t, size, size]
+                dll.udeep_png_pq_size.restype = ctypes.c_int32
+                dll.udeep_png_pq_read.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_double, _DOUBLES,
+                                                    ctypes.c_size_t]
+                dll.udeep_png_pq_read.restype = ctypes.c_int32
+                dll.udeep_levels_pq16.argtypes = [
+                    ctypes.POINTER(_Record), ctypes.POINTER(ctypes.c_float), ctypes.c_size_t, ctypes.c_double,
+                    ctypes.c_size_t, ctypes.c_uint32, ctypes.c_double, _DOUBLES, _DOUBLES, size]
+                dll.udeep_levels_pq16.restype = ctypes.c_int32
+                _state["png"] = True
+        except (OSError, AttributeError):        # not loadable here, or a build older than these functions
+            _state["library"] = None
 
 
 def available() -> bool:
@@ -162,24 +222,33 @@ def _check(status: int) -> None:
         raise ValueError(f"the core refused the call: {_ERRORS.get(status, f'error {status}')}")
 
 
+def _threads(threads: int | None) -> int:
+    """The thread count to give the core: the one asked for, or the package's setting (THREADS), where None is
+    every core, which the core calls 0."""
+    if threads is not None:
+        return threads
+    return 0 if THREADS is None else max(1, THREADS)
+
+
 def _pointer(a: np.ndarray):
     return a.ctypes.data_as(_DOUBLES)
 
 
-def light(mapping, x, sdr: bool = False, threads: int = 0) -> np.ndarray:
+def light(mapping, x, sdr: bool = False, threads: int | None = None) -> np.ndarray:
     """Data values -> light, as Mapping.light(x); with sdr=True the fair SDR light, as Mapping.light(x, 1.0).
-    `threads` = 0 uses every processor core; the result is the same on any number. Float64, the shape of `x`."""
+    `threads`: how many threads, 0 for every processor core; by default THREADS, the package's one setting.
+    The result is the same on any number. Float64, the shape of `x`."""
     dll = _load()
     if dll is None:
         raise RuntimeError("the udeep core library is not available")
     values = np.ascontiguousarray(x, dtype=np.float64)
     out = np.empty_like(values)
     function = dll.udeep_sdr_light_parallel if sdr else dll.udeep_light_parallel
-    _check(function(ctypes.byref(_record(mapping)), _pointer(values), _pointer(out), values.size, threads))
+    _check(function(ctypes.byref(_record(mapping)), _pointer(values), _pointer(out), values.size, _threads(threads)))
     return out.reshape(np.shape(x))                  # a single number comes back as one, not as a list of one
 
 
-def colours(mapping, y, dtype=np.float64, threads: int = 0) -> np.ndarray:
+def colours(mapping, y, dtype=np.float64, threads: int | None = None) -> np.ndarray:
     """Light -> linear RGB through the mapping's colour map, as Mapping.colours(y, dtype): shape y.shape + (3,).
     With dtype=np.float32 the colours are worked out in float64 a slab at a time and rounded once as they are kept."""
     dll = _load()
@@ -194,7 +263,8 @@ def colours(mapping, y, dtype=np.float64, threads: int = 0) -> np.ndarray:
         nodes, count = kept.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), table.nodes
     out = np.empty((values.size, 3), dtype=dtype)
     call = lambda part, into: _check(dll.udeep_colours_parallel(nodes, count, mapping.reference_headroom,
-                                                                  _pointer(part), _pointer(into), part.size, threads))
+                                                                  _pointer(part), _pointer(into), part.size,
+                                                                  _threads(threads)))
     if dtype is np.float64:
         call(values, out)                                # straight into the result
     else:
@@ -274,7 +344,7 @@ def levels_pq16(mapping, noise: tuple = ("unknown", None), white_nits: float = 2
     return {"levels": count.value, "max_data_step": widest.value, "worst": None if model == 0 else ratio.value}
 
 
-def read_gainmap(data: bytes, display_boost: float, threads: int = 0) -> np.ndarray | None:
+def read_gainmap(data: bytes, display_boost: float, threads: int | None = None) -> np.ndarray | None:
     """A gain-map JPEG as a display with `display_boost` of headroom shows it: float32, height x width x 3. None
     when the core's reader does not take the file (not one of this layout, or a gain map of another size than its
     base), for the caller to read it another way."""
@@ -284,7 +354,7 @@ def read_gainmap(data: bytes, display_boost: float, threads: int = 0) -> np.ndar
         return None
     out = np.empty((height.value, width.value, 3), dtype=np.float32)
     status = dll.udeep_gainmap_read(data, len(data), display_boost, out.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                                      out.size, threads)
+                                      out.size, _threads(threads))
     return out if status == 0 else None
 
 

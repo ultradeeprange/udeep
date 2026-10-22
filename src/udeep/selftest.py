@@ -121,6 +121,7 @@ def run(keep: Path | None = None, expect_core: bool = False) -> dict:
     step's name, status ("pass", "fail" or "skipped"), detail and time. `keep` keeps the files written there;
     `expect_core` makes it a failure that the Rust core is not in use."""
     result = {"udeep": getattr(udeep, "__version__", "unknown"), "python": platform.python_version(),
+              "free_threaded": core.free_threaded(), "threads": core.threads(),
               "platform": platform.platform(), "machine": platform.machine(), "package": str(Path(udeep.__file__).parent),
               "core": core.enabled(), "implementation": describe_core(), "steps": []}
     if expect_core and not core.enabled():
@@ -157,7 +158,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-core", action="store_true", help="fail unless the Rust core is in use")
     args = parser.parse_args(argv)
     result = run(args.keep, args.expect_core)
-    print(f"udeep {result['udeep']} on Python {result['python']}, {result['platform']} ({result['machine']})")
+    python = result["python"] + (" free-threaded" if result["free_threaded"] else "")
+    print(f"udeep {result['udeep']} on Python {python}, {result['platform']} ({result['machine']})")
+    print(f"  threads     {result['threads']} for the NumPy code" + (", and every core for the Rust core"
+                                                                       if result["core"] else ""))
     print(f"  using       {result['implementation']}")
     for s in result["steps"]:
         seconds = f" ({s['seconds']} s)" if "seconds" in s else ""

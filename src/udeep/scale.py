@@ -9,6 +9,8 @@ import math
 
 import numpy as np
 
+from udeep import core
+
 KINDS = ("linear", "log", "asinh")
 
 
@@ -29,6 +31,7 @@ def as_float(x):
 CHUNK = 1 << 16                  # values mapped at a time: bounds the working memory, whatever the image's size
 
 
+
 def in_chunks(function, x, tail: tuple = (), dtype=np.float64):
     """`function(x)` for a large NumPy array, worked through CHUNK values at a time into one output array of shape
     x.shape + tail. Each step of the mapping makes several arrays as large as its input on the way to its answer;
@@ -36,14 +39,28 @@ def in_chunks(function, x, tail: tuple = (), dtype=np.float64):
     of single values. Small arrays, and arrays of other libraries, go straight through.
 
     `dtype` is what the output is kept as. The arithmetic is float64 either way; float32 rounds each result once,
-    as it is stored."""
+    as it is stored.
+
+    The chunks are worked on udeep.core.threads() threads at once. Each writes its own part of the output, and NumPy lets
+    go of Python's interpreter lock while it computes, so this is faster on any Python, and on a free-threaded
+    one (3.13t, 3.14t) faster still. A call made from inside one of those threads runs on that thread alone."""
     if namespace(x) is not np or not isinstance(x, np.ndarray) or x.size <= CHUNK:
         out = function(x)
         return out if dtype is np.float64 or not isinstance(out, np.ndarray) else out.astype(dtype)
     flat = x.reshape(-1)
     out = np.empty((flat.size, *tail), dtype=dtype)
-    for start in range(0, flat.size, CHUNK):
+    starts = range(0, flat.size, CHUNK)
+
+    def work(start: int) -> None:
         out[start:start + CHUNK] = function(flat[start:start + CHUNK])
+
+    count = min(core.threads(), len(starts))
+    if count <= 1 or core.in_worker():
+        for start in starts:
+            work(start)
+    else:
+        for done in [core.executor().submit(work, start) for start in starts]:
+            done.result()                                  # in order; an error in any chunk is raised here
     return out.reshape(*x.shape, *tail)
 
 

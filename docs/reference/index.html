@@ -113,7 +113,7 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      107 public functions and classes in 18 Python modules, and the 37 names the Julia
+      111 public functions and classes in 18 Python modules, and the 37 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -844,6 +844,9 @@ done whole, those are many times the image. The result is the same, value for va
 of single values. Small arrays, and arrays of other libraries, go straight through.</p>
 <p><code>dtype</code> is what the output is kept as. The arithmetic is float64 either way; float32 rounds each result once,
 as it is stored.</p>
+<p>The chunks are worked on udeep.core.threads() threads at once. Each writes its own part of the output, and NumPy lets
+go of Python&#x27;s interpreter lock while it computes, so this is faster on any Python, and on a free-threaded
+one (3.13t, 3.14t) faster still. A call made from inside one of those threads runs on that thread alone.</p>
 <h3 id="scale.scale"><span class="kind">function</span>scale</h3>
 <pre class="sig">scale(x, kind: str, lo: float, hi: float, width: float=1.0)</pre>
 <p>Map x to t in [0, 1]: <code>lo</code> -&gt; 0, <code>hi</code> -&gt; 1, clipped; NaN stays NaN.</p>
@@ -964,7 +967,8 @@ A cone response below zero is taken as zero.</p>
 <p>The Rust core, used from Python wherever it is found.</p>
 <pre class="block">import udeep.core
 udeep.core.enabled()           # True when the core was found and has not been turned off
-udeep.core.enable(False)       # use the NumPy and Pillow code instead, from here on</pre>
+udeep.core.enable(False)       # use the NumPy and Pillow code instead, from here on
+udeep.core.THREADS = 4         # spread the work over 4 threads (None, the default: every core)</pre>
 <p>The core (core/, a Rust library with a C interface) is used wherever it is found: it maps and colours an image on
 every processor core at once (60 to 250 megapixels a second on the development machine against NumPy&#x27;s 8 to 12,
 project/performance-scope.md 4d), and it writes and reads gain-map JPEGs. Where it is not found, the NumPy and
@@ -977,6 +981,19 @@ another SDR digest. The two JPEG decoders also differ by a code or two at some p
 headroom exactly on the decoder its writer used, so write and read with the same one.</p>
 <p>The library is looked for at ENV[&quot;UDEEP_CORE_LIB&quot;], then beside this module (udeep/_lib, where a packaged
 build would put it), then in core/target/release of a source checkout (cargo build --release in core/).</p>
+<h3 id="core.free_threaded"><span class="kind">function</span>free_threaded</h3>
+<pre class="sig">free_threaded() -&gt; bool</pre>
+<p>Whether this Python runs without the global interpreter lock (a free-threaded build, with the lock off).</p>
+<h3 id="core.threads"><span class="kind">function</span>threads</h3>
+<pre class="sig">threads() -&gt; int</pre>
+<p>The number of threads the NumPy code works on now: THREADS, or by default every core this process may use,
+at most GIL_THREADS where the interpreter lock is on.</p>
+<h3 id="core.in_worker"><span class="kind">function</span>in_worker</h3>
+<pre class="sig">in_worker() -&gt; bool</pre>
+<p>Whether this is one of the package&#x27;s worker threads: work started there runs there, on that thread alone.</p>
+<h3 id="core.executor"><span class="kind">function</span>executor</h3>
+<pre class="sig">executor() -&gt; ThreadPoolExecutor</pre>
+<p>The package&#x27;s pool of threads() worker threads, made when first needed and made again if the count changes.</p>
 <h3 id="core.library_path"><span class="kind">function</span>library_path</h3>
 <pre class="sig">library_path() -&gt; Path | None</pre>
 <p>Where the core library is, or None if it is in none of the places looked in.</p>
@@ -998,11 +1015,12 @@ asked for and is not there.</p>
 <p>Whether the core is in use: yes whenever it is there, unless it was turned off (enable(False), or
 ENV[&quot;UDEEP_USE_CORE&quot;] = &quot;0&quot;).</p>
 <h3 id="core.light"><span class="kind">function</span>light</h3>
-<pre class="sig">light(mapping, x, sdr: bool=False, threads: int=0) -&gt; np.ndarray</pre>
+<pre class="sig">light(mapping, x, sdr: bool=False, threads: int | None=None) -&gt; np.ndarray</pre>
 <p>Data values -&gt; light, as Mapping.light(x); with sdr=True the fair SDR light, as Mapping.light(x, 1.0).
-<code>threads</code> = 0 uses every processor core; the result is the same on any number. Float64, the shape of <code>x</code>.</p>
+<code>threads</code>: how many threads, 0 for every processor core; by default THREADS, the package&#x27;s one setting.
+The result is the same on any number. Float64, the shape of <code>x</code>.</p>
 <h3 id="core.colours"><span class="kind">function</span>colours</h3>
-<pre class="sig">colours(mapping, y, dtype=np.float64, threads: int=0) -&gt; np.ndarray</pre>
+<pre class="sig">colours(mapping, y, dtype=np.float64, threads: int | None=None) -&gt; np.ndarray</pre>
 <p>Light -&gt; linear RGB through the mapping&#x27;s colour map, as Mapping.colours(y, dtype): shape y.shape + (3,).
 With dtype=np.float32 the colours are worked out in float64 a slab at a time and rounded once as they are kept.</p>
 <h3 id="core.write_gainmap"><span class="kind">function</span>write_gainmap</h3>
@@ -1036,7 +1054,7 @@ in multiples of SDR white. The codes are the reference&#x27;s; the compressed by
 in data units, and the data criterion&#x27;s worst ratio for <code>noise</code> (None when the noise is unknown). The
 reference is udeep.metadata.data_steps_pq16 with rounding_to_noise.</p>
 <h3 id="core.read_gainmap"><span class="kind">function</span>read_gainmap</h3>
-<pre class="sig">read_gainmap(data: bytes, display_boost: float, threads: int=0) -&gt; np.ndarray | None</pre>
+<pre class="sig">read_gainmap(data: bytes, display_boost: float, threads: int | None=None) -&gt; np.ndarray | None</pre>
 <p>A gain-map JPEG as a display with <code>display_boost</code> of headroom shows it: float32, height x width x 3. None
 when the core&#x27;s reader does not take the file (not one of this layout, or a gain map of another size than its
 base), for the caller to read it another way.</p>

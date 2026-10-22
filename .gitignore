@@ -11,6 +11,8 @@ data/
 .venv-eht/
 # Rust build output
 core/target/
+# the live view's core, built from the source when the site is published (tools/make_view.py, pages.yml)
+docs/view/udeep_core.wasm
 # Julia: resolved environments are per machine
 julia/**/Manifest.toml
 julia/UDeepCore/examples/output/

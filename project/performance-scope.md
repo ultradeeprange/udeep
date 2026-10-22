@@ -497,6 +497,76 @@ exact regeneration and no longer do: the test, which holds the generator to the 
 Neither is a fault in Rust, NumPy or OpenBLAS, and none has been reported to them: Rust documents the cost, and
 no library promises correctly rounded powers or bit-identical inverses across processors.
 
+## 4h. Newer language features, measured (2026-10-22)
+
+`tools/speed_rig.py` times each faster way of doing the work against the plain way, on the same input, and
+checks the result is the same. Every variant gave the plain way's result: value for value for the NumPy code and
+the WebAssembly core, byte for byte for the Rust core's builds, except where the table says otherwise. Machine:
+Windows 11, an Intel processor with 20 logical cores, with other work running, which made single runs vary by up
+to a few times. So the variants are taken in turn within each round (NumPy, browser), or in rounds of separate
+processes (core, where the fastest run is the steadier figure); read differences under about 10 % as none.
+
+**The NumPy code on several threads** (the core turned off; Python 3.13 with the interpreter lock, and the
+free-threaded Python 3.14 without it). Medians of 5; the results identical on every count:
+
+| Python | work, 16 MP | 1 thread | 4 threads | 8 threads | 20 threads | peak memory, 1 / 20 threads |
+|---|---|---|---|---|---|---|
+| 3.13.15 | light | 0.6773 s | 0.2125 s (3.2x) | 0.1464 s (4.6x) | 0.1993 s (3.4x) | 249 / 329 MB |
+| 3.13.15 | colours | 1.196 s | 0.3955 s (3.0x) | 0.3184 s (3.8x) | 0.3112 s (3.8x) | 376 / 538 MB |
+| 3.13.15 | view | 3.1763 s | 1.1766 s (2.7x) | 0.9392 s (3.4x) | 1.006 s (3.2x) | 1017 / 1181 MB |
+| 3.14.7 free-threaded | light | 0.7902 s | 0.2492 s (3.2x) | 0.1511 s (5.2x) | 0.1347 s (5.9x) | 249 / 313 MB |
+| 3.14.7 free-threaded | colours | 1.2656 s | 0.4118 s (3.1x) | 0.2698 s (4.7x) | 0.2192 s (5.8x) | 376 / 466 MB |
+| 3.14.7 free-threaded | view | 3.6185 s | 1.2113 s (3.0x) | 0.833 s (4.3x) | 0.7052 s (5.1x) | 1017 / 1096 MB |
+
+Adopted: the NumPy code works through an image's chunks on a pool of threads (`udeep.scale.in_chunks`), every
+core on a free-threaded Python and at most 8 with the lock (`udeep.core.GIL_THREADS`), where more threads wait on
+it. One setting, `udeep.core.THREADS` or `UDEEP_THREADS`, now sets the thread count for this and for the core.
+The cost is memory: each thread holds a chunk's working arrays, up to about 160 MB more at the peak here. A race in
+the core's first load was found on the way and fixed: a thread could take the library as absent while another was
+still loading it, and turn the core off for the rest of the process (`tests/test_threads.py`, with the old loader
+as its control: 7 of 8 threads got no core).
+
+**The Rust core, by instruction set.** The fastest of 15 runs: as the wheels carry it, for any 64-bit x86
+processor; the whole core built for x86-64-v3 (AVX2, FMA); and with the JPEG encoder's own SIMD:
+
+| work | as the wheels carry it | built for x86-64-v3 | with the JPEG encoder's SIMD |
+|---|---|---|---|
+| light, 1 thread | 0.443 s | 0.4328 s (1.02x) | 0.4471 s (0.99x) |
+| light, every core | 0.0664 s | 0.0598 s (1.11x) | 0.0561 s (1.18x) |
+| colours, 1 thread | 0.1947 s | 0.1679 s (1.16x) | 0.1945 s (1.00x) |
+| colours, every core | 0.0368 s | 0.0354 s (1.04x) | 0.041 s (0.90x) |
+| gain-map JPEG, 4 MP | 0.8198 s | 0.7549 s (1.09x) | 0.7866 s (1.04x), other bytes |
+| 16-bit PNG, 4 MP | 0.7836 s | 0.8063 s (0.97x) | 0.8065 s (0.97x) |
+
+Not adopted. A wheel built for x86-64-v3 would not run on an older processor, and choosing the core's own loops
+at run time instead was tried (`#[target_feature]`, with the processor asked once) and gained at most 5 %,
+within the noise, so it was removed. The JPEG encoder's SIMD gains little and writes other bytes, so the same
+figure would make a different file on another machine.
+
+**The browser: the JavaScript port and the WebAssembly core**, in node, medians of 7, and the WebAssembly core
+built with SIMD (`simd128`):
+
+| work | MP | JavaScript port | WebAssembly core | with simd128 |
+|---|---|---|---|---|
+| position | 0.26 | 0.0349 s | 0.0086 s (4.1x) | 0.0085 s (1.01x) |
+| position | 1 | 0.3152 s | 0.0784 s (4.0x) | 0.0836 s (0.94x) |
+| position | 4 | 1.5175 s | 0.362 s (4.2x) | 0.3592 s (1.01x) |
+| light | 0.26 | 0.0658 s | 0.0103 s (6.4x) | 0.0104 s (0.99x) |
+| light | 1 | 0.5719 s | 0.0916 s (6.2x) | 0.0898 s (1.02x) |
+| light | 4 | 2.2505 s | 0.438 s (5.1x) | 0.4332 s (1.01x) |
+| colours | 0.26 | 0.0124 s | 0.0076 s (1.6x) | 0.0073 s (1.04x) |
+| colours | 1 | 0.0969 s | 0.049 s (2.0x) | 0.0495 s (0.99x) |
+| colours | 4 | 0.3935 s | 0.222 s (1.8x) | 0.2791 s (0.80x) |
+| held pixels | 0.26 | 0.0417 s | 0.0129 s (3.2x) | 0.0128 s (1.01x) |
+| held pixels | 1 | 0.3732 s | 0.1293 s (2.9x) | 0.1261 s (1.03x) |
+| held pixels | 4 | 1.6797 s | 0.5645 s (3.0x) | 0.5163 s (1.09x) |
+
+Adopted: the live view's numbers (the held pixels, the readout under the pointer, the self-check's reference)
+come from the WebAssembly core, 1.6 to 6.4 times faster than the port, which stays as its fallback. Not adopted:
+SIMD, which gains nothing here; the hot loops call `powf`, `asinh` and `ln`, which the compiler does not vectorise.
+The site's WebAssembly is built from the source when the site is published (`.github/workflows/pages.yml`), so the
+repository holds no binary.
+
 ## 5. Order
 
 1. **3.1, colour map as a table.** Largest gain, and it settles how colour maps are defined. Needs: regenerate

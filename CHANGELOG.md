@@ -12,6 +12,19 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ### 2026-10-22
 
+- **Faster on the newer Pythons, and in the browser; measured, with what did not help left out.**
+  `tools/speed_rig.py` times each faster way against the plain one and checks the results are the same
+  (project/performance-scope.md, 4h). The NumPy code (used where there is no core) now works on several threads:
+  3.4 to 4.6 times faster on Python 3.13, 5.1 to 5.9 on the free-threaded Python 3.14, with identical results.
+  `udeep.core.THREADS` (or `UDEEP_THREADS`) sets the thread count for it and for the core. udeep runs on the
+  free-threaded Python 3.14, without bringing back the interpreter lock; its tests run there in CI, and the first
+  install is checked there too. A race in the core's first load, which could turn the core off when threads
+  arrived together, is fixed (`tests/test_threads.py`). The live view's numbers now come from the Rust core built
+  as WebAssembly, 1.6 to 6.4 times faster than the JavaScript port, which stays as its fallback; the site's
+  WebAssembly is built from the source when it is published (`pages.yml`), so the repository holds no binary.
+  Measured and not adopted: the core built for newer processors (x86-64-v3; a wheel so built would not run on
+  older ones, and choosing loops at run time gained at most 5 %), the JPEG encoder's SIMD (other bytes), and
+  WebAssembly SIMD (no gain).
 - **Python 3.13 and later only**, following [SPEC 0](https://scientific-python.org/specs/spec-0000/), as NumPy and
   matplotlib do: each Python is supported for three years after its release, so 3.11 and 3.12 are no longer.
   On an older Python, pip refuses to install it and says why, except pip 25.0 and 25.0.1, which say only that

@@ -8,7 +8,8 @@ Each step is a tool of its own and can be run alone; this is only their order, w
 
     colour tables         tools/make_tables.py         never rewrites a table that exists
     golden vectors        python -m udeep.golden       from the NumPy reference (not in --check: see below)
-    live view's copies    tools/make_view.py           the shader, the JavaScript port and the tables, copied
+    live view's copies    tools/make_view.py           the shader, the JavaScript port and its binding, and the tables,
+                                                       copied; the core built as WebAssembly where cargo can
     profile page          tools/build_profile_page.py  from profile/*.md (needs `pip install markdown`)
     namespace page        tools/build_namespace_page.py  docs/ns/<version>/, from the profile's 8.1 (markdown too)
     reference page        tools/build_reference_page.py

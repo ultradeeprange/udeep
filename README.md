@@ -106,7 +106,7 @@ file that declares itself a data record against that. Such a file holds no SDR i
 goes with it (`udeep.metadata.digest_sdr`); `--sdr` checks that link.
 
 Wherever the core is present (in an installed wheel, or built in a checkout with `cargo build --release --features
-jpeg` in `core/`), the package uses it: the mapping and colours run on every processor core (a 64-megapixel view in under 4 s where NumPy takes about 30),
+jpeg` in `core/`), the package uses it: the mapping and colours run on every processor core (a 64-megapixel view in under 4 s where NumPy takes about 30; the NumPy code runs on several threads too, fastest on a free-threaded Python; `udeep.core.THREADS` sets how many),
 and gain-map JPEGs are written and read by it. Without the library the NumPy and Pillow code does the same work,
 and `udeep.core.enable(False)` chooses that code. Both are held to the same test vectors; they agree to about one
 part in 10^12, which is not bit for bit.

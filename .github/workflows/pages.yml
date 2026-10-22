@@ -1,0 +1,50 @@
+name: pages
+
+# Publishes the site (docs/) to GitHub Pages. Everything on it is in the repository except the live view's core,
+# which is built here from the source (core/) as WebAssembly: the site never carries a binary that could differ
+# from the code it came from, and the repository holds none (tools/make_view.py builds the same for a local copy).
+# The live view works without it, on the JavaScript port, so a failed build costs speed, not the page.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false            # a deployment under way is allowed to finish
+
+jobs:
+  build:
+    name: Build the site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: The live view's core, as WebAssembly, from the source
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo build --release --locked --target wasm32-unknown-unknown --manifest-path core/Cargo.toml \
+            --target-dir core/target/view
+          cp core/target/view/wasm32-unknown-unknown/release/udeep_core.wasm docs/view/udeep_core.wasm
+          ls -l docs/view/udeep_core.wasm
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs
+
+  deploy:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write                    # GitHub vouches for this run to Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

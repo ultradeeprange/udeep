@@ -5,7 +5,10 @@ the page compiles it, and run on a GPU into a float texture, which is read back 
 reference. Skipped where wgpu finds no adapter.
 """
 import importlib.util
+import json
+import shutil
 import struct
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -26,16 +29,18 @@ def make_view():
 
 
 def test_the_pages_copies_are_the_projects_own_files():
-    """The page can only load what is in docs/. What it carries must be the reference shader, the JavaScript port
-    and the registered tables, byte for byte: run tools/make_view.py after changing any of them."""
+    """The page can only load what is in docs/. What it carries must be the reference shader, the JavaScript port,
+    the WebAssembly binding and the registered tables, byte for byte: run tools/make_view.py after changing any of
+    them. The WebAssembly core itself is built, not kept: the page fetches it, and works on the port without it."""
     copies = make_view().copies()
-    assert len(copies) == 2 + 2 * 4
+    assert len(copies) == 3 + 2 * 4
     for copy, source in copies.items():
         assert copy.is_file(), f"{copy.name} is missing: run tools/make_view.py"
         assert copy.read_bytes() == source.read_bytes(), f"{copy.name} differs from {source}: run tools/make_view.py"
     page, script = (VIEW / "index.html").read_text(encoding="utf-8"), (VIEW / "view.js").read_text(encoding="utf-8")
-    assert '<script src="udeepcore.js">' in page and '<script src="view.js">' in page
+    assert all(f'<script src="{name}">' in page for name in ("udeepcore.js", "udeepwasm.js", "held.js", "view.js"))
     assert 'fetch("mapping.wgsl")' in script and 'fetch("view.wgsl")' in script and '"tables/"' in script
+    assert 'fetch("udeep_core.wasm")' in script and "UDeepViewHeld" in script
     # every map the page offers has its tables there, at every headroom it offers
     import re
     maps = [m for m in re.findall(r'<option value="([a-z]+/\d)">', page)]
@@ -44,6 +49,51 @@ def test_the_pages_copies_are_the_projects_own_files():
         for headroom in re.findall(r'value="(\d+)"', heads):
             assert (VIEW / "tables" / f"{name.replace('/', '-')}-h{headroom}.f32").is_file(), (name, headroom)
     assert maps == ["fire/3", "ice/3"]
+
+
+# ---- the held pixels: the page's own scripts, in node, with the core as WebAssembly and with the port
+
+HELD = r"""
+import { readFileSync } from 'node:fs';
+const [, , view, wasm, out] = process.argv;
+for (const name of ['udeepcore.js', 'udeepwasm.js', 'held.js']) await import(new URL(name, view).href);
+const core = await globalThis.UDeepWasm.load(readFileSync(wasm)), port = globalThis.UDeepCore, held = globalThis.UDeepViewHeld;
+const width = 211, height = 157, data = new Float64Array(width * height);
+let seed = 7; const rand = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+for (let i = 0; i < data.length; i++) data[i] = 30 + 20 * Math.sin(i / 37) + 8 * rand();
+for (let k = 0; k < 400; k++) data[Math.floor(rand() * data.length)] = 90 + 10 * rand();          // lone bright pixels
+for (let j = 60; j < 90; j++) for (let i = 100; i < 140; i++) data[j * width + i] = 70 + 30 * rand(); // a bright block
+for (let k = 0; k < 50; k++) data[Math.floor(rand() * data.length)] = NaN;                           // no data
+data[5] = Infinity;
+const m = { stretch: 'linear', range_low: 0, range_high: 100, knee: 60, reference_headroom: 4, stretch_width: 1,
+  stretch_offset: 0, above_knee: 'hermite; exit=1', colour_map: 'fire/3' };
+const result = {};
+for (const highlight of [true, false]) {
+  const a = held(m, data, width, height, highlight, core, port), b = held(m, data, width, height, highlight, null, port);
+  result[highlight ? 'highlight' : 'extend'] = { same: Buffer.from(a.values.buffer).equals(Buffer.from(b.values.buffer)),
+    alone: [a.alone, b.alone], any: [a.any, b.any], noData: a.values.filter(v => v === 2).length };
+}
+console.log(JSON.stringify(result));
+"""
+
+
+def test_the_page_holds_the_same_pixels_with_the_core_as_with_the_port(tmp_path):
+    """held.js, as the page loads it: the WebAssembly core's held pixels are the port's, for both presets, with
+    pixels of no data, infinite values, a bright block and bright pixels that stand alone."""
+    if shutil.which("node") is None:
+        pytest.skip("needs node")
+    wasm = make_view().build_wasm()
+    if wasm is None:
+        pytest.skip("needs cargo and its wasm32-unknown-unknown target")
+    script = tmp_path / "held.mjs"
+    script.write_text(HELD, encoding="utf-8")
+    ran = subprocess.run(["node", str(script), VIEW.as_uri() + "/", str(wasm), str(tmp_path)], capture_output=True,
+                         text=True, check=False)
+    assert ran.returncode == 0, ran.stderr
+    result = json.loads(ran.stdout)
+    assert result["highlight"]["same"] and result["extend"]["same"]
+    assert result["highlight"]["alone"][0] == result["highlight"]["alone"][1] > 100       # the lone pixels are held
+    assert result["extend"]["alone"] == [0, 0] and result["highlight"]["noData"] == 51     # 50 NaN and 1 infinite
 
 
 # ---- the viewer's shader, on a GPU
