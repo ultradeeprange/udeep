@@ -28,7 +28,12 @@ vectors (`../src/udeep/golden.json`).
 | **a WebAssembly build** of the same C interface, with a JavaScript binding (see [WebAssembly](#webassembly)) | |
 
 The Python package carries the library (`setup.py` builds it into the wheel), and the Julia package binds the same
-C interface (`../julia/UDeepCore`).
+C interface (`../julia/UDeepCore`). On x86-64 the library is built twice, for any processor and with
+`-C target-cpu=x86-64-v3` (AVX2, FMA, BMI2 and the rest), as `udeep_core_v3` beside the first. Both packages open
+the first and ask it (`udeep_processor_x86_64_v3`) whether this processor can run the second, which would stop on
+an older one at its first wider instruction; `udeep_built_for_x86_64_v3` says which build a library is. The two
+give the same bytes, since Rust does not fuse a multiply and an add unless asked (`tests/test_udeep_rust.py`
+checks it, and `tools/check_wheel.py` checks each x86-64 wheel). `UDEEP_CORE_V3=0` keeps the first.
 
 By default the library depends on no other crate and reads or writes no image formats. The gain-map JPEG writer
 is behind the `jpeg` feature, which brings in two pure-Rust crates, `jpeg-encoder` and `jpeg-decoder` (both

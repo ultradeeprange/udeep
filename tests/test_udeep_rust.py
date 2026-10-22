@@ -9,6 +9,7 @@ import importlib
 import json
 import math
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -86,6 +87,8 @@ def lib():
     dll.udeep_mapping_validate.argtypes = [record]
     dll.udeep_mapping_validate.restype = ctypes.c_int32
     dll.udeep_version.restype = ctypes.c_uint32
+    dll.udeep_processor_x86_64_v3.restype = ctypes.c_uint32
+    dll.udeep_built_for_x86_64_v3.restype = ctypes.c_uint32
     dll.udeep_light_parallel.argtypes = [record, doubles, doubles, ctypes.c_size_t, ctypes.c_size_t]
     dll.udeep_light_parallel.restype = ctypes.c_int32
     dll.udeep_digest_data.argtypes = [ctypes.POINTER(ctypes.c_size_t), ctypes.c_size_t, doubles, ctypes.c_char_p]
@@ -161,7 +164,7 @@ def test_the_library_exports_every_function_the_header_declares(lib):
     only a WebAssembly build has (tests/test_udeep_wasm.py holds that build to the whole header)."""
     header = re.sub(r"/\*.*?\*/", "", (CORE / "include" / "udeep_core.h").read_text(encoding="utf-8"), flags=re.DOTALL)
     declared = set(re.findall(r"\b(udeep_\w+)\(", header)) - {"udeep_buffer_alloc", "udeep_buffer_free"}
-    assert len(declared) == 37 and not [name for name in sorted(declared) if not hasattr(lib, name)]
+    assert len(declared) == 39 and not [name for name in sorted(declared) if not hasattr(lib, name)]
     assert not hasattr(lib, "udeep_buffer_alloc")               # memory is the host's own outside WebAssembly
 
 
@@ -1186,3 +1189,79 @@ def test_the_core_gives_every_value_as_the_middle_of_its_own_level(lib, name, cm
     span = m.range_high - m.range_low
     wrong = np.isnan(back) | (np.abs(back - 0.5 * (start + end)) > 1e-5 * (end - start) + 1e-10 * span)
     assert not wrong.any(), f"{wrong.sum()} of {x.size} values misread, for example {np.sort(x[wrong])[:8]}"
+
+
+# ---- the core's two builds on x86-64: for any processor, and for x86-64-v3, chosen where the processor has it
+
+X86_64 = platform.machine().lower() in ("x86_64", "amd64")
+DIGESTS = r"""
+import hashlib, json, sys, tempfile
+from pathlib import Path
+import numpy as np
+from udeep import Mapping, core, gainmap, write_png_pq
+from udeep.view import hdr_view
+stretch = {"kind": "asinh", "lo": 0.0, "hi": 100.0, "width": 5.0}
+m = Mapping.from_stretch(stretch, 40.0, 4.0, "fire")
+x = np.random.default_rng(5).exponential(20.0, 400_000)
+x[::1001] = np.nan
+light = core.light(m, x)
+view = hdr_view(x[:250_000].reshape(500, 500), "extend", 40.0, stretch, 4.0, "fire")
+folder = Path(tempfile.mkdtemp())
+gainmap.write_gainmap_jpeg(view.sdr, view.hdr, folder / "f.jpg", 4.0)
+write_png_pq(view.hdr, folder / "f.png")
+d = lambda b: hashlib.sha256(b).hexdigest()
+print(json.dumps({"build": core.build(), "file": core.loaded().name, "light": d(light.tobytes()),
+                  "colours": d(core.colours(m, light).tobytes()), "jpeg": d((folder / "f.jpg").read_bytes()),
+                  "png": d((folder / "f.png").read_bytes())}))
+"""
+
+
+@pytest.fixture(scope="session")
+def both_builds(lib, tmp_path_factory):
+    """The core's two builds side by side, as a wheel carries them: udeep_core and udeep_core_v3."""
+    if not X86_64:
+        pytest.skip("the second build is for x86-64")
+    if lib.udeep_processor_x86_64_v3() != 1:
+        pytest.skip("this processor cannot run the x86-64-v3 build")
+    target = CORE / "target" / "x86-64-v3"
+    built = subprocess.run([CARGO, "build", "--release", "--features", "jpeg,png", "--target-dir", str(target)], cwd=CORE,
+                           capture_output=True, text=True, check=False,
+                           env={**os.environ, "RUSTFLAGS": "-C target-cpu=x86-64-v3"})
+    assert built.returncode == 0, built.stderr[-2000:]
+    name = {"win32": "udeep_core.dll", "darwin": "libudeep_core.dylib"}.get(sys.platform, "libudeep_core.so")
+    folder = tmp_path_factory.mktemp("both")
+    shutil.copyfile(CORE / "target" / "release" / name, folder / name)
+    shutil.copyfile(target / "release" / name, folder / name.replace("udeep_core", "udeep_core_v3", 1))
+    return folder / name
+
+
+def test_the_core_says_whether_the_processor_can_run_its_wider_build(lib):
+    assert lib.udeep_built_for_x86_64_v3() == 0                          # the build every host loads first
+    assert lib.udeep_processor_x86_64_v3() in ((0, 1) if X86_64 else (0,))
+
+
+def test_python_takes_the_wider_build_where_it_can_and_both_give_the_same_bytes(both_builds):
+    """The same light, colours, gain-map JPEG and 16-bit PNG, to the byte, from either build: a wider instruction set
+    changes how fast the core is, not what it makes (Rust never fuses a multiply and an add unless asked)."""
+    def run(**env) -> dict:
+        ran = subprocess.run([sys.executable, "-c", DIGESTS], capture_output=True, text=True, check=False,
+                             env={**os.environ, "UDEEP_CORE_LIB": str(both_builds), "UDEEP_USE_CORE": "1", **env})
+        assert ran.returncode == 0, ran.stderr[-2000:]
+        return json.loads(ran.stdout)
+    wide, plain = run(), run(UDEEP_CORE_V3="0")
+    assert wide["build"] == "x86-64-v3" and "udeep_core_v3" in wide["file"]
+    assert plain["build"] == "any processor" and "udeep_core_v3" not in plain["file"]
+    made = lambda run: {k: v for k, v in run.items() if k not in ("build", "file")}
+    assert made(wide) == made(plain) and len(made(wide)) == 4
+
+
+@pytest.mark.skipif(shutil.which("julia") is None or not (ROOT / "julia" / "UDeepCore" / "Manifest.toml").exists(),
+                    reason="needs julia, with the package's environment instantiated")
+def test_julia_takes_the_wider_build_where_it_can(both_builds):
+    def build(**env) -> str:
+        ran = subprocess.run([shutil.which("julia"), "--project=" + str(ROOT / "julia" / "UDeepCore"), "-e",
+                              "using UDeepCore; print(core_build())"], capture_output=True, text=True, check=False,
+                             env={**os.environ, "UDEEP_CORE_LIB": str(both_builds), **env})
+        assert ran.returncode == 0, ran.stderr[-2000:]
+        return ran.stdout.strip()
+    assert build() == "x86-64-v3" and build(UDEEP_CORE_V3="0") == "any processor"

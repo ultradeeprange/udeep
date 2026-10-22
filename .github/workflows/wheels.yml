@@ -34,13 +34,18 @@ jobs:
         if: runner.os != 'Linux'
         run: rustup update stable
       - uses: pypa/cibuildwheel@8d2b08b68458a16aeb24b64e68a09ab1c8e82084 # v3.4.1
-      - name: The wheel is for any Python 3 and carries the core
+      - name: The wheel is for any Python 3 and carries the core (on x86-64, its build for x86-64-v3 as well)
         shell: bash
         run: |
           ls -l wheelhouse
           test "$(ls wheelhouse/*.whl | wc -l | tr -d " ")" = 1
           ls wheelhouse/udeep-*-py3-none-*.whl
           python -m zipfile -l wheelhouse/*.whl | grep -E "udeep/_lib/(libudeep_core\.(so|dylib)|udeep_core\.dll)"
+          if [ "${{ runner.arch }}" = X64 ]; then
+            python -m zipfile -l wheelhouse/*.whl | grep -E "udeep/_lib/(libudeep_core_v3\.(so|dylib)|udeep_core_v3\.dll)"
+          else
+            ! python -m zipfile -l wheelhouse/*.whl | grep -q "udeep_core_v3"
+          fi
       - name: The core alone, packed for the Julia package
         shell: bash
         run: |

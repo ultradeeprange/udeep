@@ -12,7 +12,9 @@ three files lift the same pixels to within 11 of 16,270. The package's own tests
 
 What a release will change: the package looks for the core, in this order, at `ENV["UDEEP_CORE_LIB"]`, as an
 artifact installed with the package, and in the checkout it sits in. The artifact is the core library alone, one
-archive for each of Linux, Windows and macOS (Intel and Apple silicon), taken from the wheels the repository's
+archive for each of Linux, Windows and macOS (Intel and Apple silicon; on x86-64 it holds the core's x86-64-v3
+build as well, which the package opens where the processor has it, as Python does: `core_build()` says which is
+in use), taken from the wheels the repository's
 `wheels` workflow builds and tests. `tools/julia_artifacts.jl` writes the `Artifacts.toml` that names them once
 they are at a public address, and from then on `Pkg.add` brings the right one and no Rust is needed. This has
 been tried with the archives the workflow built, and the package's tests pass on them; there is no

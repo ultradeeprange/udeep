@@ -12,6 +12,13 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ### 2026-10-22
 
+- **The core built for newer processors as well, and chosen when it loads.** On x86-64 the wheels carry the core
+  twice: built for any processor, and for x86-64-v3 (AVX2, FMA: Intel Core processors since 2013, AMD since
+  2015), 4 to 16 % faster on the colours, gain-map JPEGs and the mapping on every core (project/performance-scope.md,
+  4h). Python and Julia load the second where the processor has every feature it needs, and the first otherwise;
+  `udeep.core.build()` (Julia: `core_build()`) says which is in use, `python -m udeep.selftest` reports it, and
+  `UDEEP_CORE_V3=0` keeps the first. The two give the same bytes: the tests check it, and so does each x86-64 wheel
+  as it is built. The Julia archives carry both too.
 - **Faster on the newer Pythons, and in the browser; measured, with what did not help left out.**
   `tools/speed_rig.py` times each faster way against the plain one and checks the results are the same
   (project/performance-scope.md, 4h). The NumPy code (used where there is no core) now works on several threads:
@@ -22,9 +29,8 @@ the code implements: 0.3 implements the v0.3 draft.
   arrived together, is fixed (`tests/test_threads.py`). The live view's numbers now come from the Rust core built
   as WebAssembly, 1.6 to 6.4 times faster than the JavaScript port, which stays as its fallback; the site's
   WebAssembly is built from the source when it is published (`pages.yml`), so the repository holds no binary.
-  Measured and not adopted: the core built for newer processors (x86-64-v3; a wheel so built would not run on
-  older ones, and choosing loops at run time gained at most 5 %), the JPEG encoder's SIMD (other bytes), and
-  WebAssembly SIMD (no gain).
+  Measured and not adopted: choosing the core's loops at run time (at most 5 %), the JPEG encoder's SIMD (other
+  bytes), and WebAssembly SIMD (no gain).
 - **Python 3.13 and later only**, following [SPEC 0](https://scientific-python.org/specs/spec-0000/), as NumPy and
   matplotlib do: each Python is supported for three years after its release, so 3.11 and 3.12 are no longer.
   On an older Python, pip refuses to install it and says why, except pip 25.0 and 25.0.1, which say only that

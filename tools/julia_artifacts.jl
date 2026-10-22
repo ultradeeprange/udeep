@@ -29,10 +29,12 @@ function main(directory, base_url)
         triple = first(t for t in keys(PLATFORMS) if endswith(archive, "-$t.tar.gz"))
         path = joinpath(directory, archive)
         tree = create_artifact(dir -> Pkg.PlatformEngines.unpack(path, dir))
-        library = only(readdir(joinpath(artifact_path(tree), "lib")))
+        # the core, and on x86-64 its x86-64-v3 build beside it (udeep_core_v3), which the package loads where it can
+        libraries = readdir(joinpath(artifact_path(tree), "lib"))
+        count(!contains("udeep_core_v3"), libraries) == 1 || error("$archive: expected one core library, found $libraries")
         bind_artifact!(toml, "udeep_core", tree; platform = PLATFORMS[triple], force = true,
                        download_info = [("$(rstrip(base_url, '/'))/$archive", bytes2hex(open(sha256, path)))])
-        println(rpad(triple, 22), library, "  ", bytes2hex(tree.bytes))
+        println(rpad(triple, 22), join(libraries, " + "), "  ", bytes2hex(tree.bytes))
     end
     println("wrote ", toml, " for ", length(archives), " platforms")
 end

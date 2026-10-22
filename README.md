@@ -107,7 +107,9 @@ goes with it (`udeep.metadata.digest_sdr`); `--sdr` checks that link.
 
 Wherever the core is present (in an installed wheel, or built in a checkout with `cargo build --release --features
 jpeg` in `core/`), the package uses it: the mapping and colours run on every processor core (a 64-megapixel view in under 4 s where NumPy takes about 30; the NumPy code runs on several threads too, fastest on a free-threaded Python; `udeep.core.THREADS` sets how many),
-and gain-map JPEGs are written and read by it. Without the library the NumPy and Pillow code does the same work,
+and gain-map JPEGs are written and read by it. On x86-64 a wheel carries the core twice, built for any processor
+and for x86-64-v3 (AVX2: Intel Core processors since 2013, AMD since 2015), and loads the second where the processor has it; the
+two make the same bytes, and `udeep.core.build()` says which is in use. Without the library the NumPy and Pillow code does the same work,
 and `udeep.core.enable(False)` chooses that code. Both are held to the same test vectors; they agree to about one
 part in 10^12, which is not bit for bit.
 

@@ -113,7 +113,7 @@
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      111 public functions and classes in 18 Python modules, and the 37 names the Julia
+      113 public functions and classes in 18 Python modules, and the 38 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -815,7 +815,8 @@ temporary folder and nothing is sent anywhere.</p>
 <p>A step that ran and gave the wrong result.</p>
 <h3 id="selftest.describe_core"><span class="kind">function</span>describe_core</h3>
 <pre class="sig">describe_core() -&gt; str</pre>
-<p>Which implementation is in use, in words: the Rust core library, or the NumPy and Pillow code.</p>
+<p>Which implementation is in use, in words: the Rust core library (and which of its builds), or the NumPy and
+Pillow code.</p>
 <h3 id="selftest.run"><span class="kind">function</span>run</h3>
 <pre class="sig">run(keep: Path | None=None, expect_core: bool=False) -&gt; dict</pre>
 <p>Run every step and return the result: the versions and platform, which implementation was used, and each
@@ -996,7 +997,14 @@ at most GIL_THREADS where the interpreter lock is on.</p>
 <p>The package&#x27;s pool of threads() worker threads, made when first needed and made again if the count changes.</p>
 <h3 id="core.library_path"><span class="kind">function</span>library_path</h3>
 <pre class="sig">library_path() -&gt; Path | None</pre>
-<p>Where the core library is, or None if it is in none of the places looked in.</p>
+<p>Where the core library is (its build for any processor), or None if it is in none of the places looked in.
+The library in use may be its x86-64-v3 build, beside it: loaded() says which file.</p>
+<h3 id="core.loaded"><span class="kind">function</span>loaded</h3>
+<pre class="sig">loaded() -&gt; Path | None</pre>
+<p>The file of the core library in use: its build for any processor, or its x86-64-v3 build. None if none.</p>
+<h3 id="core.build"><span class="kind">function</span>build</h3>
+<pre class="sig">build() -&gt; str | None</pre>
+<p>Which build of the core is in use: &quot;x86-64-v3&quot;, or &quot;any processor&quot; (of its architecture); None if none.</p>
 <h3 id="core.available"><span class="kind">function</span>available</h3>
 <pre class="sig">available() -&gt; bool</pre>
 <p>Whether a core library with the functions this module needs was found and loaded.</p>
@@ -1212,6 +1220,8 @@ values in row order (the last index fastest), so a Julia array is walked that wa
 <pre class="block">Mapping(stretch, range_low, range_high, knee, reference_headroom; width = 1, offset = 0, exit_slope = 1)</pre>
 <p>The mapping a file declares, as one record. <code>stretch</code> is <code>:linear</code>, <code>:log</code>, <code>:asinh</code> or <code>:proportional</code>. The
 layout is that of the C interface&#x27;s <code>udeep_mapping</code>: seven <code>Float64</code>, then two <code>UInt32</code>, 64 bytes.</p>
+<h3 id="julia.core_build"><span class="kind">function</span>core_build</h3>
+<p><code>core_build()</code>: which build of the core is in use: <code>&quot;x86-64-v3&quot;</code>, or <code>&quot;any processor&quot;</code> of its architecture.</p>
 <h3 id="julia.core_version"><span class="kind">function</span>core_version</h3>
 <p>The core library&#x27;s version, as a <code>VersionNumber</code>.</p>
 <h3 id="julia.sdr_light"><span class="kind">function</span>sdr_light</h3>

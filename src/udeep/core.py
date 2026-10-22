@@ -103,7 +103,8 @@ class _Record(ctypes.Structure):
 
 
 def library_path() -> Path | None:
-    """Where the core library is, or None if it is in none of the places looked in."""
+    """Where the core library is (its build for any processor), or None if it is in none of the places looked in.
+    The library in use may be its x86-64-v3 build, beside it: loaded() says which file."""
     name = {"win32": "udeep_core.dll", "darwin": "libudeep_core.dylib"}.get(sys.platform, "libudeep_core.so")
     here = Path(__file__).resolve()
     places = [Path(os.environ["UDEEP_CORE_LIB"])] if os.environ.get("UDEEP_CORE_LIB") else []
@@ -120,12 +121,47 @@ def _load():
     return _state["library"]                           # true sees the library, or knows there is none
 
 
+def _wider_build(dll, path: Path) -> Path | None:
+    """The core's x86-64-v3 build beside `path` (udeep_core_v3), if this processor can run it: the wheels for x86-64
+    carry both builds, and the plain one, already loaded, is asked (udeep_processor_x86_64_v3). The wider one gives
+    the same bytes, faster (project/performance-scope.md, 4h). ENV["UDEEP_CORE_V3"] = "0" keeps the plain one."""
+    if os.environ.get("UDEEP_CORE_V3") == "0":
+        return None
+    wider = path.with_name(path.name.replace("udeep_core", "udeep_core_v3", 1))
+    probe = getattr(dll, "udeep_processor_x86_64_v3", None)
+    if not wider.is_file() or probe is None:
+        return None
+    probe.restype = ctypes.c_uint32
+    return wider if probe() == 1 else None
+
+
+def loaded() -> Path | None:
+    """The file of the core library in use: its build for any processor, or its x86-64-v3 build. None if none."""
+    return _state.get("path") if _load() is not None else None
+
+
+def build() -> str | None:
+    """Which build of the core is in use: "x86-64-v3", or "any processor" (of its architecture); None if none."""
+    dll = _load()
+    if dll is None:
+        return None
+    built = getattr(dll, "udeep_built_for_x86_64_v3", None)
+    if built is None:
+        return "any processor"
+    built.restype = ctypes.c_uint32
+    return "x86-64-v3" if built() == 1 else "any processor"
+
+
 def _load_now():
     """Find the library and set up its functions: the work _load does once, under its lock."""
     path = library_path()
     if path is not None:
         try:
             dll = ctypes.CDLL(str(path))
+            wider = _wider_build(dll, path)
+            if wider is not None:
+                dll, path = ctypes.CDLL(str(wider)), wider
+            _state["path"] = path
             record = ctypes.POINTER(_Record)
             for function in (dll.udeep_light_parallel, dll.udeep_sdr_light_parallel):
                 function.argtypes = [record, _DOUBLES, _DOUBLES, ctypes.c_size_t, ctypes.c_size_t]

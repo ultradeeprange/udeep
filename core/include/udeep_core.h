@@ -64,6 +64,13 @@ typedef struct udeep_mapping {
 /* major * 10000 + minor * 100 + patch */
 uint32_t udeep_version(void);
 
+/* The core comes in two builds on x86-64: for any 64-bit processor, and for x86-64-v3 (AVX2, FMA, BMI1, BMI2, LZCNT,
+ * MOVBE), which is faster where the processor has them and gives the same bytes. udeep_processor_x86_64_v3: 1 if this
+ * processor can run the second (always 0 away from x86-64), so a host loads the first, asks, and loads the second only
+ * on 1. udeep_built_for_x86_64_v3: 1 if this library is the second. */
+uint32_t udeep_processor_x86_64_v3(void);
+uint32_t udeep_built_for_x86_64_v3(void);
+
 int32_t udeep_mapping_validate(const udeep_mapping *mapping);
 
 /* x and out may be the same buffer. */

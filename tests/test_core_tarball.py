@@ -46,8 +46,21 @@ def test_the_archive_depends_on_the_library_alone(tmp_path):
         assert tar.getmember("lib").isdir()
 
 
+def test_an_x86_64_wheels_two_builds_both_go_in_the_archive(tmp_path):
+    """An x86-64 wheel carries the core for any processor and its x86-64-v3 build: the Julia package loads the
+    second where the processor has it, as Python does, so the archive holds both, side by side."""
+    path = wheel(tmp_path, "manylinux_2_28_x86_64", "libudeep_core.so", b"plain")
+    with zipfile.ZipFile(path, "a") as z:
+        z.writestr("udeep/_lib/libudeep_core_v3.so", b"wider")
+    with tarfile.open(tool.pack(path, tmp_path / "out")) as tar:
+        assert tar.getnames() == ["lib", "lib/libudeep_core.so", "lib/libudeep_core_v3.so"]
+        assert tar.extractfile("lib/libudeep_core_v3.so").read() == b"wider"
+
+
 def test_a_wheel_without_the_core_or_for_an_unknown_platform_is_refused(tmp_path):
     with pytest.raises(SystemExit, match="expected one core library"):
         tool.pack(wheel(tmp_path, "win_amd64", None), tmp_path / "out")
+    with pytest.raises(SystemExit, match="expected one core library"):                # the wider build alone
+        tool.pack(wheel(tmp_path, "win_amd64", "udeep_core_v3.dll"), tmp_path / "out")
     with pytest.raises(SystemExit, match="no Julia platform"):
         tool.pack(wheel(tmp_path, "linux_riscv64", "libudeep_core.so"), tmp_path / "out")

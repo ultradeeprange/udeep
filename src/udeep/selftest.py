@@ -110,9 +110,10 @@ class Failed(Exception):
 
 
 def describe_core() -> str:
-    """Which implementation is in use, in words: the Rust core library, or the NumPy and Pillow code."""
+    """Which implementation is in use, in words: the Rust core library (and which of its builds), or the NumPy and
+    Pillow code."""
     if core.enabled():
-        return f"the Rust core library, {core.library_path().name}"
+        return f"the Rust core library, {core.loaded().name}, built for {core.build()}"
     return "the NumPy and Pillow code: no core library for this platform, which works, more slowly"
 
 
@@ -123,7 +124,8 @@ def run(keep: Path | None = None, expect_core: bool = False) -> dict:
     result = {"udeep": getattr(udeep, "__version__", "unknown"), "python": platform.python_version(),
               "free_threaded": core.free_threaded(), "threads": core.threads(),
               "platform": platform.platform(), "machine": platform.machine(), "package": str(Path(udeep.__file__).parent),
-              "core": core.enabled(), "implementation": describe_core(), "steps": []}
+              "core": core.enabled(), "core_build": core.build() if core.enabled() else None,
+              "implementation": describe_core(), "steps": []}
     if expect_core and not core.enabled():
         result["steps"].append({"name": "core", "status": "fail", "detail": "the Rust core was expected but is not in use"})
     folder_context = tempfile.TemporaryDirectory() if keep is None else None

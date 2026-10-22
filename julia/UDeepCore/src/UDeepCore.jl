@@ -22,7 +22,7 @@ using Libdl
 using SHA: sha256
 
 # `position` is not exported: Base has a function of that name (for streams). Call it as UDeepCore.position.
-export Mapping, light, light!, sdr_light, value, colours, digest_data, digest_pixels, digest_sdr, core_version
+export Mapping, light, light!, sdr_light, value, colours, digest_data, digest_pixels, digest_sdr, core_version, core_build
 export value_at, srgb_encode, srgb_decode, isolated, colour_table, colour_table_text, hdr_view, HdrView, levels, Declaration
 export description, caption, gainmap_jpeg, gainmap_from_renders, hdrimage!, hdrcolorbar!, save_hdr, hdr_declaration, hdr_caption, hdr_theme
 export hdr_inline, HdrFigure
@@ -104,9 +104,30 @@ function handle()
         path = library_path()
         isfile(path) || error("the udeep core library is not at $path: build it with `cargo build --release " *
                               "--features jpeg,png` in core/, or set ENV[\"UDEEP_CORE_LIB\"]")
-        HANDLE[] = Libdl.dlopen(path)
+        plain = Libdl.dlopen(path)
+        HANDLE[] = something(wider_build(plain, path), plain)
     end
     return HANDLE[]
+end
+
+"""
+The core's x86-64-v3 build beside the plain one (`udeep_core_v3`), opened, where this processor can run it; else
+`nothing`. The package's artifact carries both builds on x86-64, as the Python wheels do: the plain one, already open,
+is asked (`udeep_processor_x86_64_v3`), since on an older processor the other would stop at its first wider
+instruction. The two give the same bytes. `ENV["UDEEP_CORE_V3"] = "0"` keeps the plain one.
+"""
+function wider_build(plain, path::AbstractString)
+    get(ENV, "UDEEP_CORE_V3", "") == "0" && return nothing
+    wider = joinpath(dirname(path), replace(basename(path), "udeep_core" => "udeep_core_v3"; count = 1))
+    probe = Libdl.dlsym(plain, :udeep_processor_x86_64_v3; throw_error = false)
+    (isfile(wider) && probe !== nothing && ccall(probe, UInt32, ()) == 1) || return nothing
+    return Libdl.dlopen(wider)
+end
+
+"`core_build()`: which build of the core is in use: `\"x86-64-v3\"`, or `\"any processor\"` of its architecture."
+function core_build()
+    built = Libdl.dlsym(handle(), :udeep_built_for_x86_64_v3; throw_error = false)
+    return built !== nothing && ccall(built, UInt32, ()) == 1 ? "x86-64-v3" : "any processor"
 end
 
 symbol(name::Symbol) = Libdl.dlsym(handle(), name)

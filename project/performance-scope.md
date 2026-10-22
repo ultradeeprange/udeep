@@ -526,22 +526,34 @@ the core's first load was found on the way and fixed: a thread could take the li
 still loading it, and turn the core off for the rest of the process (`tests/test_threads.py`, with the old loader
 as its control: 7 of 8 threads got no core).
 
-**The Rust core, by instruction set.** The fastest of 15 runs: as the wheels carry it, for any 64-bit x86
-processor; the whole core built for x86-64-v3 (AVX2, FMA); and with the JPEG encoder's own SIMD:
+**The Rust core, by instruction set.** The fastest of 15 runs, at two sittings of the rig: built for any 64-bit
+x86 processor; the whole core built for x86-64-v3 (AVX2, FMA), loaded directly at the first sitting and at the
+second as the x86-64 wheels now carry it, beside the first build and chosen at load; and with the JPEG encoder's
+own SIMD. The times are the first build's; the other columns are how many times faster, first sitting / second:
 
-| work | as the wheels carry it | built for x86-64-v3 | with the JPEG encoder's SIMD |
+| work | for any processor | x86-64-v3 | with the JPEG encoder's SIMD |
 |---|---|---|---|
-| light, 1 thread | 0.443 s | 0.4328 s (1.02x) | 0.4471 s (0.99x) |
-| light, every core | 0.0664 s | 0.0598 s (1.11x) | 0.0561 s (1.18x) |
-| colours, 1 thread | 0.1947 s | 0.1679 s (1.16x) | 0.1945 s (1.00x) |
-| colours, every core | 0.0368 s | 0.0354 s (1.04x) | 0.041 s (0.90x) |
-| gain-map JPEG, 4 MP | 0.8198 s | 0.7549 s (1.09x) | 0.7866 s (1.04x), other bytes |
-| 16-bit PNG, 4 MP | 0.7836 s | 0.8063 s (0.97x) | 0.8065 s (0.97x) |
+| light, 1 thread | 0.443 / 0.4472 s | 1.02x / 1.00x | 0.99x / 0.97x |
+| light, every core | 0.0664 / 0.0684 s | 1.11x / 1.13x | 1.18x / 1.03x |
+| colours, 1 thread | 0.1947 / 0.2069 s | 1.16x / 1.09x | 1.00x / 1.09x |
+| colours, every core | 0.0368 / 0.049 s | 1.04x / 1.07x | 0.90x / 1.00x |
+| gain-map JPEG, 4 MP | 0.8198 / 0.8441 s | 1.09x / 1.11x | 1.04x / 1.06x, other bytes |
+| 16-bit PNG, 4 MP | 0.7836 / 0.8016 s | 0.97x / 1.02x | 0.97x / 1.00x |
 
-Not adopted. A wheel built for x86-64-v3 would not run on an older processor, and choosing the core's own loops
-at run time instead was tried (`#[target_feature]`, with the processor asked once) and gained at most 5 %,
-within the noise, so it was removed. The JPEG encoder's SIMD gains little and writes other bytes, so the same
-figure would make a different file on another machine.
+A third sitting, made while other work loaded the machine (the gain-map JPEG's median near 2 s for every build),
+is not counted. The x86-64-v3 build is 4 to 16 % faster on the colours, the gain-map JPEG and the light on every
+core, at both sittings, and no faster on the light on one thread or the PNG; it gives the same bytes throughout.
+
+Adopted, the same day: the x86-64 wheels carry the core twice, built for any processor and for x86-64-v3
+(`udeep_core_v3` beside `udeep_core`). Python and Julia open the first and ask it (`udeep_processor_x86_64_v3`)
+whether the processor has every x86-64-v3 feature, and if so open the second, which on an older processor would
+stop at its first wider instruction; `udeep.core.build()` and `core_build()` say which is in use, and
+`UDEEP_CORE_V3=0` keeps the first. `tests/test_udeep_rust.py` checks that each package chooses as it should and
+that the two builds give the same light, colours, gain-map JPEG and PNG to the byte, and `tools/check_wheel.py`
+checks the same in each x86-64 wheel as built. The cost is a second copy of the library in each x86-64 wheel.
+Not adopted: choosing the core's own loops at run time instead (`#[target_feature]`, with the processor asked
+once), tried and removed, since it gained at most 5 %, within the noise; and the JPEG encoder's SIMD, which gains
+little and writes other bytes, so the same figure would make a different file on another machine.
 
 **The browser: the JavaScript port and the WebAssembly core**, in node, medians of 7, and the WebAssembly core
 built with SIMD (`simd128`):

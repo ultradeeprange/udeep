@@ -15,6 +15,35 @@ pub extern "C" fn udeep_version() -> u32 {
     300
 }
 
+/// Whether this processor can run the core built for x86-64-v3 (AVX2, FMA, BMI1, BMI2, LZCNT and MOVBE: Intel
+/// processors since 2013, AMD since 2015): 1 or 0, and always 0 away from x86-64. A host that carries both builds
+/// (the Python wheels and the Julia package do) asks the plain one this, and loads the other only where it says 1:
+/// on an older processor that build would stop at its first wider instruction. The two give the same bytes.
+#[unsafe(no_mangle)]
+pub extern "C" fn udeep_processor_x86_64_v3() -> u32 {
+    #[cfg(target_arch = "x86_64")]
+    {
+        u32::from(
+            std::arch::is_x86_feature_detected!("avx2")
+                && std::arch::is_x86_feature_detected!("fma")
+                && std::arch::is_x86_feature_detected!("bmi1")
+                && std::arch::is_x86_feature_detected!("bmi2")
+                && std::arch::is_x86_feature_detected!("lzcnt")
+                && std::arch::is_x86_feature_detected!("movbe"),
+        )
+    }
+    #[cfg(not(target_arch = "x86_64"))]
+    {
+        0
+    }
+}
+
+/// Whether this library was built for x86-64-v3 (1) or for any processor of its architecture (0).
+#[unsafe(no_mangle)]
+pub extern "C" fn udeep_built_for_x86_64_v3() -> u32 {
+    u32::from(cfg!(all(target_feature = "avx2", target_feature = "fma", target_feature = "bmi2")))
+}
+
 /// Check a mapping record. 0 if it is valid.
 ///
 /// # Safety

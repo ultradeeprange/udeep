@@ -4,7 +4,8 @@
 
 A wheel that carries the core holds it at udeep/_lib/. The Julia package needs the same library and nothing else,
 as an archive named for its platform in the form Julia uses (x86_64-linux-gnu, x86_64-w64-mingw32,
-aarch64-apple-darwin, x86_64-apple-darwin): udeep_core-<version>-<platform>.tar.gz, holding lib/<library>.
+aarch64-apple-darwin, x86_64-apple-darwin): udeep_core-<version>-<platform>.tar.gz, holding lib/<library>, and on
+x86-64 its x86-64-v3 build beside it (lib/<library with _v3>), which the package loads where the processor has it.
 tools/julia_artifacts.jl turns a set of these, once they are at a public address, into the package's
 Artifacts.toml.
 
@@ -21,7 +22,7 @@ from pathlib import Path
 
 PLATFORMS = [(r"manylinux.*_x86_64$", "x86_64-linux-gnu"), (r"win_amd64$", "x86_64-w64-mingw32"),
              (r"macosx_.*_arm64$", "aarch64-apple-darwin"), (r"macosx_.*_x86_64$", "x86_64-apple-darwin")]
-LIBRARY = re.compile(r"^udeep/_lib/((?:lib)?udeep_core\.(?:so|dylib|dll))$")
+LIBRARY = re.compile(r"^udeep/_lib/((?:lib)?udeep_core(?:_v3)?\.(?:so|dylib|dll))$")
 
 
 def platform_of(wheel: Path) -> str:
@@ -35,13 +36,15 @@ def platform_of(wheel: Path) -> str:
 def pack(wheel: Path, out: Path) -> Path:
     version = wheel.name.split("-")[1]
     with zipfile.ZipFile(wheel) as z:
-        found = [(m.group(1), z.read(name)) for name in z.namelist() if (m := LIBRARY.match(name))]
-    if len(found) != 1:
-        raise SystemExit(f"{wheel.name}: expected one core library in udeep/_lib/, found {len(found)}")
-    name, library = found[0]
+        found = sorted((m.group(1), z.read(name)) for name in z.namelist() if (m := LIBRARY.match(name)))
+    wider = sum("_v3" in name for name, _ in found)
+    if len(found) - wider != 1 or wider > 1:
+        raise SystemExit(f"{wheel.name}: expected one core library in udeep/_lib/ and at most one x86-64-v3 build "
+                         f"of it, found {[name for name, _ in found]}")
     buffer = io.BytesIO()
+    entries = [("lib", b"", 0o755, tarfile.DIRTYPE)] + [(f"lib/{name}", data, 0o755, tarfile.REGTYPE) for name, data in found]
     with tarfile.open(fileobj=buffer, mode="w", format=tarfile.GNU_FORMAT) as tar:
-        for path, data, mode, kind in (("lib", b"", 0o755, tarfile.DIRTYPE), (f"lib/{name}", library, 0o755, tarfile.REGTYPE)):
+        for path, data, mode, kind in entries:
             info = tarfile.TarInfo(path)
             info.type, info.mode, info.size, info.mtime = kind, mode, len(data), 0
             info.uid = info.gid = 0

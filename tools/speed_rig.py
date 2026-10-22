@@ -3,8 +3,9 @@ checked to be the same.
 
     python tools/speed_rig.py all [--python CMD ...] [--quick] [--json FILE]     every section, then a summary
     python tools/speed_rig.py numpy [--sizes 1,4,16]          the NumPy code (no core) on 1 thread and on every core
-    python tools/speed_rig.py core                            the Rust core as the wheels carry it, built for
-                                                              x86-64-v3, and with the JPEG encoder's own SIMD
+    python tools/speed_rig.py core                            the Rust core for any processor, as the x86-64
+                                                              wheels carry it (both builds, the x86-64-v3 one
+                                                              chosen at load), and with the JPEG encoder's SIMD
     python tools/speed_rig.py wasm                            the core as WebAssembly, without and with SIMD
                                                               (simd128), and the JavaScript port, in node
 
@@ -37,6 +38,7 @@ import json
 import os
 import platform
 import shlex
+import shutil
 import statistics
 import subprocess
 import sys
@@ -49,6 +51,7 @@ CORE = ROOT / "core"
 RIG = Path(tempfile.gettempdir()) / "udeep-speed-rig"                # environments and builds, kept between runs
 STRETCH = {"kind": "asinh", "lo": 0.0, "hi": 100.0, "width": 5.0}
 LIBRARY = {"win32": "udeep_core.dll", "darwin": "libudeep_core.dylib"}.get(sys.platform, "libudeep_core.so")
+BASE, BOTH = "for any processor", "both builds, chosen at load"           # the core section's builds
 ROUNDS = 3                                    # core section: each build's process run this often, in turn
 
 
@@ -189,6 +192,7 @@ def section_core_one(library: Path, megapixels: float, repeat: int) -> list[dict
     from udeep import Mapping, core, gainmap, write_png_pq
     from udeep.view import hdr_view
     assert core.enabled() and core.library_path() == library, core.library_path()
+    in_use = core.build()
     m = Mapping.from_stretch(STRETCH, 40.0, 4.0, "fire")
     n = int(megapixels * 1_000_000)
     x = np.random.default_rng(1).exponential(20.0, n)
@@ -209,24 +213,31 @@ def section_core_one(library: Path, megapixels: float, repeat: int) -> list[dict
     for name, (function, digest_of) in work.items():
         result = function()
         rows.append({"section": "core", "work": name, "megapixels": megapixels if "MP" not in name else 4.0,
-                     **timed(function, repeat), "digest": digest_of(result)})
+                     **timed(function, repeat), "digest": digest_of(result), "core_build": in_use})
     return rows
 
 
 def section_core(megapixels: float, repeat: int) -> list[dict]:
-    """The core three ways: as the wheels carry it, for any 64-bit processor; the whole core built for x86-64-v3
-    (AVX2 and FMA: the most that instruction set gives, for comparison, since a wheel built so would not run on an
-    older processor); and with the JPEG encoder's own SIMD (its optional `simd` feature), which chooses its
-    instructions when it runs. On 22 October 2026 choosing the core's own loops at run time was tried as well
-    (core/src/fast.rs, since removed): it gained at most 5 %, within the noise, against up to 16 % for the whole
-    build, so it was not kept."""
-    variants = [("as the wheels carry it", "baseline", "", "jpeg,png", {})]
+    """The core three ways: built for any 64-bit processor; as the x86-64 wheels carry it, that build with its
+    x86-64-v3 build (AVX2 and FMA) beside it, which the package loads where the processor has it (udeep.core); and
+    with the JPEG encoder's own SIMD (its optional `simd` feature), which chooses its instructions when it runs and
+    writes different bytes, so was not taken. Where the processor has AVX-512, the whole core built for x86-64-v4,
+    for comparison. On 22 October 2026 choosing the core's own loops at run time was tried as well (core/src/fast.rs,
+    since removed): it gained at most 5 %, within the noise, against up to 16 % for the whole build, which is why
+    the wheels carry two builds instead."""
+    variants = [(BASE, "baseline", "", "jpeg,png", {})]
     if cpu_has("avx2"):
-        variants.append(("built for x86-64-v3", "native-x86-64-v3", "-C target-cpu=x86-64-v3", "jpeg,png", {}))
+        variants.append((BOTH, "native-x86-64-v3", "-C target-cpu=x86-64-v3", "jpeg,png", {}))
     if cpu_has("avx512f"):
         variants.append(("built for x86-64-v4", "native-x86-64-v4", "-C target-cpu=x86-64-v4", "jpeg,png", {}))
     variants.append(("+ JPEG encoder SIMD", "baseline-jpeg-simd", "", "jpeg,png,jpeg-encoder/simd", {}))
     libraries = {name: build(target, flags, features=features) for name, target, flags, features, _ in variants}
+    if BOTH in libraries:                   # the two builds side by side, named as a wheel names them
+        both = RIG / "target" / "both"
+        both.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(libraries[BASE], both / LIBRARY)
+        shutil.copyfile(libraries[BOTH], both / LIBRARY.replace("udeep_core", "udeep_core_v3", 1))
+        libraries[BOTH] = both / LIBRARY
     runs = {name: [] for name in libraries}
     for round_ in range(ROUNDS):            # the variants in turn, round after round, so a slow stretch falls on all
         for name, _, _, _, run_env in variants:
@@ -243,7 +254,8 @@ def section_core(megapixels: float, repeat: int) -> list[dict]:
                          "best_s": min(r[i]["best_s"] for r in rounds),
                          "spread": round((max(medians) - min(medians)) / statistics.median(medians), 2),
                          "same_result": all(r[i]["digest"] == first["digest"] for r in rounds)})
-    base = {r["work"]: r["digest"] for r in rows if r["build"] == "as the wheels carry it"}
+    assert all(r["core_build"] == "x86-64-v3" for r in rows if r["build"] == BOTH), "the x86-64-v3 build was not chosen"
+    base = {r["work"]: r["digest"] for r in rows if r["build"] == BASE}
     for r in rows:
         r["same_result"] = r["same_result"] and r["digest"] == base[r["work"]]
     return rows
@@ -346,8 +358,8 @@ def summary(rows: list[dict]) -> str:
                   "| work | " + " | ".join(builds) + " | same bytes |", "|---|" + "---|" * (len(builds) + 1)]
         for work in dict.fromkeys(r["work"] for r in core):
             cells = [r for r in core if r["work"] == work]
-            base = next(r for r in cells if r["build"] == "as the wheels carry it")["best_s"]
-            text = [f"{r['best_s']} s" + ("" if r["build"] == "as the wheels carry it"
+            base = next(r for r in cells if r["build"] == BASE)["best_s"]
+            text = [f"{r['best_s']} s" + ("" if r["build"] == BASE
                                            else f" ({base / r['best_s']:.2f}x)") for r in cells]
             lines.append(f"| {work} | " + " | ".join(text) + f" | {'yes' if all(r['same_result'] for r in cells) else 'NO'} |")
     wasm = [r for r in rows if r["section"] == "wasm"]
