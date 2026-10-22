@@ -24,7 +24,9 @@ the code implements: 0.3 implements the v0.3 draft.
   `algorithm="sha3-256"` in Python and `algorithm = "sha3-256"` in Julia. When a file declares where its data is
   kept, the reference caption now ends by saying so, with both digests in full (profile 9.4.5). Three golden
   cases are added and the caption and XMP cases change; Python, Rust, Julia, the JavaScript port and the
-  WebAssembly build all reproduce them.
+  WebAssembly build all reproduce them. The README, the profile (9.4.5) and the Trust page now say how a figure
+  made for a light and a dark page is checked: the two versions share their data digests, so the digest a paper
+  states covers both, and each has its own SDR digests.
 
 ### 2026-10-22
 

@@ -214,7 +214,10 @@
     <div class="link"><b>Measurement</b><p>The data as the instrument recorded it.</p></div>
     <div class="link"><b>Data record</b><p>Sealed, with its digest, and timestamped.</p></div>
     <div class="link"><b>UDeep figure</b><p>The declaration as now (the mapping, the data digest, the SDR figure's
-      digest), one new property saying where the provenance record is, and a C2PA signature over the file.</p></div>
+      digest), one new property saying where the provenance record is, and a C2PA signature over the file. A figure
+      made for a light and for a dark page is two files with one declaration: the same data and the same data
+      digests, each with its own SDR figure and its digest. Either is an original, and each is checked against the
+      same data.</p></div>
     <div class="link"><b>Public record</b><p>The original figure, its data, and every proof with the public keys
       needed to check it, archived with a DOI, so verifying never depends on a service still being online.</p></div>
     <div class="link copy"><b>Shared copies</b><p>Stripped, re-encoded, screenshotted. They keep the picture and,
@@ -247,7 +250,8 @@
       paper, and through their records to the authors and institutions. Each link is a persistent identifier made
       to last (a DOI, an ORCID, a ROR), and each states how far it was checked.</li>
     <li><b>The digest in the paper.</b> The data's digest, printed in the caption or the data statement, is kept by
-      every library that keeps the paper.</li>
+      every library that keeps the paper. It covers both versions of a figure made for a light and a dark page,
+      which share their data digests.</li>
     <li><b>Two hash families.</b> SHA-256 and SHA3-256 of the same data. They are of unrelated designs, so the link
       holds if either is ever broken.</li>
     <li><b>Checkable from scratch.</b> The profile, the reference code and its test vectors, deposited where they

@@ -91,8 +91,10 @@ On an older Python, pip will not install it, and says why ("require a different 
 which you have; [uv](https://docs.astral.sh/uv/), conda or the installer from python.org give a newer one beside it.
 
 For a dark page, build the figure inside `with plt.rc_context(hp.theme("dark")):`. The background and the text
-change; the data, its colours, the mapping and what the file declares do not, so a light and a dark copy are two
-files of one figure (profile 8.7). The project's site shows whichever suits the viewer's theme.
+change; the data, its colours, the mapping and what the file declares about them do not, so a light and a dark
+copy are two files of one figure (profile 8.7). Both carry the same data digests, SHA-256 and SHA3-256, so either
+is checked against the same data, and the digest a paper states covers both; each has its own SDR digests, since
+its SDR figure is its own. The project's site shows whichever suits the viewer's theme.
 
 That command builds the Rust core as it installs, if Rust (`cargo`) is on the machine, and installs without it if
 not. `python -m udeep.selftest` then says which you have, and checks that udeep works on your machine: it makes a

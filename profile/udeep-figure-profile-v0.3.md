@@ -429,7 +429,9 @@ A vector HDR figure is an SVG whose furniture is vector and whose data layer is 
   `DataDigest` in full, with its `DataDigestSha3` where it declares one. The data SHOULD be deposited where that
   identifier resolves, with the version of this profile the figure follows. Printed in the paper, the digests are
   kept by every library that keeps the paper, and with the definitions of 8.6 they let the figure be checked
-  against its data long after any service, key or signature it relies on today has gone (§16). The reference
+  against its data long after any service, key or signature it relies on today has gone (§16). A figure
+  published for a light and for a dark page (8.7) has the same data digests in both versions, so the ones stated
+  cover either; each version's SDR digests are its own. The reference
   caption (8.2) ends with this sentence whenever `DataSource` is declared: "The data is kept at *source*, with
   the digests *DataDigest* and *DataDigestSha3*." *Both digests and the caption's sentence added 2026-10-23.*
 
@@ -878,7 +880,8 @@ Each line is one normative addition or change, with the date it was made.
   digest in its caption or data statement; §16 says what a check made a century later rests on.
 - 2026-10-23 · **Both digests in the paper** (9.4.5): the SHA3-256 data digest is stated beside the SHA-256 one,
   as §16 already said, and the reference caption ends with the sentence that states them. The golden caption and
-  XMP cases change with it, and three cases are added for the SHA3-256 digests.
+  XMP cases change with it, and three cases are added for the SHA3-256 digests. The clause also says that the
+  digests stated cover both versions of a figure for a light and a dark page (8.7).
 
 ## References
 
