@@ -235,6 +235,30 @@
     independent witnesses and, in the end, another lab repeating the work.</p>
 </div></section>
 
+<section id="century"><div class="wrap">
+  <p class="eyebrow">For the long run</p>
+  <h2>Checkable in a hundred years</h2>
+  <p>A figure of record can be questioned long after every key, certificate, trust list and timestamp service of
+    its day has gone, and after its signatures can be forged: a large quantum computer would break the kinds in use
+    now. So nothing in a long-term check may depend on a live service, a trust list or a single algorithm. It rests
+    on four things instead:</p>
+  <ul>
+    <li><b>Traceable, as a measurement is.</b> An unbroken, documented chain from the figure to its data, to the
+      paper, and through their records to the authors and institutions. Each link is a persistent identifier made
+      to last (a DOI, an ORCID, a ROR), and each states how far it was checked.</li>
+    <li><b>The digest in the paper.</b> The data's digest, printed in the caption or the data statement, is kept by
+      every library that keeps the paper.</li>
+    <li><b>Two hash families.</b> SHA-256 and SHA3-256 of the same data. They are of unrelated designs, so the link
+      holds if either is ever broken.</li>
+    <li><b>Checkable from scratch.</b> The profile, the reference code and its test vectors, deposited where they
+      will last, so that a verifier can be written again without any of today's software.</li>
+  </ul>
+  <p>A signature still says who made a file. To stay evidence after its key expires and its algorithm weakens, it
+    needs an archive that keeps proof it was valid when made and renews that proof with stronger algorithms in
+    time (the IETF's Evidence Record Syntax, RFC 4998). That is a duty lasting decades, for a repository or a
+    national library rather than for this project.</p>
+</div></section>
+
 <section id="verifier"><div class="wrap">
   <p class="eyebrow">The verifier</p>
   <h2>Open, run in the reader's browser, not trusted either</h2>

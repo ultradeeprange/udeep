@@ -101,7 +101,7 @@
   <article>
     <p class="source">Rendered from <code>profile/udeep-figure-profile-v0.3.md</code>, the source of record. Earlier drafts are kept beside it.</p>
     <h1 id="udeep-figure-profile-draft-v03">UDeep Figure Profile — draft v0.3</h1>
-<p>Status: <strong>working draft</strong>, 2026-10-14. Not endorsed by any standards body. Editor: Mathew Newman
+<p>Status: <strong>working draft</strong>, 2026-10-22. Not endorsed by any standards body. Editor: Mathew Newman
 (ORCID 0000-0003-1784-3250). Reference implementation: <code>udeep</code> (Python), with a JavaScript port, a Rust core and
 golden test vectors (§10). Supersedes v0.2 (2026-09-27); changes from v0.2 are listed in Annex D, and changes made
 since the first v0.3 draft of 2026-10-06 in Annex E.</p>
@@ -138,6 +138,7 @@ as a flag (for example a threshold crossed), never to carry the value.</p>
 <li>ITU-T H.273 / ISO/IEC 23091-2 — coding-independent code points (CICP).</li>
 <li>DICOM PS3.14 — Grayscale Standard Display Function (GSDF; Barten model).</li>
 <li>ISO 16684-1 (XMP) — metadata packets.</li>
+<li>FIPS 180-4 — SHA-256; FIPS 202 — SHA3-256.</li>
 <li>W3C SVG 2; W3C CSS Color 4 and the CSS Color HDR draft; PNG (third edition, <code>cICP</code> chunk).</li>
 <li>W3C WCAG 2.1, SC 2.3.1; ITU-R BT.1702 — flashing thresholds.</li>
 </ul>
@@ -535,6 +536,16 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
 <td>optional, except in a file with no SDR base of its own, which MUST declare it (9.1.2): the digest of the fair SDR rendering's 8-bit RGB pixels, before any lossy coding, as defined in 8.6. It ties an HDR file to the figure of record (§6.8). <em>Added 2026-10-08; required of such a file 2026-10-14.</em></td>
 </tr>
 <tr>
+<td><code>udeep:DataDigestSha3</code></td>
+<td>Text</td>
+<td>optional, and only with <code>DataDigest</code>: the same bytes digested with SHA3-256 (8.6), a hash function of another design, so that the link to the data holds if either function is ever broken. <em>Added 2026-10-22.</em></td>
+</tr>
+<tr>
+<td><code>udeep:SdrDigestSha3</code></td>
+<td>Text</td>
+<td>optional, and only with <code>SdrDigest</code>: the SDR figure's bytes digested with SHA3-256 (8.6). <em>Added 2026-10-22.</em></td>
+</tr>
+<tr>
 <td><code>udeep:ColourMap</code></td>
 <td>Text</td>
 <td>the map from light to colour (§6.10): <code>grey</code>, or a registered map as <code>name/version</code> (for example <code>fire/2</code>). <em>Added 2026-10-07; versioned 2026-10-08.</em></td>
@@ -547,7 +558,8 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
 </tbody>
 </table></div>
 <p><code>NoiseParameter</code>, <code>DerivedMask</code>, <code>ColourMapTable</code> and <code>SdrDigest</code> are required in the cases their rows state.
-  <code>Preset</code>, <code>RoundingToNoise</code>, <code>DataDigest</code>, <code>DataSource</code> and <code>DataUnitCode</code> are optional. Every other property
+  <code>Preset</code>, <code>RoundingToNoise</code>, <code>DataDigest</code>, <code>DataDigestSha3</code>, <code>SdrDigestSha3</code>, <code>DataSource</code> and <code>DataUnitCode</code>
+  are optional. Every other property
   MUST be present, including one whose value is zero or the usual one (<code>Masked</code>, <code>DerivedMasked</code>, <code>StretchOffset</code>,
   <code>StretchWidth</code>, <code>AboveKnee</code>).</p>
 <ul>
@@ -586,12 +598,12 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
   range, the knee and its position, the form above the knee, a proportional mapping's end point, a number that is
   not finite); <code>MaxDataStep</code> or <code>NoiseParameter</code> is not a finite number greater than zero; <code>RoundingToNoise</code> is
   negative or not finite; <code>Masked</code> or <code>DerivedMasked</code> is negative; <code>DerivedMasked</code> is above zero and no
-  <code>DerivedMask</code> is named; or <code>Record</code> is <code>data-record</code> with an <code>unknown</code> noise model. A reader MUST refuse a
+  <code>DerivedMask</code> is named; <code>DataDigestSha3</code> or <code>SdrDigestSha3</code> is declared without <code>DataDigest</code> or <code>SdrDigest</code>; or <code>Record</code> is <code>data-record</code> with an <code>unknown</code> noise model. A reader MUST refuse a
   packet that contains a document-type or entity declaration (<code>&lt;!DOCTYPE</code>, <code>&lt;!ENTITY</code>).</p>
 </li>
 <li>
-<p>8.6 <strong>The digests.</strong> <em>Defined in full 2026-10-08.</em> Each digest is SHA-256 (FIPS 180-4) of the sequence of bytes
-  given below, written as the text <code>sha256:</code> followed by the 64 lower-case hexadecimal digits of the result.</p>
+<p>8.6 <strong>The digests.</strong> <em>Defined in full 2026-10-08.</em> <code>DataDigest</code> and <code>SdrDigest</code> are each SHA-256 (FIPS 180-4)
+  of the sequence of bytes given below, written as the text <code>sha256:</code> followed by the 64 lower-case hexadecimal digits of the result.</p>
 </li>
 <li><strong><code>DataDigest</code>, the bytes.</strong> First a header in ASCII: <code>udeep-data-1;</code>, then the array's dimensions as
     decimal integers joined by <code>x</code> (for an image, rows then columns), then <code>;</code>. An image of 2 rows and 3 columns
@@ -615,10 +627,19 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
     pixel, red, green and blue, each an unsigned 8-bit value, the top row first and each row from left to right.
     Example: one row of two pixels, white then black, has the header <code>udeep-rgb8-1;1x2;</code> and the bytes
     <code>FF FF FF 00 00 00</code>, and gives <code>sha256:72f4b9b910f818d01b50d3c137ab5cc22cd48b94b1bb1bf6c69b85655751c7a1</code>.</li>
+<li><strong>The SHA3-256 digests.</strong> <em>Added 2026-10-22.</em> <code>DataDigestSha3</code> and <code>SdrDigestSha3</code> are SHA3-256 (FIPS 202) of
+    exactly the same bytes, written as the text <code>sha3-256:</code> followed by the 64 lower-case hexadecimal digits. For
+    several images, each image's SHA3-256 digest, complete with its <code>sha3-256:</code>, is joined with <code>|</code> in the same
+    order, and the file's <code>DataDigestSha3</code> is SHA3-256 of that text. The two examples above give
+    <code>sha3-256:eeca1a376215cd3c5a22ea0feee26e8cf42adf50ba9b1cb443cc9b7dbf806173</code> and
+    <code>sha3-256:f6dc089d09b291e3f4b9689a42c6e5ed3d0866e7970a2277dbd0035a2c8d5d92</code>.</li>
+<li><strong>Checking a digest.</strong> A reader checks every digest it can compute. A file matches its data, or its SDR
+    figure, only if every one of them matches; a digest the reader cannot compute is reported as not checked.</li>
 <li>8.7 <strong>A figure for a light and for a dark page.</strong> <em>Added 2026-10-10.</em> A figure MAY be published in more than one
   version that differ only in the furniture and the background it is drawn on.
   The data, the mapping, the colours of the data and every pixel that is above white MUST be the same in each.
-  Each version is a file of its own, with its own fair SDR rendering and so its own <code>SdrDigest</code>; every other
+  Each version is a file of its own, with its own fair SDR rendering and so its own <code>SdrDigest</code> and
+  <code>SdrDigestSha3</code>; every other
   property of 8.1, <code>DataDigest</code> among them, MUST be the same in each, and that is how a reader can tell that two
   files are versions of one figure. A page MAY choose between them by the viewer's colour scheme; either is the
   figure of record. Furniture is never brighter than SDR white in any version (6.11, 9.2.1), so a dark
@@ -668,9 +689,9 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
 <li>9.1.2 <strong>A file without an SDR base names its SDR figure.</strong> <em>Added 2026-10-14.</em> A file that holds no SDR base of
   its own, such as a 16-bit PQ PNG, MUST declare the <code>SdrDigest</code> (8.6) of the fair SDR rendering that accompanies
   it. That rendering is either an 8-bit image whose pixels give the digest, or another delivery of the same figure,
-  such as its gain-map JPEG, that declares the same <code>SdrDigest</code>. Two deliveries of one figure share the mapping,
-  <code>DataDigest</code> and <code>SdrDigest</code>, and differ only in what depends on the encoding (<code>MaxDataStep</code>, <code>RoundingToNoise</code>
-  and <code>Record</code>); two versions for a light and a dark page share everything but <code>SdrDigest</code> (8.7).</li>
+  such as its gain-map JPEG, that declares the same <code>SdrDigest</code>. Two deliveries of one figure share the mapping
+  and the digests, and differ only in what depends on the encoding (<code>MaxDataStep</code>, <code>RoundingToNoise</code> and
+  <code>Record</code>); two versions for a light and a dark page share everything but their SDR digests (8.7).</li>
 </ul>
 <h3 id="92-vector-hybrid-svg">9.2 Vector (hybrid SVG)</h3>
 <p>A vector HDR figure is an SVG whose furniture is vector and whose data layer is an embedded HDR raster.</p>
@@ -712,6 +733,12 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
   portable HDR rendering is specified, a gain-map JPEG in a PDF shows as its SDR base, which is the fair SDR
   rendering and therefore safe. Source: <em>FAQ on HDR in PDF: Focus on PDF/A and PDF/X</em>, Imaging Model TWG,
   July 2025.</li>
+<li>9.4.5 <strong>Traceable from the paper.</strong> <em>Added 2026-10-22.</em> A published figure SHOULD state, in its caption or the
+  paper's data availability statement, the persistent identifier of its data (as in <code>DataSource</code>) and its
+  <code>DataDigest</code> in full. The data SHOULD be deposited where that identifier resolves, with the version of this
+  profile the figure follows. Printed in the paper, the digest is kept by every library that keeps the paper, and
+  with the definitions of 8.6 it lets the figure be checked against its data long after any service, key or
+  signature it relies on today has gone (§16).</li>
 </ul>
 <h2 id="10-conformance-and-open-issues">10. Conformance and open issues</h2>
 <p>A program can check that a conforming file:
@@ -723,7 +750,8 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
    does not exceed the headroom (within the tolerance below);
 5. has no masked pixel above SDR white;
 6. states <code>MaxDataStep</code> correctly, and claims <code>data-record</code> only when §7.3.1 holds;
-7. where it declares <code>DataDigest</code> or <code>SdrDigest</code>, matches the data or the SDR figure supplied to the check.</p>
+7. where it declares <code>DataDigest</code> or <code>SdrDigest</code>, matches the data or the SDR figure supplied to the check, in
+   every digest it declares that the check can compute (8.6).</p>
 <p><em>Tolerance for lossy gain maps.</em> An 8-bit JPEG gain map cannot be exact, and its error is exponentiated on
 display. Writers SHOULD compute the gain against the base image <strong>as decoded</strong>, and SHOULD store the gain map at
 the highest quality; without them a colour bar beside a white background overshot by 20–27 %. The check in point 4
@@ -1018,6 +1046,16 @@ an embedded table, and nothing checks one.
 <li><strong>Addresses in a file.</strong> The namespace URI is a name: a reader never needs to fetch it. <code>DataSource</code> may hold a
   URL written by whoever made the file; a viewer that offers it as a link treats it like any other link in an
   untrusted document.</li>
+<li><strong>Checkable in a hundred years.</strong> <em>Added 2026-10-22.</em> A figure of record may be questioned long after every key,
+  certificate, trust list and timestamp service of its day has gone, and after its signatures can be forged: a
+  large quantum computer would break the signature algorithms in use now. The rule for that: nothing in a
+  long-term check depends on a live service, a trust list or a single algorithm. It rests instead on digests from
+  two unrelated hash families (<code>DataDigest</code> and <code>DataDigestSha3</code>), printed in the paper and kept with its data
+  (9.4.5); on a chain of persistent identifiers from the figure to its data and the paper, and through their
+  records to the authors and institutions; and on the definitions of 8.6, short enough to be implemented again
+  from this text and checked against the golden vectors. A signature shows who made a file. To remain evidence
+  after its key expires and its algorithm weakens, it needs an archive that keeps proof it was valid when made and
+  renews that proof with stronger algorithms in time, for example as an Evidence Record (RFC 4998).</li>
 </ul>
 <h2 id="annex-a-device-verification-protocol-normative-for-claims-about-devices">Annex A — Device verification protocol (normative for claims about devices)</h2>
 <p>A statement that a device, application or format "shows HDR" or "shows N bits" MUST be supported as follows.</p>
@@ -1257,6 +1295,11 @@ form needs about one bit more at the middle of the shoulder, because it spreads 
 <li>2026-10-14 · <strong>The digest examples corrected</strong> (8.6): the two worked examples still gave the digests under the
   names before 2026-10-11 (<code>hdrplot-data-1</code>, <code>hdrplot-rgb8-1</code>). They now give the <code>udeep-</code> ones. The definitions,
   the golden vectors and the reference implementations were right.</li>
+<li>2026-10-22 · <strong>SHA3-256 digests</strong> (8.1, 8.5, 8.6, §10 point 7): <code>DataDigestSha3</code> and <code>SdrDigestSha3</code>, optional,
+  of the same bytes as <code>DataDigest</code> and <code>SdrDigest</code>, so that the link to the data does not rest on one hash
+  function. A file matches only if every digest a check can compute matches.</li>
+<li>2026-10-22 · <strong>Traceable from the paper</strong> (9.4.5, §16): a published figure states its data's identifier and
+  digest in its caption or data statement; §16 says what a check made a century later rests on.</li>
 </ul>
 <h2 id="references">References</h2>
 <ul>

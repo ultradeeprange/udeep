@@ -238,6 +238,16 @@
 <td>optional, except in a file with no SDR base of its own, which MUST declare it (9.1.2): the digest of the fair SDR rendering's 8-bit RGB pixels, before any lossy coding, as defined in 8.6. It ties an HDR file to the figure of record (§6.8). <em>Added 2026-10-08; required of such a file 2026-10-14.</em></td>
 </tr>
 <tr>
+<td><code>udeep:DataDigestSha3</code></td>
+<td>Text</td>
+<td>optional, and only with <code>DataDigest</code>: the same bytes digested with SHA3-256 (8.6), a hash function of another design, so that the link to the data holds if either function is ever broken. <em>Added 2026-10-22.</em></td>
+</tr>
+<tr>
+<td><code>udeep:SdrDigestSha3</code></td>
+<td>Text</td>
+<td>optional, and only with <code>SdrDigest</code>: the SDR figure's bytes digested with SHA3-256 (8.6). <em>Added 2026-10-22.</em></td>
+</tr>
+<tr>
 <td><code>udeep:ColourMap</code></td>
 <td>Text</td>
 <td>the map from light to colour (§6.10): <code>grey</code>, or a registered map as <code>name/version</code> (for example <code>fire/2</code>). <em>Added 2026-10-07; versioned 2026-10-08.</em></td>
@@ -250,7 +260,8 @@
 </tbody>
 </table></div>
 <p><code>NoiseParameter</code>, <code>DerivedMask</code>, <code>ColourMapTable</code> and <code>SdrDigest</code> are required in the cases their rows state.
-<code>Preset</code>, <code>RoundingToNoise</code>, <code>DataDigest</code>, <code>DataSource</code> and <code>DataUnitCode</code> are optional. Every other property
+<code>Preset</code>, <code>RoundingToNoise</code>, <code>DataDigest</code>, <code>DataDigestSha3</code>, <code>SdrDigestSha3</code>, <code>DataSource</code> and <code>DataUnitCode</code>
+are optional. Every other property
 MUST be present, including one whose value is zero or the usual one (<code>Masked</code>, <code>DerivedMasked</code>, <code>StretchOffset</code>,
 <code>StretchWidth</code>, <code>AboveKnee</code>).</p>
     <h2>An example</h2>

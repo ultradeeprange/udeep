@@ -1,6 +1,6 @@
 # UDeep Figure Profile — draft v0.3
 
-Status: **working draft**, 2026-10-14. Not endorsed by any standards body. Editor: Mathew Newman
+Status: **working draft**, 2026-10-22. Not endorsed by any standards body. Editor: Mathew Newman
 (ORCID 0000-0003-1784-3250). Reference implementation: `udeep` (Python), with a JavaScript port, a Rust core and
 golden test vectors (§10). Supersedes v0.2 (2026-09-27); changes from v0.2 are listed in Annex D, and changes made
 since the first v0.3 draft of 2026-10-06 in Annex E.
@@ -43,6 +43,7 @@ It is a profile of existing standards. It defines no new image or file format.
 - ITU-T H.273 / ISO/IEC 23091-2 — coding-independent code points (CICP).
 - DICOM PS3.14 — Grayscale Standard Display Function (GSDF; Barten model).
 - ISO 16684-1 (XMP) — metadata packets.
+- FIPS 180-4 — SHA-256; FIPS 202 — SHA3-256.
 - W3C SVG 2; W3C CSS Color 4 and the CSS Color HDR draft; PNG (third edition, `cICP` chunk).
 - W3C WCAG 2.1, SC 2.3.1; ITU-R BT.1702 — flashing thresholds.
 
@@ -271,11 +272,14 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
   | `udeep:DataSource` | Text | optional: where the data is kept: `doi:…` where the data has one, otherwise a URL, otherwise a description; several are separated by `; `. *Added 2026-10-08.* |
   | `udeep:DataUnitCode` | Text | optional: the unit in machine-readable form, as a UCUM code (for example `K`, `s-1`). `DataUnit` remains the text for people. *Added 2026-10-08.* |
   | `udeep:SdrDigest` | Text | optional, except in a file with no SDR base of its own, which MUST declare it (9.1.2): the digest of the fair SDR rendering's 8-bit RGB pixels, before any lossy coding, as defined in 8.6. It ties an HDR file to the figure of record (§6.8). *Added 2026-10-08; required of such a file 2026-10-14.* |
+  | `udeep:DataDigestSha3` | Text | optional, and only with `DataDigest`: the same bytes digested with SHA3-256 (8.6), a hash function of another design, so that the link to the data holds if either function is ever broken. *Added 2026-10-22.* |
+  | `udeep:SdrDigestSha3` | Text | optional, and only with `SdrDigest`: the SDR figure's bytes digested with SHA3-256 (8.6). *Added 2026-10-22.* |
   | `udeep:ColourMap` | Text | the map from light to colour (§6.10): `grey`, or a registered map as `name/version` (for example `fire/2`). *Added 2026-10-07; versioned 2026-10-08.* |
   | `udeep:ColourMapTable` | Text | required unless the map is `grey` or a registered map at a registered headroom: the table itself, as the node count, `;`, then base64 of the two segments' numbers (little-endian float32, row by row). *Added 2026-10-08.* |
 
   `NoiseParameter`, `DerivedMask`, `ColourMapTable` and `SdrDigest` are required in the cases their rows state.
-  `Preset`, `RoundingToNoise`, `DataDigest`, `DataSource` and `DataUnitCode` are optional. Every other property
+  `Preset`, `RoundingToNoise`, `DataDigest`, `DataDigestSha3`, `SdrDigestSha3`, `DataSource` and `DataUnitCode`
+  are optional. Every other property
   MUST be present, including one whose value is zero or the usual one (`Masked`, `DerivedMasked`, `StretchOffset`,
   `StretchWidth`, `AboveKnee`).
 
@@ -309,11 +313,11 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
   range, the knee and its position, the form above the knee, a proportional mapping's end point, a number that is
   not finite); `MaxDataStep` or `NoiseParameter` is not a finite number greater than zero; `RoundingToNoise` is
   negative or not finite; `Masked` or `DerivedMasked` is negative; `DerivedMasked` is above zero and no
-  `DerivedMask` is named; or `Record` is `data-record` with an `unknown` noise model. A reader MUST refuse a
+  `DerivedMask` is named; `DataDigestSha3` or `SdrDigestSha3` is declared without `DataDigest` or `SdrDigest`; or `Record` is `data-record` with an `unknown` noise model. A reader MUST refuse a
   packet that contains a document-type or entity declaration (`<!DOCTYPE`, `<!ENTITY`).
 
-- 8.6 **The digests.** *Defined in full 2026-10-08.* Each digest is SHA-256 (FIPS 180-4) of the sequence of bytes
-  given below, written as the text `sha256:` followed by the 64 lower-case hexadecimal digits of the result.
+- 8.6 **The digests.** *Defined in full 2026-10-08.* `DataDigest` and `SdrDigest` are each SHA-256 (FIPS 180-4)
+  of the sequence of bytes given below, written as the text `sha256:` followed by the 64 lower-case hexadecimal digits of the result.
   - **`DataDigest`, the bytes.** First a header in ASCII: `udeep-data-1;`, then the array's dimensions as
     decimal integers joined by `x` (for an image, rows then columns), then `;`. An image of 2 rows and 3 columns
     has the header `udeep-data-1;2x3;`. Then every element as an IEEE 754 binary64 number, least significant
@@ -336,10 +340,19 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
     pixel, red, green and blue, each an unsigned 8-bit value, the top row first and each row from left to right.
     Example: one row of two pixels, white then black, has the header `udeep-rgb8-1;1x2;` and the bytes
     `FF FF FF 00 00 00`, and gives `sha256:72f4b9b910f818d01b50d3c137ab5cc22cd48b94b1bb1bf6c69b85655751c7a1`.
+  - **The SHA3-256 digests.** *Added 2026-10-22.* `DataDigestSha3` and `SdrDigestSha3` are SHA3-256 (FIPS 202) of
+    exactly the same bytes, written as the text `sha3-256:` followed by the 64 lower-case hexadecimal digits. For
+    several images, each image's SHA3-256 digest, complete with its `sha3-256:`, is joined with `|` in the same
+    order, and the file's `DataDigestSha3` is SHA3-256 of that text. The two examples above give
+    `sha3-256:eeca1a376215cd3c5a22ea0feee26e8cf42adf50ba9b1cb443cc9b7dbf806173` and
+    `sha3-256:f6dc089d09b291e3f4b9689a42c6e5ed3d0866e7970a2277dbd0035a2c8d5d92`.
+  - **Checking a digest.** A reader checks every digest it can compute. A file matches its data, or its SDR
+    figure, only if every one of them matches; a digest the reader cannot compute is reported as not checked.
 - 8.7 **A figure for a light and for a dark page.** *Added 2026-10-10.* A figure MAY be published in more than one
   version that differ only in the furniture and the background it is drawn on.
   The data, the mapping, the colours of the data and every pixel that is above white MUST be the same in each.
-  Each version is a file of its own, with its own fair SDR rendering and so its own `SdrDigest`; every other
+  Each version is a file of its own, with its own fair SDR rendering and so its own `SdrDigest` and
+  `SdrDigestSha3`; every other
   property of 8.1, `DataDigest` among them, MUST be the same in each, and that is how a reader can tell that two
   files are versions of one figure. A page MAY choose between them by the viewer's colour scheme; either is the
   figure of record. Furniture is never brighter than SDR white in any version (6.11, 9.2.1), so a dark
@@ -366,9 +379,9 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
 - 9.1.2 **A file without an SDR base names its SDR figure.** *Added 2026-10-14.* A file that holds no SDR base of
   its own, such as a 16-bit PQ PNG, MUST declare the `SdrDigest` (8.6) of the fair SDR rendering that accompanies
   it. That rendering is either an 8-bit image whose pixels give the digest, or another delivery of the same figure,
-  such as its gain-map JPEG, that declares the same `SdrDigest`. Two deliveries of one figure share the mapping,
-  `DataDigest` and `SdrDigest`, and differ only in what depends on the encoding (`MaxDataStep`, `RoundingToNoise`
-  and `Record`); two versions for a light and a dark page share everything but `SdrDigest` (8.7).
+  such as its gain-map JPEG, that declares the same `SdrDigest`. Two deliveries of one figure share the mapping
+  and the digests, and differ only in what depends on the encoding (`MaxDataStep`, `RoundingToNoise` and
+  `Record`); two versions for a light and a dark page share everything but their SDR digests (8.7).
 
 ### 9.2 Vector (hybrid SVG)
 
@@ -411,6 +424,12 @@ A vector HDR figure is an SVG whose furniture is vector and whose data layer is 
   portable HDR rendering is specified, a gain-map JPEG in a PDF shows as its SDR base, which is the fair SDR
   rendering and therefore safe. Source: *FAQ on HDR in PDF: Focus on PDF/A and PDF/X*, Imaging Model TWG,
   July 2025.
+- 9.4.5 **Traceable from the paper.** *Added 2026-10-22.* A published figure SHOULD state, in its caption or the
+  paper's data availability statement, the persistent identifier of its data (as in `DataSource`) and its
+  `DataDigest` in full. The data SHOULD be deposited where that identifier resolves, with the version of this
+  profile the figure follows. Printed in the paper, the digest is kept by every library that keeps the paper, and
+  with the definitions of 8.6 it lets the figure be checked against its data long after any service, key or
+  signature it relies on today has gone (§16).
 
 ## 10. Conformance and open issues
 
@@ -423,7 +442,8 @@ A program can check that a conforming file:
    does not exceed the headroom (within the tolerance below);
 5. has no masked pixel above SDR white;
 6. states `MaxDataStep` correctly, and claims `data-record` only when §7.3.1 holds;
-7. where it declares `DataDigest` or `SdrDigest`, matches the data or the SDR figure supplied to the check.
+7. where it declares `DataDigest` or `SdrDigest`, matches the data or the SDR figure supplied to the check, in
+   every digest it declares that the check can compute (8.6).
 
 *Tolerance for lossy gain maps.* An 8-bit JPEG gain map cannot be exact, and its error is exponentiated on
 display. Writers SHOULD compute the gain against the base image **as decoded**, and SHOULD store the gain map at
@@ -687,6 +707,16 @@ Preference judgements alone are insufficient: preference and scientific usefulne
 - **Addresses in a file.** The namespace URI is a name: a reader never needs to fetch it. `DataSource` may hold a
   URL written by whoever made the file; a viewer that offers it as a link treats it like any other link in an
   untrusted document.
+- **Checkable in a hundred years.** *Added 2026-10-22.* A figure of record may be questioned long after every key,
+  certificate, trust list and timestamp service of its day has gone, and after its signatures can be forged: a
+  large quantum computer would break the signature algorithms in use now. The rule for that: nothing in a
+  long-term check depends on a live service, a trust list or a single algorithm. It rests instead on digests from
+  two unrelated hash families (`DataDigest` and `DataDigestSha3`), printed in the paper and kept with its data
+  (9.4.5); on a chain of persistent identifiers from the figure to its data and the paper, and through their
+  records to the authors and institutions; and on the definitions of 8.6, short enough to be implemented again
+  from this text and checked against the golden vectors. A signature shows who made a file. To remain evidence
+  after its key expires and its algorithm weakens, it needs an archive that keeps proof it was valid when made and
+  renews that proof with stronger algorithms in time, for example as an Evidence Record (RFC 4998).
 
 ## Annex A — Device verification protocol (normative for claims about devices)
 
@@ -839,6 +869,11 @@ Each line is one normative addition or change, with the date it was made.
 - 2026-10-14 · **The digest examples corrected** (8.6): the two worked examples still gave the digests under the
   names before 2026-10-11 (`hdrplot-data-1`, `hdrplot-rgb8-1`). They now give the `udeep-` ones. The definitions,
   the golden vectors and the reference implementations were right.
+- 2026-10-22 · **SHA3-256 digests** (8.1, 8.5, 8.6, §10 point 7): `DataDigestSha3` and `SdrDigestSha3`, optional,
+  of the same bytes as `DataDigest` and `SdrDigest`, so that the link to the data does not rest on one hash
+  function. A file matches only if every digest a check can compute matches.
+- 2026-10-22 · **Traceable from the paper** (9.4.5, §16): a published figure states its data's identifier and
+  digest in its caption or data statement; §16 says what a check made a century later rests on.
 
 ## References
 

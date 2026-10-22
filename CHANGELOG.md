@@ -12,6 +12,13 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ### 2026-10-22
 
+- **Checkable in a hundred years, and traceable** (profile 8.6, 9.4.5, §16; agreed by Mathew the same day). A
+  figure may declare SHA3-256 digests beside its SHA-256 ones (`DataDigestSha3`, `SdrDigestSha3`, optional), so
+  that the link to its data does not rest on one hash function; a file matches only if every digest a check can
+  compute matches. A published figure should state its data's identifier and digest in its caption or data
+  statement, where every library that keeps the paper keeps them too. §16 and the Trust page say what a check made
+  a century later rests on: no live service, trust list or single algorithm. The reference implementation does
+  not write or check the SHA3-256 digests yet.
 - **A Trust page on the site**: a proposal for checking a scientific figure against the data it claims to show,
   with graded verdicts, a public record of the original that copies point back to, an open verifier, and the first
   experiment, C2PA signatures on UDeep files. Decided the same day: signing will be optional and off unless asked
