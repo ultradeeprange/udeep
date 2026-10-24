@@ -10,6 +10,22 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ## Unreleased
 
+### 2026-10-24
+
+- **Where the declaration is stored, written down** (profile 8.8, new): one packet, in a gain-map JPEG's primary
+  image XMP segment, a PNG's uncompressed XMP `iTXt` chunk or an SVG's `<metadata>`; read only from there, refused
+  when there are two, and read whether its properties are attributes or elements. It is what the reference
+  writers already did, so no file changes; the reader now takes the declaration only from that place (it used to
+  find one anywhere in a file's bytes), and the validator says why it did not take one stored elsewhere or
+  compressed. `udeep.metadata.replace_packet` puts a new declaration where the old one was, with the segment's
+  length (and a PNG chunk's CRC) put right.
+- **Anatomy of a UDeep file**, a new page made from the files: a gain-map JPEG and a 16-bit PQ PNG segment by
+  segment, and their declaration property by property, with each meaning from profile 8.1.
+- **Conformance files** (`docs/conformance/`): twelve cases, each a small file made to pass or break one rule, with
+  the data and SDR figure to check it against and the verdict a validator must give (`expected.json`); made by
+  `tools/make_conformance.py` and checked by `tests/test_conformance.py`. The data is synthetic.
+- **A roadmap page**, with the steps as a timeline.
+
 ### 2026-10-23
 
 - **SHA3-256 digests, written and checked.** Every writer now declares `DataDigestSha3` and `SdrDigestSha3` beside

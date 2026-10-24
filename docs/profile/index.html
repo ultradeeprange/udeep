@@ -94,14 +94,14 @@
 <body>
 <header class="top"><div class="wrap">
   <a class="brand" href="../index.html">U<b>Deep</b></a>
-  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html" aria-current="page">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../trust/index.html">Trust</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../roadmap/index.html">Roadmap</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html" aria-current="page">Profile</a><a href="../anatomy/index.html">Inside a file</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../trust/index.html">Trust</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../roadmap/index.html">Roadmap</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
 </div></header>
 <main><div class="wrap layout">
   <nav class="toc" aria-label="Sections of the profile"><span class="label">Contents</span><a href="#1-scope">1. Scope</a><a href="#2-normative-references">2. Normative references</a><a href="#3-terms">3. Terms</a><a href="#4-the-model">4. The model</a><a href="#5-layer-1-the-data">5. Layer 1: the data</a><a href="#6-layer-2-the-mapping">6. Layer 2: the mapping</a><a href="#7-layer-3-precision">7. Layer 3: precision</a><a href="#8-declared-metadata">8. Declared metadata</a><a href="#9-delivery-forms">9. Delivery forms</a><a href="#10-conformance-and-open-issues">10. Conformance and open issues</a><a href="#11-viewer-requirements">11. Viewer requirements</a><a href="#12-layer-4-display-rendering-informative">12. Layer 4: display rendering (informative)</a><a href="#13-layer-5-presets-informative">13. Layer 5: presets (informative)</a><a href="#14-comfort-and-accessibility">14. Comfort and accessibility</a><a href="#15-evidence-of-benefit-informative">15. Evidence of benefit (informative)</a><a href="#16-security-considerations-informative">16. Security considerations (informative)</a><a href="#annex-a-device-verification-protocol-normative-for-claims-about-devices">Annex A — Device verification protocol (normative for claims about devices)</a><a href="#annex-b-device-evidence-informative">Annex B — Device evidence (informative)</a><a href="#annex-c-data-precision-worked-examples-informative">Annex C — Data precision: worked examples (informative)</a><a href="#annex-d-changes-from-v02">Annex D — Changes from v0.2</a><a href="#annex-e-changes-since-the-first-v03-draft-2026-10-06">Annex E — Changes since the first v0.3 draft (2026-10-06)</a><a href="#references">References</a></nav>
   <article>
     <p class="source">Rendered from <code>profile/udeep-figure-profile-v0.3.md</code>, the source of record. Earlier drafts are kept beside it.</p>
     <h1 id="udeep-figure-profile-draft-v03">UDeep Figure Profile — draft v0.3</h1>
-<p>Status: <strong>working draft</strong>, 2026-10-22. Not endorsed by any standards body. Editor: Mathew Newman
+<p>Status: <strong>working draft</strong>, 2026-10-24. Not endorsed by any standards body. Editor: Mathew Newman
 (ORCID 0000-0003-1784-3250). Reference implementation: <code>udeep</code> (Python), with a JavaScript port, a Rust core and
 golden test vectors (§10). Supersedes v0.2 (2026-09-27); changes from v0.2 are listed in Annex D, and changes made
 since the first v0.3 draft of 2026-10-06 in Annex E.</p>
@@ -635,7 +635,8 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
     <code>sha3-256:f6dc089d09b291e3f4b9689a42c6e5ed3d0866e7970a2277dbd0035a2c8d5d92</code>.</li>
 <li><strong>Checking a digest.</strong> A reader checks every digest it can compute. A file matches its data, or its SDR
     figure, only if every one of them matches; a digest the reader cannot compute is reported as not checked.</li>
-<li>8.7 <strong>A figure for a light and for a dark page.</strong> <em>Added 2026-10-10.</em> A figure MAY be published in more than one
+<li>
+<p>8.7 <strong>A figure for a light and for a dark page.</strong> <em>Added 2026-10-10.</em> A figure MAY be published in more than one
   version that differ only in the furniture and the background it is drawn on.
   The data, the mapping, the colours of the data and every pixel that is above white MUST be the same in each.
   Each version is a file of its own, with its own fair SDR rendering and so its own <code>SdrDigest</code> and
@@ -643,7 +644,35 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
   property of 8.1, <code>DataDigest</code> among them, MUST be the same in each, and that is how a reader can tell that two
   files are versions of one figure. A page MAY choose between them by the viewer's colour scheme; either is the
   figure of record. Furniture is never brighter than SDR white in any version (6.11, 9.2.1), so a dark
-  version is not a way to give text or axes more contrast against the data.</li>
+  version is not a way to give text or axes more contrast against the data.</p>
+</li>
+<li>
+<p>8.8 <strong>Where the declaration is stored.</strong> <em>Added 2026-10-24.</em> This is how the reference writers have stored it
+  since the declaration was added; it is written down so that another implementation stores and finds it the same
+  way.</p>
+</li>
+<li><strong>One declaration.</strong> A file MUST carry its declaration as one <code>rdf:Description</code> holding <code>udeep</code> properties, in
+    one XMP packet (ISO 16684-1), stored as below. A reader MUST take the declaration only from there, and MUST
+    NOT use any declaration from a file that holds two or more.</li>
+<li><strong>Gain-map JPEG.</strong> The packet is in an APP1 segment of the primary image (the image an ordinary JPEG decoder
+    shows), headed by the XMP identifier <code>http://ns.adobe.com/xap/1.0/</code> and a zero byte, before the primary
+    image's first scan. It MAY hold other descriptions too: the reference writer puts the gain map's container
+    description (<code>hdrgm</code>, <code>Container</code>) in the same packet. The gain-map image's own XMP describes the gain map
+    only; a declaration there is not read. One segment holds at most 65,533 bytes after its length, and so the
+    packet at most 65,504; the packet is not split (Extended XMP is not used). A declaration that carries a
+    colour-map table (6.10) is 9,336 bytes as the reference writes it, a seventh of that.</li>
+<li><strong>16-bit PNG.</strong> The packet is the text of an <code>iTXt</code> chunk whose keyword is <code>XML:com.adobe.xmp</code>, with the
+    compression flag 0 (not compressed) and an empty language tag and translated keyword. It SHOULD come before
+    the first <code>IDAT</code> chunk, as the <code>cICP</code> chunk must.</li>
+<li><strong>SVG.</strong> The packet is in the <code>&lt;metadata&gt;</code> element (9.2.5).</li>
+<li><strong>How the properties are written.</strong> The reference writes each property as an attribute of the
+    <code>rdf:Description</code>, its value as 8.4 gives it. A reader MUST also accept the same properties written as child
+    elements of that description, as other XMP tools may rewrite them, and ignores properties of other
+    namespaces.</li>
+<li><strong>A signature comes last.</strong> A file that is signed (§16) is signed after its declaration is written, so that
+    the signature covers it; changing the declaration afterwards breaks the signature, as it should.</li>
+<li>The <a href="https://ultradeeprange.github.io/udeep/anatomy/">Anatomy of a UDeep file</a> page shows a gain-map JPEG and
+    a 16-bit PNG segment by segment, and the conformance files there test these rules.</li>
 </ul>
 <h2 id="9-delivery-forms">9. Delivery forms</h2>
 <h3 id="91-raster">9.1 Raster</h3>
@@ -746,7 +775,7 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.</p>
 </ul>
 <h2 id="10-conformance-and-open-issues">10. Conformance and open issues</h2>
 <p>A program can check that a conforming file:
-1. carries the §8 metadata, and the metadata is consistent (range, knee, headroom);
+1. carries the §8 metadata, stored as 8.8, and the metadata is consistent (range, knee, headroom);
 2. declares a mapping that is strictly increasing over the declared range (6.3);
 3. has an SDR rendering (or gain-map base) that matches the fair SDR rendering within the delivery's
    quantisation;
@@ -1304,6 +1333,10 @@ form needs about one bit more at the middle of the shoulder, because it spreads 
   function. A file matches only if every digest a check can compute matches.</li>
 <li>2026-10-22 · <strong>Traceable from the paper</strong> (9.4.5, §16): a published figure states its data's identifier and
   digest in its caption or data statement; §16 says what a check made a century later rests on.</li>
+<li>2026-10-24 · <strong>Where the declaration is stored</strong> (8.8, new; §10 point 1): one packet, in the primary image's XMP
+  segment of a gain-map JPEG, an uncompressed XMP <code>iTXt</code> chunk of a PNG, or an SVG's <code>&lt;metadata&gt;</code>; read only from
+  there, and refused when there are two; properties as attributes or as elements. It writes down what the
+  reference writers already did: no file they wrote changes.</li>
 <li>2026-10-23 · <strong>Both digests in the paper</strong> (9.4.5): the SHA3-256 data digest is stated beside the SHA-256 one,
   as §16 already said, and the reference caption ends with the sentence that states them. The golden caption and
   XMP cases change with it, and three cases are added for the SHA3-256 digests. The clause also says that the

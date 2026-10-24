@@ -1,6 +1,6 @@
 # UDeep Figure Profile — draft v0.3
 
-Status: **working draft**, 2026-10-22. Not endorsed by any standards body. Editor: Mathew Newman
+Status: **working draft**, 2026-10-24. Not endorsed by any standards body. Editor: Mathew Newman
 (ORCID 0000-0003-1784-3250). Reference implementation: `udeep` (Python), with a JavaScript port, a Rust core and
 golden test vectors (§10). Supersedes v0.2 (2026-09-27); changes from v0.2 are listed in Annex D, and changes made
 since the first v0.3 draft of 2026-10-06 in Annex E.
@@ -358,6 +358,32 @@ the mapped light. Rounding adds error with standard deviation Δx_q / √12.
   figure of record. Furniture is never brighter than SDR white in any version (6.11, 9.2.1), so a dark
   version is not a way to give text or axes more contrast against the data.
 
+- 8.8 **Where the declaration is stored.** *Added 2026-10-24.* This is how the reference writers have stored it
+  since the declaration was added; it is written down so that another implementation stores and finds it the same
+  way.
+  - **One declaration.** A file MUST carry its declaration as one `rdf:Description` holding `udeep` properties, in
+    one XMP packet (ISO 16684-1), stored as below. A reader MUST take the declaration only from there, and MUST
+    NOT use any declaration from a file that holds two or more.
+  - **Gain-map JPEG.** The packet is in an APP1 segment of the primary image (the image an ordinary JPEG decoder
+    shows), headed by the XMP identifier `http://ns.adobe.com/xap/1.0/` and a zero byte, before the primary
+    image's first scan. It MAY hold other descriptions too: the reference writer puts the gain map's container
+    description (`hdrgm`, `Container`) in the same packet. The gain-map image's own XMP describes the gain map
+    only; a declaration there is not read. One segment holds at most 65,533 bytes after its length, and so the
+    packet at most 65,504; the packet is not split (Extended XMP is not used). A declaration that carries a
+    colour-map table (6.10) is 9,336 bytes as the reference writes it, a seventh of that.
+  - **16-bit PNG.** The packet is the text of an `iTXt` chunk whose keyword is `XML:com.adobe.xmp`, with the
+    compression flag 0 (not compressed) and an empty language tag and translated keyword. It SHOULD come before
+    the first `IDAT` chunk, as the `cICP` chunk must.
+  - **SVG.** The packet is in the `<metadata>` element (9.2.5).
+  - **How the properties are written.** The reference writes each property as an attribute of the
+    `rdf:Description`, its value as 8.4 gives it. A reader MUST also accept the same properties written as child
+    elements of that description, as other XMP tools may rewrite them, and ignores properties of other
+    namespaces.
+  - **A signature comes last.** A file that is signed (§16) is signed after its declaration is written, so that
+    the signature covers it; changing the declaration afterwards breaks the signature, as it should.
+  - The [Anatomy of a UDeep file](https://ultradeeprange.github.io/udeep/anatomy/) page shows a gain-map JPEG and
+    a 16-bit PNG segment by segment, and the conformance files there test these rules.
+
 ## 9. Delivery forms
 
 ### 9.1 Raster
@@ -438,7 +464,7 @@ A vector HDR figure is an SVG whose furniture is vector and whose data layer is 
 ## 10. Conformance and open issues
 
 A program can check that a conforming file:
-1. carries the §8 metadata, and the metadata is consistent (range, knee, headroom);
+1. carries the §8 metadata, stored as 8.8, and the metadata is consistent (range, knee, headroom);
 2. declares a mapping that is strictly increasing over the declared range (6.3);
 3. has an SDR rendering (or gain-map base) that matches the fair SDR rendering within the delivery's
    quantisation;
@@ -878,6 +904,10 @@ Each line is one normative addition or change, with the date it was made.
   function. A file matches only if every digest a check can compute matches.
 - 2026-10-22 · **Traceable from the paper** (9.4.5, §16): a published figure states its data's identifier and
   digest in its caption or data statement; §16 says what a check made a century later rests on.
+- 2026-10-24 · **Where the declaration is stored** (8.8, new; §10 point 1): one packet, in the primary image's XMP
+  segment of a gain-map JPEG, an uncompressed XMP `iTXt` chunk of a PNG, or an SVG's `<metadata>`; read only from
+  there, and refused when there are two; properties as attributes or as elements. It writes down what the
+  reference writers already did: no file they wrote changes.
 - 2026-10-23 · **Both digests in the paper** (9.4.5): the SHA3-256 data digest is stated beside the SHA-256 one,
   as §16 already said, and the reference caption ends with the sentence that states them. The golden caption and
   XMP cases change with it, and three cases are added for the SHA3-256 digests. The clause also says that the

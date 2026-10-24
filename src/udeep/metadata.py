@@ -24,6 +24,7 @@ import hashlib
 import math
 import re
 import xml.etree.ElementTree as ET
+import zlib
 from dataclasses import dataclass, fields
 from pathlib import Path
 from xml.sax.saxutils import quoteattr
@@ -288,18 +289,26 @@ def _check_reads_back(d: Declaration, element: bytes) -> None:
 
 
 def _declared(xmp: bytes) -> dict | None:
-    """The udeep properties of the first rdf:Description that has any, as text; None if there is none."""
+    """The udeep properties of the packet's one rdf:Description that has any, as text; None if there is none.
+    Properties may be written as attributes (as the reference writes them) or as child elements, as other XMP
+    tools may rewrite them (profile 8.8). ValueError for a packet with more than one such description."""
     if b"<!DOCTYPE" in xmp or b"<!ENTITY" in xmp:
         raise ValueError("the XMP packet carries a document-type declaration, which this reader refuses")
     try:
         root = ET.fromstring(xmp)
     except ET.ParseError as err:
         raise ValueError(f"the XMP packet is not well-formed XML: {err}") from err
+    declarations = []
     for node in root.iter(f"{{{_RDF}}}Description"):
         found = {k.split("}")[1]: v for k, v in node.attrib.items() if k.startswith(f"{{{NAMESPACE}}}")}
+        found.update({child.tag.split("}")[1]: (child.text or "") for child in node
+                      if child.tag.startswith(f"{{{NAMESPACE}}}")})
         if found:
-            return found
-    return None
+            declarations.append(found)
+    if len(declarations) > 1:
+        raise ValueError(f"the XMP packet holds {len(declarations)} udeep declarations, and a file carries one "
+                         "(profile 8.8)")
+    return declarations[0] if declarations else None
 
 
 def parse(xmp: bytes) -> Declaration | None:
@@ -333,12 +342,134 @@ def missing_properties(xmp: bytes) -> list[str] | None:
     return [_property(f.name) for f in fields(Declaration) if f.name not in OPTIONAL and _property(f.name) not in found]
 
 
+XMP_JPEG = b"http://ns.adobe.com/xap/1.0/\x00"     # the identifier that heads a JPEG APP1 segment holding XMP
+XMP_PNG = b"XML:com.adobe.xmp"                       # the keyword of the iTXt chunk that holds a PNG's XMP
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+def _udeep_packets(blob: bytes) -> list[bytes]:
+    return [m.group(0) for m in re.finditer(rb"<x:xmpmeta.*?</x:xmpmeta>", blob, re.DOTALL)
+            if NAMESPACE.encode() in m.group(0)]
+
+
+def _jpeg_segments(data: bytes):
+    """(start, marker, body) for each segment of a JPEG's primary image before its first scan; `start` is where its
+    marker is."""
+    i = 2
+    while i + 4 <= len(data):
+        if data[i] != 0xFF:
+            return
+        marker = data[i + 1]
+        if marker == 0xFF:                                           # a fill byte
+            i += 1
+            continue
+        if marker in (0xDA, 0xD9):                                   # the scan, or the end: the segments are over
+            return
+        if marker == 0x01 or 0xD0 <= marker <= 0xD7:                 # markers with no length
+            i += 2
+            continue
+        n = int.from_bytes(data[i + 2:i + 4], "big")
+        yield i, marker, data[i + 4:i + 2 + n]
+        i += 2 + n
+
+
+def _jpeg_xmp(data: bytes) -> list[bytes]:
+    """The XMP of a JPEG's primary image: every APP1 segment headed by the XMP identifier, before the first scan."""
+    return [body[len(XMP_JPEG):] for _, marker, body in _jpeg_segments(data)
+            if marker == 0xE1 and body.startswith(XMP_JPEG)]
+
+
+def _png_chunks(data: bytes):
+    """(start, kind, body) for each chunk of a PNG up to IEND."""
+    i = 8
+    while i + 8 <= len(data):
+        n = int.from_bytes(data[i:i + 4], "big")
+        kind = data[i + 4:i + 8]
+        yield i, kind, data[i + 8:i + 8 + n]
+        if kind == b"IEND":
+            return
+        i += 12 + n
+
+
+def replace_packet(data: bytes, new: bytes) -> bytes:
+    """The file's bytes with its declaration packet replaced by `new`, in the same place, with the lengths that hold
+    it put right: a JPEG's APP1 segment (and nothing after it moves relative to the MPF index, which comes later),
+    or a PNG's iTXt chunk and its CRC. ValueError if the file holds no declaration where profile 8.8 keeps one, or
+    if the new packet does not fit in one JPEG segment."""
+    old = packet(data)
+    if old is None:
+        raise ValueError("the file holds no udeep declaration where profile 8.8 keeps one")
+    if data[:2] == b"\xff\xd8":
+        for start, marker, body in _jpeg_segments(data):
+            if marker == 0xE1 and body.startswith(XMP_JPEG) and old in body:
+                body = body.replace(old, new, 1)
+                if len(body) + 2 > 0xFFFF:
+                    raise ValueError(f"the packet is {len(new)} bytes, more than one JPEG segment holds (profile 8.8)")
+                end = start + 4 + int.from_bytes(data[start + 2:start + 4], "big") - 2
+                return data[:start] + b"\xff\xe1" + (len(body) + 2).to_bytes(2, "big") + body + data[end:]
+    elif data[:8] == PNG_SIGNATURE:
+        for start, kind, body in _png_chunks(data):
+            if kind == b"iTXt" and old in body:
+                body = body.replace(old, new, 1)
+                end = start + 12 + int.from_bytes(data[start:start + 4], "big")
+                crc = zlib.crc32(kind + body).to_bytes(4, "big")
+                return data[:start] + len(body).to_bytes(4, "big") + kind + body + crc + data[end:]
+    else:
+        return data.replace(old, new, 1)
+    raise ValueError("the declaration's packet is not held where it was found")
+
+
+def _png_xmp(data: bytes) -> tuple[list[bytes], list[str]]:
+    """The XMP of a PNG: the text of each uncompressed iTXt chunk with the XMP keyword; and a note for each one
+    that is compressed, which profile 8.8 does not allow."""
+    out, notes = [], []
+    for _start, kind, body in _png_chunks(data):
+        if kind == b"iTXt" and body.split(b"\x00", 1)[0] == XMP_PNG:
+            rest = body.split(b"\x00", 1)[1] if b"\x00" in body else b""
+            parts = rest[2:].split(b"\x00", 2) if len(rest) >= 2 else []
+            if len(rest) < 2 or len(parts) < 3:
+                notes.append("an iTXt chunk with the XMP keyword cannot be read")
+            elif rest[0] != 0:
+                notes.append("its XMP iTXt chunk is compressed, and profile 8.8 has it stored uncompressed")
+            else:
+                out.append(parts[2])
+    return out, notes
+
+
+def _storage(data: bytes) -> tuple[list[bytes], list[str]]:
+    """The udeep packets a file stores where profile 8.8 says, and notes on any it carries elsewhere."""
+    notes = []
+    if data[:2] == b"\xff\xd8":
+        places = _jpeg_xmp(data)
+        where = "the primary image's XMP segment (APP1)"
+    elif data[:8] == PNG_SIGNATURE:
+        places, notes = _png_xmp(data)
+        where = "an uncompressed iTXt chunk with the keyword XML:com.adobe.xmp"
+    elif b"<svg" in data[:4096]:
+        places = [m.group(0) for m in re.finditer(rb"<metadata[\s>].*?</metadata>", data, re.DOTALL)]
+        where = "the SVG's metadata element"
+    else:
+        places, where = [data], "the packet"                          # a bare XMP packet
+    found = [p for place in places for p in _udeep_packets(place)]
+    if len(_udeep_packets(data)) > len(found):
+        notes.append(f"it carries udeep metadata outside {where}, the one place a reader takes it from (profile 8.8)")
+    return found, notes
+
+
 def packet(data: bytes) -> bytes | None:
-    """The XMP packet in a file's bytes that uses the udeep namespace, or None."""
-    for m in re.finditer(rb"<x:xmpmeta.*?</x:xmpmeta>", data, re.DOTALL):
-        if NAMESPACE.encode() in m.group(0):
-            return m.group(0)
-    return None
+    """The XMP packet holding a file's declaration, from the place its format keeps XMP (profile 8.8): a JPEG's
+    primary-image APP1 segment, a PNG's uncompressed iTXt chunk, an SVG's metadata element, or a bare packet.
+    None if there is none there; ValueError if there is more than one."""
+    found, _ = _storage(data)
+    if len(found) > 1:
+        raise ValueError(f"the file carries {len(found)} udeep metadata packets, and a file carries one (profile 8.8)")
+    return found[0] if found else None
+
+
+def stored_elsewhere(data: bytes) -> list[str]:
+    """Why a declaration a file carries was not taken: stored outside the one place profile 8.8 allows, or in a
+    compressed PNG chunk. Empty when there is nothing of the kind."""
+    return _storage(data)[1]
 
 
 def read_metadata(path) -> Declaration | None:

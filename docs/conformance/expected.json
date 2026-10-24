@@ -1,0 +1,146 @@
+{
+ "about": "UDeep conformance files: each case, the files to check, and the verdict a validator must give for the checks named. The data is synthetic.",
+ "profile": "UDeep Figure Profile draft v0.3",
+ "cases": {
+  "valid": {
+   "file": "valid.jpg",
+   "data": {
+    "npy": "data.npy",
+    "csv": "data.csv"
+   },
+   "sdr": "valid_sdr.png",
+   "tests": "a complete gain-map JPEG, with its data and its SDR figure of record",
+   "checks": {
+    "metadata": "pass",
+    "mapping": "pass",
+    "precision": "pass",
+    "data link": "pass",
+    "sdr link": "pass"
+   },
+   "conforms": true
+  },
+  "valid-other-data": {
+   "file": "valid.jpg",
+   "data": {
+    "npy": "other_data.npy",
+    "csv": "other_data.csv"
+   },
+   "sdr": null,
+   "tests": "the same file against data one value apart (\u00a710 point 7)",
+   "checks": {
+    "metadata": "pass",
+    "data link": "fail"
+   },
+   "conforms": false
+  },
+  "valid-other-sdr": {
+   "file": "valid.jpg",
+   "data": null,
+   "sdr": "other_sdr.png",
+   "tests": "the same file against another SDR figure (\u00a710 point 7)",
+   "checks": {
+    "metadata": "pass",
+    "sdr link": "fail"
+   },
+   "conforms": false
+  },
+  "record": {
+   "file": "record.png",
+   "data": {
+    "npy": "data.npy",
+    "csv": "data.csv"
+   },
+   "sdr": "valid_sdr.png",
+   "tests": "a 16-bit PQ PNG data record of the same figure, read back as data",
+   "checks": {
+    "metadata": "pass",
+    "mapping": "pass",
+    "precision": "pass",
+    "data link": "pass",
+    "data read back": "pass",
+    "sdr link": "pass"
+   },
+   "conforms": true
+  },
+  "missing-unit": {
+   "file": "missing_unit.jpg",
+   "data": null,
+   "sdr": null,
+   "tests": "a required property absent: DataUnit (8.1)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  },
+  "not-a-number": {
+   "file": "not_a_number.jpg",
+   "data": null,
+   "sdr": null,
+   "tests": "a number that is not one: MaxDataStep is nan (8.5)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  },
+  "sha3-alone": {
+   "file": "sha3_alone.jpg",
+   "data": null,
+   "sdr": null,
+   "tests": "a SHA3-256 digest without its SHA-256 partner (8.5)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  },
+  "headroom": {
+   "file": "headroom.jpg",
+   "data": null,
+   "sdr": null,
+   "tests": "the declared headroom is not the gain map's (9.1)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  },
+  "two-declarations": {
+   "file": "two_declarations.jpg",
+   "data": null,
+   "sdr": null,
+   "tests": "two declarations in one packet (8.8)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  },
+  "elsewhere": {
+   "file": "elsewhere.jpg",
+   "data": null,
+   "sdr": null,
+   "tests": "the declaration outside the primary image's XMP segment (8.8)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  },
+  "compressed": {
+   "file": "compressed.png",
+   "data": null,
+   "sdr": null,
+   "tests": "the PNG's XMP chunk compressed (8.8)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  },
+  "no-sdr-digest": {
+   "file": "no_sdr_digest.png",
+   "data": null,
+   "sdr": null,
+   "tests": "a PNG with no SDR base that does not name its SDR figure (9.1.2)",
+   "checks": {
+    "metadata": "fail"
+   },
+   "conforms": false
+  }
+ }
+}

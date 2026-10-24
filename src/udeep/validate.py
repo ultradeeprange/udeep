@@ -50,6 +50,7 @@ from udeep.metadata import (
     parse,
     read_metadata,
     rounding_to_noise,
+    stored_elsewhere,
     values_pq16,
 )
 
@@ -222,17 +223,30 @@ def _colour_map(d: Declaration) -> tuple[str, str]:
     return "known", ""
 
 
+def _stored(add, raw: bytes) -> tuple[Declaration, list[str]] | None:
+    """1, first: the declaration from where profile 8.8 keeps it, with the properties it lacks; None, with the
+    failure reported, when there is none to use."""
+    try:
+        xmp = packet(raw)
+    except ValueError as err:
+        return add("fail", str(err))
+    if xmp is None:
+        elsewhere = stored_elsewhere(raw)
+        return add("fail", "the file carries no udeep metadata" + (": " + "; ".join(elsewhere) if elsewhere else ""))
+    try:
+        return parse(xmp), missing_properties(xmp)
+    except (ValueError, TypeError) as err:
+        return add("fail", f"the declaration is not valid: {err}")
+
+
 def _metadata(report: Report, path, raw: bytes) -> tuple[Declaration, float] | None:
     """1. the metadata is there, complete and consistent. Returns the declaration and the gain map's headroom, or
     None when there is nothing further to check."""
     add = lambda status, detail: report.add("1", "metadata", status, detail)
-    xmp = packet(raw)
-    if xmp is None:
-        return add("fail", "the file carries no udeep metadata")
-    try:
-        d, missing = parse(xmp), missing_properties(xmp)
-    except (ValueError, TypeError) as err:
-        return add("fail", f"the declaration is not valid: {err}")
+    found = _stored(add, raw)
+    if found is None:
+        return None
+    d, missing = found
     report.declaration = d
     try:
         cap = _capacity_max(raw)
@@ -444,13 +458,10 @@ def _pixels(report: Report, path, hdr, expected: tuple) -> None:
 def _png_metadata(report: Report, raw: bytes) -> Declaration | None:
     """1, for a PNG: the declaration is there, complete and consistent."""
     add = lambda status, detail: report.add("1", "metadata", status, detail)
-    xmp = packet(raw)
-    if xmp is None:
-        return add("fail", "the file carries no udeep metadata")
-    try:
-        d, missing = parse(xmp), missing_properties(xmp)
-    except (ValueError, TypeError) as err:
-        return add("fail", f"the declaration is not valid: {err}")
+    found = _stored(add, raw)
+    if found is None:
+        return None
+    d, missing = found
     report.declaration = d
     problems = []
     if missing:

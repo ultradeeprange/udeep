@@ -12,6 +12,7 @@ Each step is a tool of its own and can be run alone; this is only their order, w
                                                        copied; the core built as WebAssembly where cargo can
     profile page          tools/build_profile_page.py  from profile/*.md (needs `pip install markdown`)
     namespace page        tools/build_namespace_page.py  docs/ns/<version>/, from the profile's 8.1 (markdown too)
+    anatomy page          tools/build_anatomy_page.py  docs/anatomy/, from the conformance files and the profile's 8.1
     reference page        tools/build_reference_page.py
     evidence table        tools/evidence.py
     site chrome           tools/site_chrome.py         last: it rewrites the head and navigation of every page
@@ -34,6 +35,7 @@ STEPS = [
     ("live view's copies", [PY, "tools/make_view.py"], True),
     ("profile page", [PY, "tools/build_profile_page.py"], True),
     ("namespace page", [PY, "tools/build_namespace_page.py"], True),
+    ("anatomy page", [PY, "tools/build_anatomy_page.py"], True),     # from the committed conformance files
     ("reference page", [PY, "tools/build_reference_page.py"], True),
     ("evidence table", [PY, "tools/evidence.py"], True),
 ]

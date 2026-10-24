@@ -10,7 +10,7 @@ import pytest
 
 from udeep import mpl as hp
 from udeep import write_gainmap_jpeg
-from udeep.metadata import Declaration, declared_light, description
+from udeep.metadata import Declaration, declared_light, description, packet, replace_packet
 from udeep.tone import tone
 from udeep.validate import main, validate
 
@@ -44,11 +44,19 @@ def saved(tmp_path):
     plt.close(fig)
 
 
-def tamper(path, name, value):
+def edit_declaration(path, edit):
+    """Change a file's declaration packet, keeping the file well formed: the segment or chunk holding it is given
+    its new length (udeep.metadata.replace_packet), as any tool that edits XMP must."""
     raw = path.read_bytes()
-    new, n = re.subn(rb'udeep:' + name.encode() + rb'="[^"]*"', b'udeep:' + name.encode() + b'="' + value.encode() + b'"', raw)
-    assert n == 1                                            # the edit must land
-    path.write_bytes(new)
+    path.write_bytes(replace_packet(raw, edit(packet(raw))))
+
+
+def tamper(path, name, value):
+    def change(xmp):
+        new, n = re.subn(rb'udeep:' + name.encode() + rb'="[^"]*"', b'udeep:' + name.encode() + b'="' + value.encode() + b'"', xmp)
+        assert n == 1                                        # the edit must land
+        return new
+    edit_declaration(path, change)
 
 
 def test_a_written_file_conforms_as_far_as_the_file_alone_shows(saved):
@@ -143,9 +151,10 @@ def detail(report, name):
 
 def rename(path, name):
     """Take one property out of the file's declaration, by giving it a name the profile does not have."""
-    raw = path.read_bytes()
-    assert raw.count(b" udeep:" + name.encode() + b"=") == 1
-    path.write_bytes(raw.replace(b" udeep:" + name.encode() + b"=", b" udeep:X" + name.encode() + b"="))
+    def change(xmp):
+        assert xmp.count(b" udeep:" + name.encode() + b"=") == 1
+        return xmp.replace(b" udeep:" + name.encode() + b"=", b" udeep:X" + name.encode() + b"=")
+    edit_declaration(path, change)
 
 
 def written(tmp_path, headroom=2.0, **kw):
@@ -263,6 +272,8 @@ def test_point_6_fails_on_a_number_that_cannot_be_compared(tmp_path, monkeypatch
 def replace_bytes(path, old, new):
     raw = path.read_bytes()
     assert raw.count(old) == 1
+    if old in (packet(raw) or b""):                          # in the declaration: keep its segment's length right
+        return edit_declaration(path, lambda xmp: xmp.replace(old, new))
     path.write_bytes(raw.replace(old, new))
 
 

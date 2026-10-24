@@ -106,14 +106,14 @@
 <body>
 <header class="top"><div class="wrap">
   <a class="brand" href="../index.html">U<b>Deep</b></a>
-  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../trust/index.html">Trust</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../roadmap/index.html">Roadmap</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../anatomy/index.html">Inside a file</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../trust/index.html">Trust</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../roadmap/index.html">Roadmap</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
 </div></header>
 <main><div class="wrap layout">
   <nav class="toc" aria-label="Modules"><span class="label">Python</span><a href="#udeep">udeep</a><a href="#mpl">udeep.mpl</a><a href="#view">udeep.view</a><a href="#mapping">udeep.mapping</a><a href="#cmap">udeep.cmap</a><a href="#gainmap">udeep.gainmap</a><a href="#export">udeep.export</a><a href="#metadata">udeep.metadata</a><a href="#validate">udeep.validate</a><a href="#selftest">udeep.selftest</a><a href="#scale">udeep.scale</a><a href="#tone">udeep.tone</a><a href="#masks">udeep.masks</a><a href="#jnd">udeep.jnd</a><a href="#vision">udeep.vision</a><a href="#color">udeep.color</a><a href="#core">udeep.core</a><a href="#gpu">udeep.gpu</a><a href="#golden">udeep.golden</a><span class="label">Julia</span><a href="#julia">UDeepCore</a></nav>
   <article>
     <h1>Reference</h1>
     <p class="source">Written from the docstrings in <code>src/udeep/</code> by <code>tools/build_reference_page.py</code>:
-      115 public functions and classes in 18 Python modules, and the 38 names the Julia
+      117 public functions and classes in 18 Python modules, and the 38 names the Julia
       package exports, from <code>julia/UDeepCore/src/</code>. The profile says what a figure file means; this page
       says what the code offers.</p>
     <h2 id="udeep">udeep</h2>
@@ -638,9 +638,21 @@ itself states: <code>missing_properties</code> does.</p>
 <pre class="sig">missing_properties(xmp: bytes) -&gt; list[str] | None</pre>
 <p>The properties profile 8.1 requires of every file that this packet does not carry, by name and in the
 record&#x27;s order; None if the packet holds no declaration at all.</p>
+<h3 id="metadata.replace_packet"><span class="kind">function</span>replace_packet</h3>
+<pre class="sig">replace_packet(data: bytes, new: bytes) -&gt; bytes</pre>
+<p>The file&#x27;s bytes with its declaration packet replaced by <code>new</code>, in the same place, with the lengths that hold
+it put right: a JPEG&#x27;s APP1 segment (and nothing after it moves relative to the MPF index, which comes later),
+or a PNG&#x27;s iTXt chunk and its CRC. ValueError if the file holds no declaration where profile 8.8 keeps one, or
+if the new packet does not fit in one JPEG segment.</p>
 <h3 id="metadata.packet"><span class="kind">function</span>packet</h3>
 <pre class="sig">packet(data: bytes) -&gt; bytes | None</pre>
-<p>The XMP packet in a file&#x27;s bytes that uses the udeep namespace, or None.</p>
+<p>The XMP packet holding a file&#x27;s declaration, from the place its format keeps XMP (profile 8.8): a JPEG&#x27;s
+primary-image APP1 segment, a PNG&#x27;s uncompressed iTXt chunk, an SVG&#x27;s metadata element, or a bare packet.
+None if there is none there; ValueError if there is more than one.</p>
+<h3 id="metadata.stored_elsewhere"><span class="kind">function</span>stored_elsewhere</h3>
+<pre class="sig">stored_elsewhere(data: bytes) -&gt; list[str]</pre>
+<p>Why a declaration a file carries was not taken: stored outside the one place profile 8.8 allows, or in a
+compressed PNG chunk. Empty when there is nothing of the kind.</p>
 <h3 id="metadata.read_metadata"><span class="kind">function</span>read_metadata</h3>
 <pre class="sig">read_metadata(path) -&gt; Declaration | None</pre>
 <p>The declaration a file carries (gain-map JPEG, PNG, SVG or a bare packet), or None if it has none.

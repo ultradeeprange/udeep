@@ -15,6 +15,7 @@ DOCS = Path(__file__).resolve().parents[1] / "docs"
 BASE = "https://ultradeeprange.github.io/udeep/"                 # where the site will be served; one place to change
 REPO = "https://github.com/ultradeeprange/udeep"
 NAV = [("index.html", "Home"), ("gallery/index.html", "Real data"), ("profile/index.html", "Profile"),
+       ("anatomy/index.html", "Inside a file"),
        ("apps/index.html", "In your apps"), ("view/index.html", "Live view"), ("standard/index.html", "Standardisation"),
        ("trust/index.html", "Trust"),
        ("evidence/index.html", "Evidence"), ("questions/index.html", "Questions"),

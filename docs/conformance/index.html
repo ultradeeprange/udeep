@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conformance files · UDeep</title>
+<meta name="description" content="Small UDeep figure files, each made to pass or to break one rule of the profile, with the verdict a validator must give: for checking another implementation against the reference.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root { color-scheme: dark; --ground: #111316; --panel: #191d22; --line: #2b3138; --ink: #e4e8ec; --muted: #939da7;
+          --tag: #8cc2e6; --warm: #e8b04a;
+          --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+          --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+          --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.62 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover, nav a[aria-current] { color: var(--ink); }
+  .layout { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 40px; padding-block: 36px 64px; align-items: start; }
+  .toc { position: sticky; top: 16px; font-size: 13.5px; display: grid; gap: 6px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .toc a { color: var(--muted); text-decoration: none; } .toc a:hover { color: var(--ink); }
+  .toc .label { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  article { max-width: 78ch; min-width: 0; }
+  article h1, article h2, article h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; line-height: 1.2; }
+  article h1 { font-size: clamp(30px, 4.2vw, 42px); margin: 0 0 14px; }
+  article h2 { font-size: 25px; margin: 44px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+  article h3 { font-size: 19px; margin: 28px 0 8px; }
+  article p, article li { color: var(--soft); }
+  article ul, article ol { padding-left: 1.3em; display: grid; gap: 6px; }
+  article code { font-family: var(--mono); font-size: 13.5px; background: var(--panel); padding: 1px 4px; border-radius: 3px; }
+  article blockquote { margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--warm); background: var(--panel); }
+  article strong { color: var(--ink); }
+  .scroll { overflow-x: auto; margin: 14px 0; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 520px; width: 100%; }
+  th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .source { font-size: 14px; color: var(--muted); margin-bottom: 26px; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; gap: 20px; } .toc { position: static; max-height: none; } }
+
+  .single { padding-block: 36px 64px; }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; overflow-x: auto;
+         font: 13px/1.55 var(--mono); color: var(--ink); }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/conformance/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Conformance files · UDeep">
+<meta property="og:description" content="Small UDeep figure files, each made to pass or to break one rule of the profile, with the verdict a validator must give: for checking another implementation against the reference.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/conformance/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  /* tables, the same on every page: a panel, readable headings, and a mark before each verdict */
+  .scroll:has(> table) { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 16px; }
+  .scroll > table th { color: var(--ink); }
+  .scroll > table td:first-child { font-weight: 600; color: var(--ink); }
+  td.yes, td.y, td.done { color: var(--yes); } td.no, td.n { color: var(--no); } td.part, td.p, td.next { color: var(--warm); }
+  td.later { color: var(--muted); }
+  td.yes::before, td.y::before, td.done::before { content: "\2713\00a0"; font-weight: 700; }
+  td.no::before, td.n::before { content: "\2717\00a0"; font-weight: 700; }
+  td.part::before, td.p::before { content: "\25D0\00a0"; }
+  td.next::before { content: "\2192\00a0"; }
+  td.later::before { content: "\25CB\00a0"; }
+  tr.ours td { background: var(--raise, var(--panel)); border-top: 2px solid var(--warm); border-bottom: 2px solid var(--warm); }
+  tr.ours td:first-child { color: var(--warm); }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">U<b>Deep</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../anatomy/index.html">Inside a file</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../trust/index.html">Trust</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../roadmap/index.html">Roadmap</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+<main><div class="wrap single">
+  <article>
+    <h1>Conformance files</h1>
+    <p>Small figure files, each made to pass or to break one rule of the <a href="../profile/index.html">profile</a>,
+    with the verdict a validator must give. Another implementation shows that it stores, finds and checks a
+    declaration as the reference does by giving the same verdicts. The data is synthetic: a ramp with one bright
+    spot, 40 by 60 values, noise-free. <a href="../anatomy/index.html">Anatomy of a UDeep file</a> takes the two
+    valid files apart.</p>
+    <p>The same cases in machine-readable form: <a href="expected.json"><code>expected.json</code></a>. With the
+    reference implementation, a case is checked as</p>
+    <pre><code>import numpy, udeep.validate
+report = udeep.validate.validate("valid.jpg", data=numpy.load("data.npy"), sdr="valid_sdr.png")
+print(report)     # or report.status("data link"), report.ok</code></pre>
+    <p>or, for a file on its own, <code>python -m udeep.validate FILE</code>. Points that need the figure itself
+    (the pixels, §10 points 3 to 5) are not part of these cases.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Case</th><th>Files</th><th>What it tests</th><th>A validator must report</th></tr></thead>
+      <tbody>
+      <tr><td>valid</td><td><a href="valid.jpg"><code>valid.jpg</code></a><br>data <a href="data.npy"><code>data.npy</code></a> / <a href="data.csv"><code>.csv</code></a><br>SDR figure <a href="valid_sdr.png"><code>valid_sdr.png</code></a></td><td>a complete gain-map JPEG, with its data and its SDR figure of record</td><td class="done">metadata <b>pass</b>, mapping <b>pass</b>, precision <b>pass</b>, data link <b>pass</b>, sdr link <b>pass</b>; conforms</td></tr>
+      <tr><td>valid-other-data</td><td><a href="valid.jpg"><code>valid.jpg</code></a><br>data <a href="other_data.npy"><code>other_data.npy</code></a> / <a href="other_data.csv"><code>.csv</code></a></td><td>the same file against data one value apart (§10 point 7)</td><td class="no">metadata <b>pass</b>, data link <b>fail</b>; does not conform</td></tr>
+      <tr><td>valid-other-sdr</td><td><a href="valid.jpg"><code>valid.jpg</code></a><br>SDR figure <a href="other_sdr.png"><code>other_sdr.png</code></a></td><td>the same file against another SDR figure (§10 point 7)</td><td class="no">metadata <b>pass</b>, sdr link <b>fail</b>; does not conform</td></tr>
+      <tr><td>record</td><td><a href="record.png"><code>record.png</code></a><br>data <a href="data.npy"><code>data.npy</code></a> / <a href="data.csv"><code>.csv</code></a><br>SDR figure <a href="valid_sdr.png"><code>valid_sdr.png</code></a></td><td>a 16-bit PQ PNG data record of the same figure, read back as data</td><td class="done">metadata <b>pass</b>, mapping <b>pass</b>, precision <b>pass</b>, data link <b>pass</b>, data read back <b>pass</b>, sdr link <b>pass</b>; conforms</td></tr>
+      <tr><td>missing-unit</td><td><a href="missing_unit.jpg"><code>missing_unit.jpg</code></a></td><td>a required property absent: DataUnit (8.1)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      <tr><td>not-a-number</td><td><a href="not_a_number.jpg"><code>not_a_number.jpg</code></a></td><td>a number that is not one: MaxDataStep is nan (8.5)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      <tr><td>sha3-alone</td><td><a href="sha3_alone.jpg"><code>sha3_alone.jpg</code></a></td><td>a SHA3-256 digest without its SHA-256 partner (8.5)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      <tr><td>headroom</td><td><a href="headroom.jpg"><code>headroom.jpg</code></a></td><td>the declared headroom is not the gain map&#x27;s (9.1)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      <tr><td>two-declarations</td><td><a href="two_declarations.jpg"><code>two_declarations.jpg</code></a></td><td>two declarations in one packet (8.8)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      <tr><td>elsewhere</td><td><a href="elsewhere.jpg"><code>elsewhere.jpg</code></a></td><td>the declaration outside the primary image&#x27;s XMP segment (8.8)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      <tr><td>compressed</td><td><a href="compressed.png"><code>compressed.png</code></a></td><td>the PNG&#x27;s XMP chunk compressed (8.8)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      <tr><td>no-sdr-digest</td><td><a href="no_sdr_digest.png"><code>no_sdr_digest.png</code></a></td><td>a PNG with no SDR base that does not name its SDR figure (9.1.2)</td><td class="no">metadata <b>fail</b>; does not conform</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">doi:10.0000/udeep-conformance-example is an example identifier: there is no such record.</p>
+  </article>
+</div></main>
+<footer><div class="wrap"><p>UDeep Figure Profile, draft v0.3 · files and text under CC BY 4.0.</p></div></footer>
+</body>
+</html>
