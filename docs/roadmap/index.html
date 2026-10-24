@@ -49,6 +49,36 @@
   .test p { font-size: 15px; }
   .status { justify-self: start; font-family: var(--mono); font-size: 12px; padding: 4px 10px; border: 1px solid var(--warm-line);
             color: var(--warm); border-radius: 3px; }
+  /* the roadmap's timeline: a track through four phases; across on a wide screen, down on a narrow one */
+  .timeline { list-style: none; padding: 0; margin: 6px 0 0; max-width: none; position: relative;
+              display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 18px; }
+  .timeline::before { content: ""; position: absolute; left: 10px; right: 0; top: 10px; height: 2px; background: var(--line); }
+  .phase { position: relative; display: grid; gap: 10px; align-content: start; padding-top: 38px; }
+  .phase.done::after { content: ""; position: absolute; top: 10px; left: 10px; right: -18px; height: 2px; background: var(--good); }
+  .marker { position: absolute; z-index: 1; top: 0; left: 0; width: 22px; height: 22px; border-radius: 50%;
+            border: 2px solid var(--muted); background: var(--ground); }
+  .phase.done .marker { background: var(--good); border-color: var(--good); }
+  .phase.next .marker { border-color: var(--warm); background: var(--ground);
+                        box-shadow: 0 0 0 5px color-mix(in srgb, var(--warm) 22%, transparent); }
+  .phase.later .marker, .phase.last .marker { border-style: dashed; }
+  .when { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .phase.done .when { color: var(--good); } .phase.next .when { color: var(--warm); }
+  .phase h3 { font-size: 19px; }
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; max-width: none; }
+  .steps li { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line);
+              border-radius: 6px; padding: 10px 12px; font-size: 14px; line-height: 1.5; }
+  .steps li b { display: block; color: var(--ink); }
+  .steps li span { color: var(--muted); }
+  .phase.done .steps li { border-left-color: var(--good); }
+  .phase.next .steps li { border-left-color: var(--warm); }
+  .parked { font-size: 14px; color: var(--muted); border: 1px dashed var(--line); border-radius: 6px; padding: 10px 14px; max-width: none; }
+  @media (max-width: 860px) {
+    .timeline { grid-template-columns: 1fr; gap: 28px; padding-left: 38px; }
+    .timeline::before { left: 10px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; }
+    .phase { padding-top: 0; }
+    .phase.done::after { left: -28px; right: auto; top: 22px; bottom: -28px; width: 2px; height: auto; }
+    .marker { left: -38px; top: 0; }
+  }
   footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
 </style>
 <!-- chrome:head -->
@@ -147,23 +177,53 @@
 <section id="next"><div class="wrap">
   <p class="eyebrow">What comes next</p>
   <h2>The roadmap</h2>
-  <div class="scroll"><table>
-    <thead><tr><th>Step</th><th>What it gives</th><th>State</th></tr></thead>
-    <tbody>
-      <tr><td>A release</td><td>packages on PyPI, and a version of the profile and code with a DOI, so that it can be installed in one line and cited</td><td class="next">next</td></tr>
-      <tr><td>A figure without code</td><td>open a microscope's TIFF, a telescope's FITS, a 16-bit PNG or a table in the browser, choose where white sits, and save the UDeep figure, its ordinary version and its caption; nothing installed, nothing sent anywhere</td><td class="next">next</td></tr>
-      <tr><td>No changes to a script</td><td>one line added to an existing matplotlib script, and its figures are saved as UDeep files; whatever the script does not say is written into the file as a default, never guessed silently</td><td class="next">next</td></tr>
-      <tr><td>Check a figure in the browser</td><td>drop a file on a page and see its graded check; later, the same check made in the background as a figure loads</td><td class="next">next</td></tr>
-      <tr><td>Signing</td><td>an optional signature (C2PA) with the author's own key, off unless asked for; decided on 22 October 2026 (<a href="../trust/index.html">Trust</a>)</td><td class="next">next</td></tr>
-      <tr><td>Two hash functions, and checkable in a hundred years</td><td>every figure's link to its data taken with SHA-256 and SHA3-256 (profile 8.6 and §16)</td><td class="done">done</td></tr>
-      <tr><td>The observer study</td><td>whether the range above white helps people read figures, with its predictions registered in advance and a null result published too; it needs research-ethics approval and participants</td><td class="later">later</td></tr>
-      <tr><td>A paper</td><td>a software paper or a methods preprint</td><td class="later">later</td></tr>
-      <tr><td>More tools</td><td>Fiji and ImageJ, napari, R, MATLAB and Plotly; and, in the end, the software that comes with instruments, which is where a figure is first made</td><td class="later">later</td></tr>
-      <tr><td>Browsers that read the record</td><td>the value under the pointer, the units, the caption and the check, shown by the browser itself, as Chrome has said it will do for C2PA signatures</td><td class="later">later, once there are files to read</td></tr>
-      <tr><td>Vector figures with HDR</td><td>sharp axes and text with an HDR data layer in one SVG; waiting for browsers to support HDR colours, which they do not yet</td><td class="later">parked</td></tr>
-      <tr><td>A standard</td><td>a proposal through BSI, the UK national body, to ISO's photography committee (ISO/TC 42)</td><td class="later">after the paper</td></tr>
-    </tbody>
-  </table></div>
+  <p class="muted">In order, without dates. Each step says what it gives.</p>
+  <ol class="timeline">
+    <li class="phase done">
+      <div class="marker" aria-hidden="true"></div>
+      <p class="when">Done</p>
+      <h3>The standard and its tools</h3>
+      <ul class="steps">
+        <li><b>The profile, draft v0.3</b><span>what a figure file made from data must declare, with numbered checks and shared test vectors</span></li>
+        <li><b>A reference implementation</b><span>Python, a Rust core, Julia and the browser, all reproducing the same test vectors</span></li>
+        <li><b>A validator</b><span>checks a file against the profile, and reads a data record back as the numbers</span></li>
+        <li><b>Checkable in a hundred years</b><span>every figure's link to its data taken with SHA-256 and SHA3-256 (profile &sect;16)</span></li>
+      </ul>
+    </li>
+    <li class="phase next">
+      <div class="marker" aria-hidden="true"></div>
+      <p class="when">Next</p>
+      <h3>Seamless to make and to check</h3>
+      <ul class="steps">
+        <li><b>A release</b><span>on PyPI, with a DOI: installed in one line, and citable</span></li>
+        <li><b>A figure without code</b><span>open a TIFF, a FITS file, a 16-bit PNG or a table in the browser, choose where white sits, save the figure</span></li>
+        <li><b>No changes to a script</b><span>one line added to a matplotlib script, and its figures are saved as UDeep files</span></li>
+        <li><b>Check a figure in the browser</b><span>drop a file on a page and see its graded check; later, checked as it loads</span></li>
+        <li><b>Signing</b><span>an optional C2PA signature with the author's own key, off unless asked for (<a href="../trust/index.html">Trust</a>)</span></li>
+      </ul>
+    </li>
+    <li class="phase later">
+      <div class="marker" aria-hidden="true"></div>
+      <p class="when">Later</p>
+      <h3>Shown to work, and used widely</h3>
+      <ul class="steps">
+        <li><b>The observer study</b><span>whether the range above white helps people read figures; it needs ethics approval and participants</span></li>
+        <li><b>A paper</b><span>a software paper or a methods preprint</span></li>
+        <li><b>More tools</b><span>Fiji and ImageJ, napari, R, MATLAB and Plotly; then the software that comes with instruments</span></li>
+        <li><b>Browsers that read the record</b><span>the value under the pointer, the units, the caption and the check, shown by the browser itself</span></li>
+      </ul>
+    </li>
+    <li class="phase last">
+      <div class="marker" aria-hidden="true"></div>
+      <p class="when">After the paper</p>
+      <h3>A standard</h3>
+      <ul class="steps">
+        <li><b>A proposal</b><span>through BSI, the UK national body, to ISO's photography committee (ISO/TC 42), as the data-referred image state (<a href="../standard/index.html">route</a>)</span></li>
+      </ul>
+    </li>
+  </ol>
+  <p class="parked"><b>Parked:</b> vector figures with HDR, one SVG with sharp axes and an HDR data layer, until browsers
+    support HDR colours, which they do not yet.</p>
 </div></section>
 
 <section id="viewing"><div class="wrap">
