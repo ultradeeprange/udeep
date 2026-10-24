@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Roadmap · UDeep</title>
+<meta name="description" content="Where UDeep is going: what it is for, the two tests it has to pass, what comes next, where a UDeep figure can be seen today, and what may lie further out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #111316; --panel: #191d22; --raise: #20252b; --line: #2b3138;
+    --ink: #e4e8ec; --muted: #939da7; --tag: #8cc2e6; --warm: #e8b04a; --good: #9fd49a;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.6 var(--sans); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; }
+  a { color: var(--tag); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(32px, 4.6vw, 48px); line-height: 1.06; }
+  h2 { font-size: 26px; line-height: 1.15; }
+  h3 { font-size: 18px; line-height: 1.3; }
+  p { margin: 0; max-width: 70ch; }
+  ul, ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; max-width: 74ch; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  code { font-family: var(--mono); font-size: 13.5px; }
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; }
+  .brand { font-family: var(--mono); font-weight: 600; text-decoration: none; color: var(--ink); }
+  .brand b { color: var(--warm); font-weight: 600; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; } nav a:hover, nav a[aria-current] { color: var(--ink); }
+  .intro { padding-block: 48px 30px; display: grid; gap: 16px; }
+  section { padding-block: 40px; border-top: 1px solid var(--line); }
+  section > .wrap { display: grid; gap: 18px; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: 14px; min-width: 600px; width: 100%; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .done { color: var(--good); } .next { color: var(--warm); } .later { color: var(--muted); }
+  .tests { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .test { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; }
+  .test p { font-size: 15px; }
+  .status { justify-self: start; font-family: var(--mono); font-size: 12px; padding: 4px 10px; border: 1px solid var(--warm-line);
+            color: var(--warm); border-radius: 3px; }
+  footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
+</style>
+<!-- chrome:head -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://ultradeeprange.github.io/udeep/roadmap/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="UDeep">
+<meta property="og:title" content="Roadmap · UDeep">
+<meta property="og:description" content="Where UDeep is going: what it is for, the two tests it has to pass, what comes next, where a UDeep figure can be seen today, and what may lie further out.">
+<meta property="og:url" content="https://ultradeeprange.github.io/udeep/roadmap/">
+<meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style id="theme">
+  :root { --soft: #cfd5db; --warm-line: #5a4a26; --yes: #9fd49a; --no: #e39a8a; --str: #b5d49a; --yes-line: #3f5a3c;
+          --plate: #111316; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+      --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+      --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+      --plate: #ffffff; }
+  }
+  :root[data-theme="light"] { color-scheme: light; --ground: #f3f4f6; --panel: #ffffff; --raise: #e6e9ed;
+    --line: #d2d7dd; --ink: #15191d; --muted: #56616c; --faint: #7b8691; --tag: #1c6aa0; --warm: #8f6200;
+    --soft: #2c343b; --warm-line: #d8bf85; --yes: #2c7a27; --no: #b0452f; --str: #3a7a1c; --yes-line: #a9cfa4;
+      --good: #2c7a27; --bad: #b0452f;
+    --plate: #ffffff; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  /* tables, the same on every page: a panel, readable headings, and a mark before each verdict */
+  .scroll:has(> table) { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 16px; }
+  .scroll > table th { color: var(--ink); }
+  .scroll > table td:first-child { font-weight: 600; color: var(--ink); }
+  td.yes, td.y, td.done { color: var(--yes); } td.no, td.n { color: var(--no); } td.part, td.p, td.next { color: var(--warm); }
+  td.later { color: var(--muted); }
+  td.yes::before, td.y::before, td.done::before { content: "\2713\00a0"; font-weight: 700; }
+  td.no::before, td.n::before { content: "\2717\00a0"; font-weight: 700; }
+  td.part::before, td.p::before { content: "\25D0\00a0"; }
+  td.next::before { content: "\2192\00a0"; }
+  td.later::before { content: "\25CB\00a0"; }
+  tr.ours td { background: var(--raise, var(--panel)); border-top: 2px solid var(--warm); border-bottom: 2px solid var(--warm); }
+  tr.ours td:first-child { color: var(--warm); }
+  picture { display: block; }
+  .plate.themed { background: var(--plate); }
+</style>
+<script src="../site.js" defer></script>
+<!-- /chrome:head -->
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../index.html">U<b>Deep</b></a>
+  <nav aria-label="Site"><a href="../index.html">Home</a><a href="../gallery/index.html">Real data</a><a href="../profile/index.html">Profile</a><a href="../apps/index.html">In your apps</a><a href="../view/index.html">Live view</a><a href="../standard/index.html">Standardisation</a><a href="../trust/index.html">Trust</a><a href="../evidence/index.html">Evidence</a><a href="../questions/index.html">Questions</a><a href="../check/index.html">Device checks</a><a href="../roadmap/index.html" aria-current="page">Roadmap</a><a href="../about/index.html">About</a><a href="https://github.com/ultradeeprange/udeep">GitHub</a></nav>
+</div></header>
+
+<main>
+<div class="wrap intro">
+  <p class="eyebrow">Roadmap · 24 October 2026</p>
+  <h1>Where UDeep is going</h1>
+  <p>UDeep is a draft standard, the UDeep Figure Profile, for figure files made from data. A file that follows it
+    is an ordinary image that also records how the data became the picture. The code in the repository is its
+    reference implementation. This page says what the project is for, the two tests it has to pass, and what comes
+    next. What exists today is on the <a href="../about/index.html">About page</a>.</p>
+  <p class="status">A plan, not a promise: nothing here has a date, and the order can change.</p>
+</div>
+
+<section id="aim"><div class="wrap">
+  <p class="eyebrow">The aim</p>
+  <h2>The ordinary way a figure says how it was made</h2>
+  <p>HDR photographs reached everyone without anyone choosing a format: the standard came first, and then the
+    phone's camera saved in it by default. UDeep aims for the same with figures made from data. The tools people
+    already use would write it without being asked, viewers and journals would read and check it, and in time it
+    would become a standard of the kind photography already has. The likeliest home is ISO's photography committee,
+    as a third image state beside scene-referred and display-referred: data-referred. The
+    <a href="../standard/index.html">standardisation page</a> sets out that route.</p>
+</div></section>
+
+<section id="tests"><div class="wrap">
+  <p class="eyebrow">Two tests</p>
+  <h2>It has to be seamless, and it has to be worth it</h2>
+  <div class="tests">
+    <div class="test">
+      <h3>Seamless</h3>
+      <p>No extra step for anyone. The reader needs nothing: a UDeep figure is an ordinary JPEG or PNG and shows as
+        the ordinary figure wherever HDR does not. Whoever makes the figure should not have to change how they
+        work, whether they write code or not: most figures are made by people who never script.</p>
+    </div>
+    <div class="test">
+      <h3>Worth it</h3>
+      <p>Measured on the 18 HDR figures on this site: the record of how a figure was made adds 1.5 to 1.7 KiB, under
+        1 % of the file; the range above white adds about half as many bytes again. The record is useful on every
+        screen today. That the range helps people read figures has not been shown: a study is designed and not yet
+        run (<a href="../about/index.html#study">About</a>).</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="next"><div class="wrap">
+  <p class="eyebrow">What comes next</p>
+  <h2>The roadmap</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Step</th><th>What it gives</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>A release</td><td>packages on PyPI, and a version of the profile and code with a DOI, so that it can be installed in one line and cited</td><td class="next">next</td></tr>
+      <tr><td>A figure without code</td><td>open a microscope's TIFF, a telescope's FITS, a 16-bit PNG or a table in the browser, choose where white sits, and save the UDeep figure, its ordinary version and its caption; nothing installed, nothing sent anywhere</td><td class="next">next</td></tr>
+      <tr><td>No changes to a script</td><td>one line added to an existing matplotlib script, and its figures are saved as UDeep files; whatever the script does not say is written into the file as a default, never guessed silently</td><td class="next">next</td></tr>
+      <tr><td>Check a figure in the browser</td><td>drop a file on a page and see its graded check; later, the same check made in the background as a figure loads</td><td class="next">next</td></tr>
+      <tr><td>Signing</td><td>an optional signature (C2PA) with the author's own key, off unless asked for; decided on 22 October 2026 (<a href="../trust/index.html">Trust</a>)</td><td class="next">next</td></tr>
+      <tr><td>Two hash functions, and checkable in a hundred years</td><td>every figure's link to its data taken with SHA-256 and SHA3-256 (profile 8.6 and §16)</td><td class="done">done</td></tr>
+      <tr><td>The observer study</td><td>whether the range above white helps people read figures, with its predictions registered in advance and a null result published too; it needs research-ethics approval and participants</td><td class="later">later</td></tr>
+      <tr><td>A paper</td><td>a software paper or a methods preprint</td><td class="later">later</td></tr>
+      <tr><td>More tools</td><td>Fiji and ImageJ, napari, R, MATLAB and Plotly; and, in the end, the software that comes with instruments, which is where a figure is first made</td><td class="later">later</td></tr>
+      <tr><td>Browsers that read the record</td><td>the value under the pointer, the units, the caption and the check, shown by the browser itself, as Chrome has said it will do for C2PA signatures</td><td class="later">later, once there are files to read</td></tr>
+      <tr><td>Vector figures with HDR</td><td>sharp axes and text with an HDR data layer in one SVG; waiting for browsers to support HDR colours, which they do not yet</td><td class="later">parked</td></tr>
+      <tr><td>A standard</td><td>a proposal through BSI, the UK national body, to ISO's photography committee (ISO/TC 42)</td><td class="later">after the paper</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section id="viewing"><div class="wrap">
+  <p class="eyebrow">Today</p>
+  <h2>Where a UDeep figure can be seen</h2>
+  <p>A UDeep figure is a standard HDR image with a little metadata, so it needs no support of its own to be seen.
+    Wherever a screen and its software show HDR images, the range above white appears; everywhere else, the ordinary
+    figure does, which is still the complete figure.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Where</th><th>What shows</th></tr></thead>
+    <tbody>
+      <tr><td>Chrome and Edge (version 137 or later), Safari 26</td><td class="done">the gain-map JPEG with its range above white, on an HDR screen</td></tr>
+      <tr><td>iPhone Photos</td><td class="done">the gain-map JPEG as HDR (Annex B, B1)</td></tr>
+      <tr><td>Firefox</td><td class="part">the ordinary figure: it did not show gain maps when checked in September 2026</td></tr>
+      <tr><td>Any screen without HDR, and print</td><td class="done">the ordinary figure, as it would have been made anyway</td></tr>
+      <tr><td>A standalone SVG loaded as an image</td><td class="part">the gain map is dropped; an HDR AVIF inside it keeps its range (Annex B, B4)</td></tr>
+      <tr><td>A screenshot</td><td class="part">the ordinary figure: a screenshot keeps no HDR</td></tr>
+      <tr><td>The record (mapping, units, caption, check)</td><td class="part">read by the validator, the live view and the packages; no browser reads it natively yet</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">On Windows, HDR has to be switched on in the display settings. The <a href="../check/index.html">device
+    checks</a> show what your own screen does, and reports of what they show are welcome.</p>
+</div></section>
+
+<section id="further"><div class="wrap">
+  <p class="eyebrow">Further out</p>
+  <h2>What may lie ahead</h2>
+  <p>This section is speculation, not evidence: where the world may go, and what each would mean for UDeep.</p>
+  <ul>
+    <li><b>Every screen HDR, and brighter.</b> The ordinary figure becomes the fallback. A UDeep figure's range grows
+      with each screen's headroom with no change to the file, since each display applies the range up to what it can show.</li>
+    <li><b>Machines read figures.</b> Software that reads papers and charts guesses values from pixels today. A UDeep
+      figure gives it the exact mapping, the uncertainty and the link to the data.</li>
+    <li><b>A picture with no record looks suspect.</b> Signatures say who made a file; UDeep's record answers whether a
+      picture follows from its data, which signatures do not.</li>
+    <li><b>Papers become live pages,</b> and a figure becomes a view of its data. A UDeep data record, read back as the
+      numbers, already treats a figure that way.</li>
+    <li><b>Data in headsets,</b> where brighter than white is native. The declared mapping does not depend on the display.</li>
+    <li><b>Figures kept for a century.</b> The profile already says what a check made a hundred years from now rests on
+      (§16): no live service, no trust list and no single algorithm.</li>
+  </ul>
+</div></section>
+
+<section id="where"><div class="wrap">
+  <p class="eyebrow">Beyond the paper</p>
+  <h2>Where else it could be used</h2>
+  <p>Wherever a picture is made from measurements, and either the data has more range than an ordinary picture holds,
+    or people need to trust how the picture was made. A first list, not yet tested with anyone in these fields:</p>
+  <ul>
+    <li><b>Medical images outside the clinic:</b> teaching, papers and patient portals, with soft tissue and bone in
+      one picture and the window stated. Diagnosis needs regulated software, so this is communication, not diagnosis.</li>
+    <li><b>Microscopy and blots:</b> faint and saturated signal together, and an image that says how it was adjusted.</li>
+    <li><b>Astronomy and space images,</b> for papers and the public: bright cores without losing the faint parts.</li>
+    <li><b>Weather, climate and Earth observation:</b> storms, fires and heat maps, with the colour scale and the data
+      source in the file.</li>
+    <li><b>Thermal imaging and inspection:</b> a report image that states its temperature or intensity scale.</li>
+    <li><b>News graphics and public statistics:</b> a chart or map that can show which data it came from. A check
+      says that a picture follows from the data it names, never that the data is true.</li>
+    <li><b>Cultural heritage:</b> infrared and X-ray images of paintings and manuscripts, with their processing on record.</li>
+  </ul>
+  <p>Comments on this roadmap are welcome in the <a href="https://github.com/ultradeeprange/udeep/discussions/categories/q-a">Q&amp;A
+    discussions</a> or the <a href="https://github.com/ultradeeprange/udeep/issues">issue tracker</a>.</p>
+</div></section>
+</main>
+
+<footer><div class="wrap"><p>UDeep · Mathew Newman · text under CC BY 4.0.</p></div></footer>
+</body>
+</html>

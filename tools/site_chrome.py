@@ -18,7 +18,7 @@ NAV = [("index.html", "Home"), ("gallery/index.html", "Real data"), ("profile/in
        ("apps/index.html", "In your apps"), ("view/index.html", "Live view"), ("standard/index.html", "Standardisation"),
        ("trust/index.html", "Trust"),
        ("evidence/index.html", "Evidence"), ("questions/index.html", "Questions"),
-       ("check/index.html", "Device checks"), ("about/index.html", "About")]
+       ("check/index.html", "Device checks"), ("roadmap/index.html", "Roadmap"), ("about/index.html", "About")]
 CHECK_DESCRIPTIONS = {
     "check/index.html": "Test pages that show whether a screen and browser display HDR, each with controls that must pass.",
     "check/pattern/index.html": "One HDR test pattern in gain-map JPEG, HDR PNG, AVIF and HDR video, with an SDR control.",
