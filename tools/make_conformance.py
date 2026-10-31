@@ -205,8 +205,7 @@ def page() -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Conformance files · UDeep</title>
 <meta name="description" content="Small UDeep figure files, each made to pass or to break one rule of the profile, with the verdict a validator must give: for checking another implementation against the reference.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../fonts/plex.css">
 <style>{STYLE}
   .single {{ padding-block: 36px 64px; }}
   pre {{ background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; overflow-x: auto;

@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'sha256-rkKxNNItxEeiqY5cXX0Dpnqa9HwPhgMbcxcn3rftrU0=' 'sha256-7A2k4qsoV3UC3gC3oPsNfG3ft8wtgsw9tmK0EE8cxJo='; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Anatomy of a UDeep file · UDeep</title>
 <meta name="description" content="A UDeep gain-map JPEG and a 16-bit PQ PNG taken apart, segment by segment, and the declaration they carry, property by property.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../fonts/plex.css">
 <style>
   :root { color-scheme: dark; --ground: #111316; --panel: #191d22; --line: #2b3138; --ink: #e4e8ec; --muted: #939da7;
           --tag: #8cc2e6; --warm: #e8b04a;
@@ -55,8 +55,19 @@
   .bar { display: flex; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); margin: 6px 0 4px; }
   .bar span { min-width: 3px; }
   .bar .image { background: var(--line); } .bar .meta { background: var(--muted); } .bar .decl { background: var(--warm); }
+  .bar .w2 { flex: 2 0 0; }
+  .bar .w12 { flex: 12 0 0; }
+  .bar .w49 { flex: 49 0 0; }
+  .bar .w540 { flex: 540 0 0; }
+  .bar .w733 { flex: 733 0 0; }
+  .bar .w760 { flex: 760 0 0; }
+  .bar .w1182 { flex: 1182 0 0; }
+  .bar .w1261 { flex: 1261 0 0; }
+  .bar .w1790 { flex: 1790 0 0; }
+  .bar .w3281 { flex: 3281 0 0; }
   .key { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
   .key i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+  .key i.decl { background: var(--warm); } .key i.meta { background: var(--muted); } .key i.image { background: var(--line); }
   details { margin: 10px 0; } summary { cursor: pointer; color: var(--tag); }
   table.declared td:nth-child(2) { width: 34%; } table.declared td:nth-child(2) code { overflow-wrap: anywhere; }
   table.declared td:nth-child(3) { width: 46%; }
@@ -103,6 +114,7 @@
   picture { display: block; }
   .plate.themed { background: var(--plate); }
 </style>
+<link rel="stylesheet" href="../site.css">
 <script src="../site.js" defer></script>
 <!-- /chrome:head -->
 </head>
@@ -125,8 +137,8 @@
     The first is the ordinary figure, which any program shows. The second, after it, is the gain map, which a screen
     that can show HDR uses to make the bright parts brighter than white. The declaration is in the first image's XMP
     segment, beside the gain map's own description.</p>
-    <div class="bar" role="img" aria-label="5,009 bytes in all"><span class="meta" style="flex: 2 0 0"></span><span class="decl" style="flex: 1790 0 0"></span><span class="meta" style="flex: 733 0 0"></span><span class="image" style="flex: 760 0 0"></span><span class="meta" style="flex: 1182 0 0"></span><span class="image" style="flex: 540 0 0"></span><span class="meta" style="flex: 2 0 0"></span></div>
-    <p class="key"><span><i style="background: var(--warm)"></i>the declaration's segment</span><span><i style="background: var(--muted)"></i>other metadata</span><span><i style="background: var(--line)"></i>image data</span></p>
+    <div class="bar" role="img" aria-label="5,009 bytes in all"><span class="meta w2"></span><span class="decl w1790"></span><span class="meta w733"></span><span class="image w760"></span><span class="meta w1182"></span><span class="image w540"></span><span class="meta w2"></span></div>
+    <p class="key"><span><i class="decl"></i>the declaration's segment</span><span><i class="meta"></i>other metadata</span><span><i class="image"></i>image data</span></p>
     <p class="muted">In a figure this small (60 by 40 pixels) the metadata is a large share of the file. In the
     18 HDR figures of this site's gallery, the declaration is 1.5 to 1.7 KiB of files from 184 KiB to 1 MiB, under
     1 % of each.</p>
@@ -174,7 +186,7 @@
     <p><a href="../conformance/record.png"><code>record.png</code></a>, 4,603 bytes: the same figure as a data
     record, fine enough that it reads back as the data. It has no ordinary SDR picture of its own, so its
     declaration names the one that goes with it, by digest.</p>
-    <div class="bar" role="img" aria-label="4,603 bytes in all"><span class="meta" style="flex: 49 0 0"></span><span class="decl" style="flex: 1261 0 0"></span><span class="image" style="flex: 3281 0 0"></span><span class="meta" style="flex: 12 0 0"></span></div>
+    <div class="bar" role="img" aria-label="4,603 bytes in all"><span class="meta w49"></span><span class="decl w1261"></span><span class="image w3281"></span><span class="meta w12"></span></div>
     <div class="scroll"><table>
       <thead><tr><th>Part</th><th>At byte</th><th>Bytes</th><th>What it holds</th></tr></thead>
       <tbody>

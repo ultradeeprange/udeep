@@ -6,22 +6,12 @@
    light or dark for this site, and keeps the figures in step: each figure exists for a light and for a dark page
    (the same data and mapping, other furniture), named <name>_hdr.jpg and <name>_dark_hdr.jpg.
 
-   Both choices are remembered in this browser only. */
+   Both choices are remembered in this browser only. Their styles, and the rule that holds everything at SDR
+   white, are in site.css: the site's Content Security Policy blocks a <style> element a script adds. */
 (function () {
   var root = document.documentElement;
   function recall(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }   // private mode
   function remember(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* not remembered */ } }
-
-  var style = document.createElement("style");
-  style.textContent =
-    "html.hdr-limit img, html.hdr-limit video, html.hdr-limit svg, html.hdr-limit canvas { dynamic-range-limit: standard !important; }" +
-    ".site-switch { font: 600 12px/1 inherit; font-family: inherit; color: var(--ink, #e4e8ec); background: transparent;" +
-    " border: 1px solid var(--line, #3a424b); border-radius: 4px; padding: 7px 10px; cursor: pointer; white-space: nowrap; }" +
-    ".site-switch[aria-pressed='true'] { background: var(--warm, #e8b04a); color: var(--ground, #111316); border-color: var(--warm, #e8b04a); }" +
-    ".site-switch:focus-visible { outline: 2px solid var(--tag, #8cc2e6); outline-offset: 2px; }" +
-    ".site-switches { display: flex; gap: 8px; flex-wrap: wrap; }" +
-    ".site-switch-bar { justify-content: flex-end; margin: 0 0 12px; }";
-  document.head.appendChild(style);
 
   function button(title) {
     var b = document.createElement("button");

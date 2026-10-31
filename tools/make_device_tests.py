@@ -57,16 +57,15 @@ STYLE = """
   .v { width: 160px; height: 160px; background: #ffffff; padding: 30px; }
   .v span { display: block; width: 100px; height: 100px; background: #ffffff; }
 """
-FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
-         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600'
-         '&family=IBM+Plex+Sans:wght@400;600&display=swap">')
+FONTS = '<link rel="stylesheet" href="{up}fonts/plex-mono-sans.css">'     # docs/fonts/, served by the site itself
 
 
-def page(path: Path, title: str, body: str, depth: int = 2) -> None:
+def page(path: Path, title: str, body: str, depth: int = 2, css: str = "") -> None:
+    """`css`: the page's own rules, after the shared ones (the site's pages carry no style= attribute)."""
     up = "../" * depth
     doc = (f'<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
            f'<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
-           f'<title>{html.escape(title)} · udeep</title>{FONTS}<style>{STYLE}</style></head><body><main>'
+           f'<title>{html.escape(title)} · udeep</title>{FONTS.format(up=up)}<style>{STYLE}{css}</style></head><body><main>'
            f'<p class="crumb"><a href="{up}index.html">UDeep</a> / <a href="../index.html">device checks</a></p>'
            f'{body}</main></body></html>\n')
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -212,14 +211,16 @@ def build_svg() -> list[str]:
             ("S6", "standalone <code>.svg</code> file with the AVIF PQ", '<img src="pq.svg" width="1080" height="1150" alt="SVG file, AVIF PQ">')]
     vec = "".join(f'<div class="row"><p><span class="id">{i}</span> <code>{c}</code></p>'
                   f'<svg viewBox="0 0 300 150" width="300" height="150"><rect width="300" height="150" fill="#ffffff"/>'
-                  f'<rect x="100" y="25" width="100" height="100" style="fill: #000000; fill: {c}"/></svg></div>'
+                  f'<rect x="100" y="25" width="100" height="100" class="fill-{i.lower()}"/></svg></div>'
                   for i, c in fills)
+    # black first: a browser that does not know the colour drops the second fill and leaves the square black
+    css = "".join(f"  rect.fill-{i.lower()} {{ fill: #000000; fill: {c}; }}\n" for i, c in fills)
     body = ("<h1>Does HDR survive inside SVG?</h1><p>The pattern placed inside SVG in different ways. HDR works if "
             "the <b>squares appear inside the white band</b>.</p>"
             + "".join(f'<div class="row"><p><span class="id">{i}</span> {t}</p>{h}</div>' for i, t, h in rows)
             + "<h2>Vector fills above white</h2><p class=\"muted\">A white rectangle with a square filled at 4x white. "
               "<b>Black</b>: colour not recognised. <b>Same white</b>: clamped to SDR. <b>Brighter</b>: vector HDR.</p>" + vec)
-    page(out / "index.html", "SVG check", body)
+    page(out / "index.html", "SVG check", body, css=css)
     return ["svg"]
 
 

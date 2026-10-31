@@ -1,10 +1,18 @@
 """Keep the site's shared furniture consistent on every page under docs/: favicon, link-preview tags, the HDR
-limit script (site.js), and the navigation. Idempotent: run it after adding or editing a page.
+limit script (site.js) and its styles (site.css), the navigation, and the Content Security Policy. Idempotent: run it
+after adding or editing a page.
 
     python tools/site_chrome.py
+
+The policy (a <meta> tag straight after <meta charset>; GitHub Pages cannot send the header) lets a page load only
+the site's own files and run no inline script. Of inline styles it allows only the page's own <style> blocks, by
+their SHA-256, so it is written here, last, from the page as it ends up: a page whose styles changed since this ran
+loses them in the browser, and `tools/build_all.py --check` fails until this is run again.
 """
 from __future__ import annotations
 
+import base64
+import hashlib
 import html
 import re
 from pathlib import Path
@@ -28,6 +36,12 @@ CHECK_DESCRIPTIONS = {
     "check/precision/index.html": "A blind banding test: HDR grey ramps rounded to 8 to 16 bits, in shuffled order.",
 }
 START, END = "<!-- chrome:head -->", "<!-- /chrome:head -->"
+CSP = re.compile(r'<meta http-equiv="Content-Security-Policy" content="[^"]*">\n?')
+# The live view compiles the project's Rust core as WebAssembly: 'wasm-unsafe-eval' allows that, and not eval.
+WASM = ("view/index.html",)
+# The SVG check carries its test pattern inside inline SVG as data: images (that is what it tests).
+DATA_IMAGES = ("check/svg/index.html",)
+INLINE = re.compile(r'<script(?![^>]*\ssrc=)[^>]*>|\sstyle="|\son[a-z]+="', re.IGNORECASE)
 # The pages are written dark first (their own :root holds the dark palette). This block, placed after a page's own
 # styles, adds the few tokens the pages share and the light palette: for a viewer whose system asks for light, and
 # for an explicit choice (data-theme on the root element, set by the control in site.js or by a host page), which
@@ -100,7 +114,31 @@ def head_block(page: Path, title: str, desc: str) -> str:
             f'<meta property="og:title" content="{e(title)}">\n<meta property="og:description" content="{e(desc)}">\n'
             f'<meta property="og:url" content="{url}">\n<meta property="og:image" content="{BASE}assets/og.png">\n'
             f'<meta name="twitter:card" content="summary_large_image">\n'            + ("" if page.relative_to(DOCS).as_posix().startswith(UNTHEMED) else THEME_CSS)
-            + f'<script src="{up}site.js" defer></script>\n{END}')
+            + f'<link rel="stylesheet" href="{up}site.css">\n<script src="{up}site.js" defer></script>\n{END}')
+
+
+def with_policy(rel: str, s: str) -> str:
+    """The page with its Content Security Policy, written from what the page now holds."""
+    bad = INLINE.search(s)
+    if bad:
+        raise SystemExit(f"{rel}: {bad.group(0).strip()!r}: the Content Security Policy runs no inline script, style= "
+                         "or on*= handler; put the script in a .js file and the style in a class")
+    hashes = []
+    # as the browser hashes a <style>: its text, newlines as \n
+    for css in re.findall(r"<style\b[^>]*>(.*?)</style>", s, re.DOTALL | re.IGNORECASE):
+        h = "'sha256-" + base64.b64encode(hashlib.sha256(css.encode("utf-8")).digest()).decode("ascii") + "'"
+        hashes += [h] if h not in hashes else []
+    script = "'self'" + (" 'wasm-unsafe-eval'" if rel in WASM else "")
+    style = " ".join(["'self'", *hashes])
+    images = "img-src 'self' data:; " if rel in DATA_IMAGES else ""
+    policy = (f"default-src 'self'; script-src {script}; style-src {style}; {images}"
+              "object-src 'none'; base-uri 'none'; form-action 'none'")
+    s = CSP.sub("", s)
+    charset = '<meta charset="utf-8">'
+    if s.count(charset) != 1:
+        raise SystemExit(f"{rel}: expected exactly one {charset}")
+    sep = "\n" if s.split(charset, 1)[1].startswith("\n") else ""
+    return s.replace(charset, f'{charset}{sep}<meta http-equiv="Content-Security-Policy" content="{policy}">', 1)
 
 
 def nav_html(page: Path) -> str:
@@ -115,9 +153,11 @@ def main() -> None:
     og_image()
     for page in sorted(DOCS.rglob("*.html")):
         rel = page.relative_to(DOCS).as_posix()
-        if rel == "404.html":                               # served at any depth, so it stands alone with absolute links
-            continue
         s = page.read_text(encoding="utf-8")
+        if rel == "404.html":                               # served at any depth, so it stands alone with absolute links
+            page.write_text(with_policy(rel, s), encoding="utf-8")
+            print("ok", rel)
+            continue
         title = html.unescape(re.search(r"<title>(.*?)</title>", s, re.DOTALL).group(1)).strip()
         m = re.search(r'<meta name="description" content="([^"]*)">', s)
         if m is None and rel in CHECK_DESCRIPTIONS:
@@ -135,7 +175,7 @@ def main() -> None:
             s, n = re.subn(r"<nav aria-label=\"[^\"]*\">.*?</nav>", nav_html(page), s, count=1, flags=re.DOTALL)
             if n != 1:
                 raise SystemExit(f"{rel}: navigation not found")
-        page.write_text(s, encoding="utf-8")
+        page.write_text(with_policy(rel, s), encoding="utf-8")
         print("ok", rel)
 
 

@@ -67,8 +67,7 @@ if __name__ == "__main__":
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Profile · UDeep</title>
 <meta name="description" content="The UDeep Figure Profile, draft v0.3: a data-first specification for turning scientific data into light, with its requirements, metadata, delivery forms and conformance rules.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../fonts/plex.css">
 <style>{STYLE}</style>
 </head>
 <body>

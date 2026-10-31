@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Video check · UDeep</title><meta name="description" content="Does 12-bit HDR video play? HEVC and AV1 at 10 and 12 bits."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap"><style>
+<html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'sha256-+CydJKtpLOOejadm9Xnj/b+eyBG+4SwTv7JI9LafOq0='; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Video check · UDeep</title><meta name="description" content="Does 12-bit HDR video play? HEVC and AV1 at 10 and 12 bits."><link rel="stylesheet" href="../../fonts/plex-mono-sans.css"><style>
   :root { color-scheme: dark; --ground: #121417; --panel: #1b1f24; --ink: #e3e7eb; --muted: #909aa4;
           --tag: #8cc2e6; --line: #2b3138;
           --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -29,6 +29,7 @@
 <meta property="og:url" content="https://ultradeeprange.github.io/udeep/check/video/">
 <meta property="og:image" content="https://ultradeeprange.github.io/udeep/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../site.css">
 <script src="../../site.js" defer></script>
 <!-- /chrome:head -->
 </head><body><main><p class="crumb"><a href="../../index.html">UDeep</a> / <a href="../index.html">device checks</a></p><h1>Does 12-bit HDR video play?</h1><p>For each: does it <b>play</b>, and do the <b>squares show inside the white band</b>? V1 and V4 are 10-bit controls.</p><div class="row"><p><span class="id">V1</span> HEVC Main 10: control</p><video src="hevc10.mp4" autoplay muted loop playsinline controls width="1080" height="1080"></video></div><div class="row"><p><span class="id">V2</span> HEVC Main 12</p><video src="hevc12.mp4" autoplay muted loop playsinline controls width="1080" height="1080"></video></div><div class="row"><p><span class="id">V3</span> HEVC Main 4:4:4 12</p><video src="hevc444_12.mp4" autoplay muted loop playsinline controls width="1080" height="1080"></video></div><div class="row"><p><span class="id">V4</span> AV1 10-bit (Main): control</p><video src="av1_10.mp4" autoplay muted loop playsinline controls width="1080" height="1080"></video></div><div class="row"><p><span class="id">V5</span> AV1 12-bit (Professional)</p><video src="av1_12.mp4" autoplay muted loop playsinline controls width="1080" height="1080"></video></div></main></body></html>

@@ -10,6 +10,17 @@ the code implements: 0.3 implements the v0.3 draft.
 
 ## Unreleased
 
+### 2026-10-31
+
+- **The site loads only its own files, and runs no inline code.** Every page carries a Content Security Policy
+  (a `<meta>` tag; GitHub Pages cannot send the header): the site's own files only, no inline script, and of
+  inline styles only the page's own `<style>` blocks, by their SHA-256. `tools/site_chrome.py` writes it last,
+  from the page as it ends up, so `tools/build_all.py --check` fails when a page's styles and its policy part;
+  `tests/test_site.py` checks it. The live view alone may compile WebAssembly (`'wasm-unsafe-eval'`, which
+  allows that and not `eval`). IBM Plex is served from `docs/fonts/` (the same files, with the OFL) rather than
+  Google Fonts, the three inline scripts are files beside their pages, `site.js`'s styles are `site.css`, and
+  the few `style=` attributes are classes. The pages look as they did.
+
 ### 2026-10-24
 
 - **Where the declaration is stored, written down** (profile 8.8, new): one packet, in a gain-map JPEG's primary
