@@ -138,21 +138,21 @@ def test_every_page_has_a_content_security_policy_that_fits_it():
         assert policy["default-src"] == "'self'" and policy["object-src"] == policy["base-uri"] == "'none'", rel
         assert policy["script-src"] == ("'self' 'wasm-unsafe-eval'" if rel == "view/index.html" else "'self'"), rel
         assert policy.get("img-src", "'self'") == ("'self' data:" if rel == "check/svg/index.html" else "'self'"), rel
-        styles = {sha256(css) for css in re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL)}
+        styles = {sha256(css) for css in re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL | re.I)}
         assert set(policy["style-src"].split()) == {"'self'", *styles}, rel
-        assert "'unsafe-inline'" not in m.group(1) and "'unsafe-eval'" not in m.group(1) and "http" not in m.group(1), rel
+        assert not any(word in m.group(1) for word in ("'unsafe-inline'", "'unsafe-eval'", "http")), rel
 
 
 def test_no_page_runs_inline_code_or_loads_another_sites_files():
     for page in PAGES:
         text = page.read_text(encoding="utf-8")
         rel = page.relative_to(DOCS).as_posix()
-        assert not re.search(r"<script(?![^>]*\ssrc=)", text), rel             # every script is a file
-        assert not re.search(r'\sstyle="|\son[a-z]+="', text), rel             # no style= and no onclick= and friends
-        for tag in re.findall(r"<(?:script|img|source|video|audio|iframe|embed|object)\b[^>]*>", text):
-            assert not re.search(r'\s(?:src|srcset|data)="(?:https?:)?//', tag), (rel, tag)
-        for tag in re.findall(r"<link\b[^>]*>", text):
-            assert 'rel="canonical"' in tag or not re.search(r'\shref="(?:https?:)?//', tag), (rel, tag)
+        assert not re.search(r"<script(?![^>]*\ssrc=)", text, re.I), rel       # every script is a file
+        assert not re.search(r'\sstyle="|\son[a-z]+="', text, re.I), rel       # no style= and no onclick= and friends
+        for tag in re.findall(r"<(?:script|img|source|video|audio|iframe|embed|object)\b[^>]*>", text, re.I):
+            assert not re.search(r'\s(?:src|srcset|data)="(?:https?:)?//', tag, re.I), (rel, tag)
+        for tag in re.findall(r"<link\b[^>]*>", text, re.I):
+            assert 'rel="canonical"' in tag or not re.search(r'\shref="(?:https?:)?//', tag, re.I), (rel, tag)
     for css in DOCS.rglob("*.css"):
         assert not re.search(r"url\(\s*['\"]?(?:https?:)?//|@import", css.read_text(encoding="utf-8")), css
     assert 'createElement("style")' not in (DOCS / "site.js").read_text(encoding="utf-8")   # its styles: site.css

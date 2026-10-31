@@ -41,7 +41,7 @@ CSP = re.compile(r'<meta http-equiv="Content-Security-Policy" content="[^"]*">\n
 WASM = ("view/index.html",)
 # The SVG check carries its test pattern inside inline SVG as data: images (that is what it tests).
 DATA_IMAGES = ("check/svg/index.html",)
-INLINE = re.compile(r'<script(?![^>]*\ssrc=)[^>]*>|\sstyle="|\son[a-z]+="')
+INLINE = re.compile(r'<script(?![^>]*\ssrc=)[^>]*>|\sstyle="|\son[a-z]+="', re.IGNORECASE)
 # The pages are written dark first (their own :root holds the dark palette). This block, placed after a page's own
 # styles, adds the few tokens the pages share and the light palette: for a viewer whose system asks for light, and
 # for an explicit choice (data-theme on the root element, set by the control in site.js or by a host page), which
@@ -124,7 +124,8 @@ def with_policy(rel: str, s: str) -> str:
         raise SystemExit(f"{rel}: {bad.group(0).strip()!r}: the Content Security Policy runs no inline script, style= "
                          "or on*= handler; put the script in a .js file and the style in a class")
     hashes = []
-    for css in re.findall(r"<style\b[^>]*>(.*?)</style>", s, re.DOTALL):    # as the browser hashes it: newlines as \n
+    # as the browser hashes a <style>: its text, newlines as \n
+    for css in re.findall(r"<style\b[^>]*>(.*?)</style>", s, re.DOTALL | re.IGNORECASE):
         h = "'sha256-" + base64.b64encode(hashlib.sha256(css.encode("utf-8")).digest()).decode("ascii") + "'"
         hashes += [h] if h not in hashes else []
     script = "'self'" + (" 'wasm-unsafe-eval'" if rel in WASM else "")
