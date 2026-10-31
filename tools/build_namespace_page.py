@@ -60,8 +60,7 @@ def main() -> None:
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>udeep namespace {VERSION} · UDeep</title>
 <meta name="description" content="The udeep XMP namespace, version {VERSION}: the properties in which a figure file declares how its data became light, as the UDeep Figure Profile defines them.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../../fonts/plex.css">
 <style>{STYLE}
   .single {{ padding-block: 36px 64px; }}
   .uri {{ font-family: var(--mono); font-size: 15px; overflow-wrap: anywhere; color: var(--ink); }}

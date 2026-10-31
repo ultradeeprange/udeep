@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'sha256-gPYi0bOUig0tUOuXveZfXlplUPd6w/AmtsaSh61ljv0=' 'sha256-7A2k4qsoV3UC3gC3oPsNfG3ft8wtgsw9tmK0EE8cxJo='; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Standardisation · UDeep</title>
 <meta name="description" content="How the UDeep Figure Profile is built (data first, perception last) and the route to making it a standard.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../fonts/plex.css">
 <style>
   :root {
     color-scheme: dark;
@@ -63,6 +63,8 @@
   footer { border-top: 1px solid var(--line); padding-block: 28px 48px; font-size: 13px; color: var(--muted); }
   @media (max-width: 640px) { .layer { grid-template-columns: 1fr; gap: 6px; } }
 
+  /* layout that was in style= attributes, which the page's Content Security Policy does not run */
+  ol.points { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; max-width: 74ch; }
 </style>
 <!-- chrome:head -->
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
@@ -106,6 +108,7 @@
   picture { display: block; }
   .plate.themed { background: var(--plate); }
 </style>
+<link rel="stylesheet" href="../site.css">
 <script src="../site.js" defer></script>
 <!-- /chrome:head -->
 </head>
@@ -268,7 +271,7 @@
         This route suits JTC 1 subjects, and requires a mature specification from such a body.</p></div>
   </div>
   <p><b>Suggested sequence.</b></p>
-  <ol style="margin:0;padding-left:1.4em;display:grid;gap:6px;max-width:74ch">
+  <ol class="points">
     <li>Align the profile with ISO 22028-5 and ISO 21496-1 now (terms, metadata, references).</li>
     <li>Build community practice and evidence (stages 1–2 above).</li>
     <li>Engage BSI CPW/42 and propose a <b>Technical Report</b> (informative: the evidence and the data-referred model).</li>

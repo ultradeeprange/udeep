@@ -106,8 +106,9 @@ def table(parts) -> str:
             f"<th>What it holds</th></tr></thead>\n      <tbody>\n{rows}\n      </tbody>\n    </table></div>")
 
 
-def bar(parts, total: int) -> str:
-    """The file's bytes in proportion: the declaration and other metadata against the image data."""
+def bar(parts, total: int) -> tuple[str, set[int]]:
+    """The file's bytes in proportion: the declaration and other metadata against the image data. With the sizes
+    the segments are drawn at, each a class (`w<bytes>`, see main), as the site's pages carry no style= attribute."""
     spans = []
     for _o, s, m, w in parts:
         kind = ("decl" if "UDeep declaration" in w else "image" if m in ("SOS",) or m.startswith("IDAT") else "meta")
@@ -115,8 +116,8 @@ def bar(parts, total: int) -> str:
             spans[-1][1] += s
         else:
             spans.append([kind, s])
-    cells = "".join(f'<span class="{k}" style="flex: {s} 0 0"></span>' for k, s in spans)
-    return f'<div class="bar" role="img" aria-label="{total:,} bytes in all">{cells}</div>'
+    cells = "".join(f'<span class="{k} w{s}"></span>' for k, s in spans)
+    return f'<div class="bar" role="img" aria-label="{total:,} bytes in all">{cells}</div>', {s for _k, s in spans}
 
 
 def meanings() -> dict[str, str]:
@@ -172,6 +173,8 @@ def main() -> None:
     primary, gain = jpeg_parts(jpg, 0, gain_at, True), jpeg_parts(jpg, gain_at, len(jpg), False)
     chunks = png_parts(png)
     xmp = packet(jpg)
+    (jpg_bar, jpg_sizes), (png_bar, png_sizes) = bar(primary + gain, len(jpg)), bar(chunks, len(png))
+    widths = "".join(f"  .bar .w{s} {{ flex: {s} 0 0; }}\n" for s in sorted(jpg_sizes | png_sizes))
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -179,8 +182,7 @@ def main() -> None:
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Anatomy of a UDeep file · UDeep</title>
 <meta name="description" content="A UDeep gain-map JPEG and a 16-bit PQ PNG taken apart, segment by segment, and the declaration they carry, property by property.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../fonts/plex.css">
 <style>{STYLE}
   .single {{ padding-block: 36px 64px; }}
   article {{ max-width: none; }}
@@ -191,8 +193,9 @@ def main() -> None:
   .bar {{ display: flex; height: 22px; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); margin: 6px 0 4px; }}
   .bar span {{ min-width: 3px; }}
   .bar .image {{ background: var(--line); }} .bar .meta {{ background: var(--muted); }} .bar .decl {{ background: var(--warm); }}
-  .key {{ display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }}
+{widths}  .key {{ display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }}
   .key i {{ display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }}
+  .key i.decl {{ background: var(--warm); }} .key i.meta {{ background: var(--muted); }} .key i.image {{ background: var(--line); }}
   details {{ margin: 10px 0; }} summary {{ cursor: pointer; color: var(--tag); }}
   table.declared td:nth-child(2) {{ width: 34%; }} table.declared td:nth-child(2) code {{ overflow-wrap: anywhere; }}
   table.declared td:nth-child(3) {{ width: 46%; }}
@@ -219,8 +222,8 @@ def main() -> None:
     The first is the ordinary figure, which any program shows. The second, after it, is the gain map, which a screen
     that can show HDR uses to make the bright parts brighter than white. The declaration is in the first image's XMP
     segment, beside the gain map's own description.</p>
-    {bar(primary + gain, len(jpg))}
-    <p class="key"><span><i style="background: var(--warm)"></i>the declaration's segment</span><span><i style="background: var(--muted)"></i>other metadata</span><span><i style="background: var(--line)"></i>image data</span></p>
+    {jpg_bar}
+    <p class="key"><span><i class="decl"></i>the declaration's segment</span><span><i class="meta"></i>other metadata</span><span><i class="image"></i>image data</span></p>
     <p class="muted">In a figure this small (60 by 40 pixels) the metadata is a large share of the file. In the
     18 HDR figures of this site's gallery, the declaration is 1.5 to 1.7 KiB of files from 184 KiB to 1 MiB, under
     1 % of each.</p>
@@ -233,7 +236,7 @@ def main() -> None:
     <p><a href="../conformance/record.png"><code>record.png</code></a>, {len(png):,} bytes: the same figure as a data
     record, fine enough that it reads back as the data. It has no ordinary SDR picture of its own, so its
     declaration names the one that goes with it, by digest.</p>
-    {bar(chunks, len(png))}
+    {png_bar}
     {table(chunks)}
 
     <h2>The declaration</h2>

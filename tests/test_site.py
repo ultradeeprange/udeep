@@ -1,6 +1,9 @@
 """The site under docs/: every figure a page can show exists for a light and for a dark page, the two declare the
-same thing about the data, and the pages that follow the viewer's theme carry the styles that do it."""
+same thing about the data, the pages that follow the viewer's theme carry the styles that do it, and every page
+carries a Content Security Policy that fits it and loads nothing from elsewhere."""
+import base64
 import dataclasses
+import hashlib
 import re
 from pathlib import Path
 
@@ -114,3 +117,42 @@ def test_the_light_palette_defines_every_token_a_page_uses():
 def test_site_js_names_dark_files_as_the_tools_write_them():
     script = (DOCS / "site.js").read_text(encoding="utf-8")
     assert r"/_(hdr\.jpg|sdr\.png|full\.png)$/" in script and '"_dark_$1"' in script
+
+
+CSP = re.compile(r'<meta charset="utf-8">\n?<meta http-equiv="Content-Security-Policy" content="([^"]+)">')
+
+
+def sha256(text: str) -> str:
+    return "'sha256-" + base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode("ascii") + "'"
+
+
+def test_every_page_has_a_content_security_policy_that_fits_it():
+    """Straight after <meta charset>: the site's own files only, no inline script, and of inline styles only the page's
+    own <style> blocks, by hash (tools/site_chrome.py writes it; run it after editing a page)."""
+    for page in PAGES:
+        text = page.read_text(encoding="utf-8")                  # newlines as \n, as the browser hashes a <style>
+        rel = page.relative_to(DOCS).as_posix()
+        m = CSP.search(text)
+        assert m and text.index(m.group(0)) < text.index("<title>"), rel
+        policy = dict(d.strip().split(" ", 1) for d in m.group(1).split(";"))
+        assert policy["default-src"] == "'self'" and policy["object-src"] == policy["base-uri"] == "'none'", rel
+        assert policy["script-src"] == ("'self' 'wasm-unsafe-eval'" if rel == "view/index.html" else "'self'"), rel
+        assert policy.get("img-src", "'self'") == ("'self' data:" if rel == "check/svg/index.html" else "'self'"), rel
+        styles = {sha256(css) for css in re.findall(r"<style\b[^>]*>(.*?)</style>", text, re.DOTALL)}
+        assert set(policy["style-src"].split()) == {"'self'", *styles}, rel
+        assert "'unsafe-inline'" not in m.group(1) and "'unsafe-eval'" not in m.group(1) and "http" not in m.group(1), rel
+
+
+def test_no_page_runs_inline_code_or_loads_another_sites_files():
+    for page in PAGES:
+        text = page.read_text(encoding="utf-8")
+        rel = page.relative_to(DOCS).as_posix()
+        assert not re.search(r"<script(?![^>]*\ssrc=)", text), rel             # every script is a file
+        assert not re.search(r'\sstyle="|\son[a-z]+="', text), rel             # no style= and no onclick= and friends
+        for tag in re.findall(r"<(?:script|img|source|video|audio|iframe|embed|object)\b[^>]*>", text):
+            assert not re.search(r'\s(?:src|srcset|data)="(?:https?:)?//', tag), (rel, tag)
+        for tag in re.findall(r"<link\b[^>]*>", text):
+            assert 'rel="canonical"' in tag or not re.search(r'\shref="(?:https?:)?//', tag), (rel, tag)
+    for css in DOCS.rglob("*.css"):
+        assert not re.search(r"url\(\s*['\"]?(?:https?:)?//|@import", css.read_text(encoding="utf-8")), css
+    assert 'createElement("style")' not in (DOCS / "site.js").read_text(encoding="utf-8")   # its styles: site.css

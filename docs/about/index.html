@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'sha256-ttjYmqtyswB4XDNEXOn3oSddi+egdQ26UgP1hbDsZt8=' 'sha256-7A2k4qsoV3UC3gC3oPsNfG3ft8wtgsw9tmK0EE8cxJo='; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>About · UDeep</title>
 <meta name="description" content="Who is behind UDeep, where the project stands, the planned study of whether HDR helps people read figures, how to cite it, and how to report what your screen shows.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../fonts/plex.css">
 <style>
   :root {
     color-scheme: dark;
@@ -91,6 +91,7 @@
   picture { display: block; }
   .plate.themed { background: var(--plate); }
 </style>
+<link rel="stylesheet" href="../site.css">
 <script src="../site.js" defer></script>
 <!-- /chrome:head -->
 </head>
@@ -200,18 +201,6 @@ https://github.com/ultradeeprange/udeep</pre>
 
 <footer><div class="wrap"><p>UDeep · Mathew Newman · text under CC BY 4.0.</p></div></footer>
 
-<script>
-  document.getElementById("copy").addEventListener("click", function () {
-    var text = document.getElementById("template").textContent, note = document.getElementById("copied");
-    function fallback() {
-      var range = document.createRange(); range.selectNodeContents(document.getElementById("template"));
-      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-      note.textContent = "Selected. Press Ctrl+C or ⌘C to copy.";
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { note.textContent = "Copied."; }, fallback);
-    } else { fallback(); }
-  });
-</script>
+<script src="copy.js"></script>
 </body>
 </html>

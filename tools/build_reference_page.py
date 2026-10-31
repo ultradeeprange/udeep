@@ -229,8 +229,7 @@ def page() -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Reference · UDeep</title>
 <meta name="description" content="The udeep Python package and the UDeepCore Julia package: every public function and type, with the description written in the source.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="../fonts/plex.css">
 <style>{STYLE}{EXTRA}</style>
 </head>
 <body>
