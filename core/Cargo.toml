@@ -18,9 +18,9 @@ jpeg = ["dep:jpeg-encoder", "dep:jpeg-decoder"]
 png = ["dep:miniz_oxide"]
 
 [dependencies]
-jpeg-encoder = { version = "0.6", optional = true }
+jpeg-encoder = { version = "0.7", optional = true }
 jpeg-decoder = { version = "0.3", optional = true, default-features = false }
-miniz_oxide = { version = "0.8", optional = true }
+miniz_oxide = { version = "0.9", optional = true }
 
 # The golden-vector test reads JSON.
 [dev-dependencies]
