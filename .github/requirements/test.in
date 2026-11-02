@@ -5,7 +5,7 @@
 #     uv pip compile --universal --python-version 3.13 --generate-hashes .github/requirements/test.in -o .github/requirements/test.txt
 numpy>=2.1
 pillow>=10
-pytest>=8
+pytest>=9.2.0
 matplotlib>=3.8
 array-api-strict
 pytest-cov
