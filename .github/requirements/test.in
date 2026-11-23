@@ -3,9 +3,9 @@
 # backend, so that the editable install needs nothing from the network. Compiled, with every file's hash, to
 # test.txt:
 #     uv pip compile --universal --python-version 3.13 --generate-hashes .github/requirements/test.in -o .github/requirements/test.txt
-numpy>=2.1
+numpy>=2.5.5
 pillow>=10
-pytest>=8
+pytest>=9.2.0
 matplotlib>=3.8
 array-api-strict
 pytest-cov
