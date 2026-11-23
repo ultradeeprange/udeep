@@ -7,5 +7,5 @@ build
 setuptools>=70.1
 twine
 readme-renderer[md]     # without its Markdown extra, twine check passes a Markdown README without rendering it
-numpy>=2.1
+numpy>=2.5.5
 pillow>=10
